@@ -4,6 +4,7 @@
 [![StackOverflow](https://img.shields.io/badge/stack_overflow-twelvemonkeys-orange.svg)](https://stackoverflow.com/questions/tagged/twelvemonkeys)
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/haraldk76/100)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/haraldk/TwelveMonkeys/badge)](https://securityscorecards.dev/viewer/?uri=github.com/haraldk/TwelveMonkeys)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7900/badge)](https://www.bestpractices.dev/projects/7900)
 
 ![Logo](logo.png)
 
