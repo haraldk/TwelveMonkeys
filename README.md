@@ -1,9 +1,12 @@
 [![CI](https://github.com/haraldk/TwelveMonkeys/actions/workflows/ci.yml/badge.svg)](https://github.com/haraldk/TwelveMonkeys/actions/workflows/ci.yml)
+[![CodeQL](https://github.com/haraldk/TwelveMonkeys/actions/workflows/codeql.yml/badge.svg)](https://github.com/haraldk/TwelveMonkeys/actions/workflows/codeql.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/haraldk/TwelveMonkeys/badge)](https://securityscorecards.dev/viewer/?uri=github.com/haraldk/TwelveMonkeys)
+[![OpenSSF Best Practices](https://www.bestpractices.dev/projects/7900/badge)](https://www.bestpractices.dev/projects/7900)
+
 [![Maven Central](https://img.shields.io/maven-central/v/com.twelvemonkeys.imageio/imageio?color=slateblue)](https://search.maven.org/search?q=g:com.twelvemonkeys.imageio)
 [![Maven Snapshot](https://img.shields.io/nexus/s/com.twelvemonkeys.imageio/imageio?label=development&server=https%3A%2F%2Foss.sonatype.org&color=slateblue)](https://oss.sonatype.org/content/repositories/snapshots/com/twelvemonkeys/)
 [![StackOverflow](https://img.shields.io/badge/stack_overflow-twelvemonkeys-orange.svg)](https://stackoverflow.com/questions/tagged/twelvemonkeys)
 [![Donate](https://img.shields.io/badge/donate-PayPal-blue.svg)](https://paypal.me/haraldk76/100)
-[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/haraldk/TwelveMonkeys/badge)](https://securityscorecards.dev/viewer/?uri=github.com/haraldk/TwelveMonkeys)
 
 ![Logo](logo.png)
 

@@ -60,7 +60,7 @@ final class PredictorTransform implements Transform {
 
         // (0,0) Black (0x000000ff) predict
         raster.getDataElements(0, 0, rgba);
-        rgba[3] += 0xff;
+        rgba[3] += (byte) 0xff;
         raster.setDataElements(0, 0, rgba);
 
         byte[] predictor = new byte[4];
@@ -100,7 +100,7 @@ final class PredictorTransform implements Transform {
 
                 switch (transformType) {
                     case PredictorMode.BLACK:
-                        rgba[3] += 0xff;
+                        rgba[3] += (byte) 0xff;
                         break;
                     case PredictorMode.L:
                         raster.getDataElements(lX, y, predictor);

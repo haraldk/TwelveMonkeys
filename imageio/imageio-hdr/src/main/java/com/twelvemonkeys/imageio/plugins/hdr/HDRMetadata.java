@@ -5,7 +5,7 @@ import com.twelvemonkeys.imageio.StandardImageMetadataSupport;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadataNode;
 
-public class HDRMetadata extends StandardImageMetadataSupport {
+final class HDRMetadata extends StandardImageMetadataSupport {
     public HDRMetadata(ImageTypeSpecifier type, HDRHeader header) {
         super(builder(type)
                       .withCompressionTypeName("RLE")

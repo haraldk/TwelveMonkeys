@@ -50,8 +50,8 @@ public class StringArrayReader extends StringReader {
     protected final Object finalLock;
     private int currentSting;
     private int markedString;
-    private int mark;
-    private int next;
+    private long mark;
+    private long next;
 
     /**
      * Create a new string array reader.
@@ -151,7 +151,7 @@ public class StringArrayReader extends StringReader {
         }
     }
 
-    public int read(char pBuffer[], int pOffset, int pLength) throws IOException {
+    public int read(char[] pBuffer, int pOffset, int pLength) throws IOException {
         synchronized (finalLock) {
             int read = current.read(pBuffer, pOffset, pLength);
 

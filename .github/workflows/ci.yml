@@ -17,7 +17,7 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
-        java: [ 8, 11, 17, 20 ]
+        java: [ 8, 11, 17, 20, 21-ea ]
     runs-on: ${{ matrix.os }}
     permissions:
       checks: write
@@ -32,7 +32,7 @@ jobs:
       - name: Run Tests
         run: mvn --batch-mode --no-transfer-progress test
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@75b84e78b3f0aaea7ed7cf8d1d100d7f97f963ec # v4.0.0
+        uses: mikepenz/action-junit-report@0a8a5ba57593d67b2e45de2c543b438412382b7b # v4.0.1
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
@@ -66,7 +66,7 @@ jobs:
       - name: Run Tests
         run: mvn --batch-mode --no-transfer-progress test
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@75b84e78b3f0aaea7ed7cf8d1d100d7f97f963ec # v4.0.0
+        uses: mikepenz/action-junit-report@0a8a5ba57593d67b2e45de2c543b438412382b7b # v4.0.1
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"

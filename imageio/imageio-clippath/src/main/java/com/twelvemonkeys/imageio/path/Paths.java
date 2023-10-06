@@ -42,6 +42,7 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
 import javax.imageio.*;
 import javax.imageio.metadata.IIOMetadata;
@@ -307,7 +308,7 @@ public final class Paths {
             throw new IllegalArgumentException("output == null!");
         }
 
-        ImageTypeSpecifier type = ImageTypeSpecifier.createFromRenderedImage(image);
+        ImageTypeSpecifier type = ImageTypeSpecifiers.createFromRenderedImage(image);
         Iterator<ImageWriter> writers = ImageIO.getImageWriters(type, formatName);
 
         if (writers.hasNext()) {

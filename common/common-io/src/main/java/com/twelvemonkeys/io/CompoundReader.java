@@ -56,8 +56,8 @@ public class CompoundReader extends Reader {
 
     private int currentReader;
     private int markedReader;
-    private int mark;
-    private int mNext;
+    private long mark;
+    private long next;
 
     /**
      * Create a new compound reader.
@@ -76,7 +76,7 @@ public class CompoundReader extends Reader {
         finalLock = pReaders; // NOTE: It's ok to sync on pReaders, as the
                           // reference can't change, only it's elements
 
-        readers = new ArrayList<Reader>();
+        readers = new ArrayList<>();
 
         boolean markSupported = true;
         while (pReaders.hasNext()) {
@@ -101,7 +101,7 @@ public class CompoundReader extends Reader {
         }
         
         // NOTE: Reset mNext for every reader, and record marked reader in mark/reset methods!
-        mNext = 0;
+        next = 0;
         return current;
     }
 
@@ -135,7 +135,7 @@ public class CompoundReader extends Reader {
 
         synchronized (finalLock) {
             ensureOpen();
-            mark = mNext;
+            mark = next;
             markedReader = currentReader;
 
             current.mark(pReadLimit);
@@ -158,7 +158,7 @@ public class CompoundReader extends Reader {
             }
             current.reset();
 
-            mNext = mark;
+            next = mark;
         }
     }
 
@@ -177,13 +177,13 @@ public class CompoundReader extends Reader {
                 return read(); // In case of 0-length readers
             }
 
-            mNext++;
+            next++;
 
             return read;
         }
     }
 
-    public int read(char pBuffer[], int pOffset, int pLength) throws IOException {
+    public int read(char[] pBuffer, int pOffset, int pLength) throws IOException {
         synchronized (finalLock) {
             int read = current.read(pBuffer, pOffset, pLength);
 
@@ -192,7 +192,7 @@ public class CompoundReader extends Reader {
                 return read(pBuffer, pOffset, pLength); // In case of 0-length readers
             }
 
-            mNext += read;
+            next += read;
 
             return read;
         }
@@ -213,7 +213,7 @@ public class CompoundReader extends Reader {
                 return skip(pChars); // In case of 0-length readers
             }
 
-            mNext += skipped;
+            next += skipped;
 
             return skipped;
         }

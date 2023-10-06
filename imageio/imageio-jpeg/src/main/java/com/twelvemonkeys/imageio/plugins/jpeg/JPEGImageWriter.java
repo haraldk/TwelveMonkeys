@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.ImageWriterBase;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
+import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 
 import javax.imageio.IIOImage;
@@ -161,7 +162,7 @@ public final class JPEGImageWriter extends ImageWriterBase {
         else {
             // If the image metadata is our substitute, convert it back to native com.sun format
             if (image.getMetadata() instanceof JPEGImage10Metadata) {
-                ImageTypeSpecifier type = image.hasRaster() ? null : ImageTypeSpecifier.createFromRenderedImage(image.getRenderedImage());
+                ImageTypeSpecifier type = image.hasRaster() ? null : ImageTypeSpecifiers.createFromRenderedImage(image.getRenderedImage());
                 IIOMetadata nativeMetadata = delegate.getDefaultImageMetadata(type, param);
 
                 JPEGImage10Metadata metadata = (JPEGImage10Metadata) image.getMetadata();
@@ -185,7 +186,7 @@ public final class JPEGImageWriter extends ImageWriterBase {
         boolean overrideDestination = param != null && param.getDestinationType() != null;
         ImageTypeSpecifier destinationType = overrideDestination
                                              ? param.getDestinationType()
-                                             : ImageTypeSpecifier.createFromRenderedImage(renderedImage);
+                                             : ImageTypeSpecifiers.createFromRenderedImage(renderedImage);
 
         ColorSpace cmykCS = destinationType.getColorModel().getColorSpace();
 
