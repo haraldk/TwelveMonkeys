@@ -52,7 +52,7 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
  * @version $Id: JPEGImageReaderSpi.java,v 1.0 24.01.11 22.12 haraldk Exp$
  */
 public final class JPEGImageReaderSpi extends ImageReaderSpiBase {
-    protected ImageReaderSpi delegateProvider;
+    ImageReaderSpi delegateProvider;
 
     /**
      * Constructor for use by {@link javax.imageio.spi.IIORegistry} only.

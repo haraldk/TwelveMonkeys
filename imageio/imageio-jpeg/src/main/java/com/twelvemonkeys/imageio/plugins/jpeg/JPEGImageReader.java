@@ -888,20 +888,21 @@ public final class JPEGImageReader extends ImageReaderBase {
         throw new IIOException("No SOF segment in stream");
     }
 
+    private Application lastAppSegment(int marker, String identifier) throws IOException {
+        List<Application> appSegments = getAppSegments(marker, identifier);
+        return appSegments.isEmpty() ? null : appSegments.get(appSegments.size() - 1);
+    }
+
     AdobeDCT getAdobeDCT() throws IOException {
-        List<Application> adobe = getAppSegments(JPEG.APP14, "Adobe");
-        return adobe.isEmpty() ? null : (AdobeDCT) adobe.get(0);
+        return (AdobeDCT) lastAppSegment(JPEG.APP14, "Adobe");
     }
 
     JFIF getJFIF() throws IOException{
-        List<Application> jfif = getAppSegments(JPEG.APP0, "JFIF");
-        return jfif.isEmpty() ? null : (JFIF) jfif.get(0);
-
+        return (JFIF) lastAppSegment(JPEG.APP0, "JFIF");
     }
 
     JFXX getJFXX() throws IOException {
-        List<Application> jfxx = getAppSegments(JPEG.APP0, "JFXX");
-        return jfxx.isEmpty() ? null : (JFXX) jfxx.get(0);
+        return (JFXX) lastAppSegment(JPEG.APP0, "JFXX");
     }
 
     private EXIF getExif() throws IOException {
