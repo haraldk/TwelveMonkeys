@@ -60,7 +60,9 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
                         new Dimension(394, 383), new Dimension(394, 394), new Dimension(372, 394),
                         new Dimension(400, 400), new Dimension(320, 382)),
                 // Alpha transparency and Alpha filtering
-                new TestData(getClassLoaderResource("/webp/alpha_filter.webp"), new Dimension(1600, 1600))
+                new TestData(getClassLoaderResource("/webp/alpha_filter.webp"), new Dimension(1600, 1600)),
+                // Lossy with grayscale ICC profile
+                new TestData(getClassLoaderResource("/webp/incompatible-icc-gray.webp"), new Dimension(766, 1100))
         );
     }
 

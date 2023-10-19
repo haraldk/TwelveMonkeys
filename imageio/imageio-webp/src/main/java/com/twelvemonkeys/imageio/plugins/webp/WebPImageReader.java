@@ -77,6 +77,11 @@ final class WebPImageReader extends ImageReaderBase {
     // Either VP8_, VP8L or VP8X chunk
     private long fileSize;
     private VP8xChunk header;
+
+    // The ICC Profile contained in the stream, only suitable for metadata.
+    private ICC_Profile containedICCP;
+
+    // A safe, verified RGB ICC Profile used for color conversion.
     private ICC_Profile iccProfile;
     private final List<AnimationFrame> frames = new ArrayList<>();
 
@@ -88,6 +93,7 @@ final class WebPImageReader extends ImageReaderBase {
     protected void resetMembers() {
         fileSize = -1;
         header = null;
+        containedICCP = null;
         iccProfile = null;
         lsbBitReader = null;
         frames.clear();
@@ -299,13 +305,20 @@ final class WebPImageReader extends ImageReaderBase {
 
                 if (header.containsICCP) {
                     // ICCP chunk must be first chunk, if present
-                    while (iccProfile == null && imageInput.getStreamPosition() < fileSize) {
+                    while (containedICCP == null && imageInput.getStreamPosition() < fileSize) {
                         int nextChunk = imageInput.readInt();
                         long chunkLength = imageInput.readUnsignedInt();
                         long chunkStart = imageInput.getStreamPosition();
 
                         if (nextChunk == WebP.CHUNK_ICCP) {
-                            iccProfile = ColorProfiles.readProfile(IIOUtil.createStreamAdapter(imageInput, chunkLength));
+                            containedICCP = ColorProfiles.readProfile(IIOUtil.createStreamAdapter(imageInput, chunkLength));
+
+                            if (containedICCP.getColorSpaceType() == ColorSpace.TYPE_RGB) {
+                                iccProfile = containedICCP;
+                            }
+                            else {
+                                processWarningOccurred("Encountered non-RGB ICC Profile, ignoring color profile, colors may appear incorrect");
+                            }
                         }
                         else {
                             processWarningOccurred(String.format("Expected 'ICCP' chunk, '%s' chunk encountered", fourCC(nextChunk)));
@@ -386,9 +399,10 @@ final class WebPImageReader extends ImageReaderBase {
 
         if (iccProfile != null && !ColorProfiles.isCS_sRGB(iccProfile)) {
             ICC_ColorSpace colorSpace = ColorSpaces.createColorSpace(iccProfile);
-            int[] bandOffsets = header.containsALPH ? new int[] {0, 1, 2, 3} : new int[] {0, 1, 2};
+            int[] bandOffsets = header.containsALPH ? new int[]{0, 1, 2, 3} : new int[]{0, 1, 2};
             return ImageTypeSpecifiers.createInterleaved(colorSpace, bandOffsets, DataBuffer.TYPE_BYTE, header.containsALPH, false);
         }
+        // Non-RGB profile is simply ignored
 
         return ImageTypeSpecifiers.createFromBufferedImageType(header.containsALPH ? BufferedImage.TYPE_4BYTE_ABGR : BufferedImage.TYPE_3BYTE_BGR);
     }
