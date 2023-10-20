@@ -844,7 +844,7 @@ public final class ImageUtil {
                 return false;
             }
 
-            for (int i = 0; i > mapSize1; i++) {
+            for (int i = 0; i < mapSize1; i++) {
                 if (icm1.getRGB(i) != icm2.getRGB(i)) {
                     return false;
                 }
