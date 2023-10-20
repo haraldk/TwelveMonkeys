@@ -1070,7 +1070,7 @@ public final class PSDImageReader extends ImageReaderBase {
         final int height = getLayerHeight(layerIndex);
 
         // TODO: This behaviour must be documented!
-        // If layer has no pixel data, return null
+        // If layer has no pixel data, return null, as we can't create a 0 x 0 sample model/raster
         if (width <= 0 || height <= 0) {
             return null;
         }
