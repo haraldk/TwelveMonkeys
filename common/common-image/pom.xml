@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
     <name>TwelveMonkeys :: Common :: Image</name>
     <description>
-        The TwelveMonkeys Common Image support
+        TwelveMonkeys Common image support classes.
     </description>
 
     <properties>

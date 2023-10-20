@@ -10,7 +10,7 @@
     <packaging>jar</packaging>
     <name>TwelveMonkeys :: Common :: IO</name>
     <description>
-        The TwelveMonkeys Common IO support
+        TwelveMonkeys Common I/O support classes.
     </description>
 
     <properties>

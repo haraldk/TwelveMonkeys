@@ -9,7 +9,7 @@
     <artifactId>imageio-metadata</artifactId>
     <name>TwelveMonkeys :: ImageIO :: Metadata</name>
     <description>
-        ImageIO metadata module.
+        TwelveMonkeys ImageIO metadata support classes.
     </description>
 
     <properties>

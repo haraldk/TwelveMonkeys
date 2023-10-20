@@ -10,7 +10,7 @@
     <artifactId>contrib</artifactId>
     <name>TwelveMonkeys :: Contrib</name>
     <description>
-      Contributions to TwelveMonkeys which are not matching into the ImageIO plug-ins.
+      Contributions to TwelveMonkeys and code that doesn't fit anywhere else.
     </description>
 
     <dependencies>

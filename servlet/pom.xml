@@ -10,6 +10,9 @@
     <groupId>com.twelvemonkeys.servlet</groupId>
     <artifactId>servlet</artifactId>
     <name>TwelveMonkeys :: Servlet</name>
+    <description>
+        TwelveMonkeys Servlet support classes.
+    </description>
 
     <dependencies>
         <dependency>

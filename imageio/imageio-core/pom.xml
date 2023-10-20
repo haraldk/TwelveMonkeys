@@ -8,6 +8,9 @@
     </parent>
     <artifactId>imageio-core</artifactId>
     <name>TwelveMonkeys :: ImageIO :: Core</name>
+    <description>
+        TwelveMonkeys ImageIO core support classes.
+    </description>
 
     <properties>
         <project.jpms.module.name>com.twelvemonkeys.imageio.core</project.jpms.module.name>
