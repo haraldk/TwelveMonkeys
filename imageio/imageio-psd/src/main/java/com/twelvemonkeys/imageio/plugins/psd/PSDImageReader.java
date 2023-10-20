@@ -864,21 +864,27 @@ public final class PSDImageReader extends ImageReaderBase {
 
             long imageResourcesLength = imageInput.readUnsignedInt();
 
-            if (pParseData && metadata.imageResources == null && imageResourcesLength > 0) {
-                long expectedEnd = imageInput.getStreamPosition() + imageResourcesLength;
-                metadata.imageResources = new ArrayList<>();
-
-                while (imageInput.getStreamPosition() < expectedEnd) {
-                    PSDImageResource resource = PSDImageResource.read(imageInput);
-                    metadata.imageResources.add(resource);
+            if (pParseData && metadata.imageResources == null) {
+                if (imageResourcesLength == 0) {
+                    metadata.imageResources = Collections.emptyList();
                 }
+                else {
+                    metadata.imageResources = new ArrayList<>();
 
-                if (DEBUG) {
-                    System.out.println("imageResources: " + metadata.imageResources);
-                }
+                    long expectedEnd = imageInput.getStreamPosition() + imageResourcesLength;
 
-                if (imageInput.getStreamPosition() != expectedEnd) {
-                    throw new IIOException("Corrupt PSD document"); // ..or maybe just a bug in the reader.. ;-)
+                    while (imageInput.getStreamPosition() < expectedEnd) {
+                        PSDImageResource resource = PSDImageResource.read(imageInput);
+                        metadata.imageResources.add(resource);
+                    }
+
+                    if (DEBUG) {
+                        System.out.println("imageResources: " + metadata.imageResources);
+                    }
+
+                    if (imageInput.getStreamPosition() != expectedEnd) {
+                        throw new IIOException("Corrupt PSD document"); // ..or maybe just a bug in the reader.. ;-)
+                    }
                 }
             }
 
