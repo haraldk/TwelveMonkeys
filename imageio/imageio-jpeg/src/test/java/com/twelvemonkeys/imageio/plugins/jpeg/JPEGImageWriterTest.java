@@ -38,7 +38,13 @@ import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 import org.junit.Test;
 import org.w3c.dom.NodeList;
 
-import javax.imageio.*;
+import javax.imageio.IIOImage;
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageReader;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
@@ -48,8 +54,7 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_Profile;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -211,7 +216,7 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest<JPEGImageWriter
         // Test APP2/ICC_PROFILE segments form native metadata
         IIOMetadataNode nativeMeta = (IIOMetadataNode) metadata.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
         NodeList unknown = nativeMeta.getElementsByTagName("unknown");
-        assertEquals(11, unknown.getLength()); // We write longer segments than the original, so we get less segments
+        assertEquals(14, unknown.getLength()); // We write longer segments than the original, so we get less segments
 
         ByteArrayOutputStream iccSegments = new ByteArrayOutputStream(1024 * 1024);
 
@@ -259,7 +264,7 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest<JPEGImageWriter
         // Test APP2/ICC_PROFILE segments form native metadata
         IIOMetadataNode nativeMeta = (IIOMetadataNode) metadata.getAsTree(JPEGImage10Metadata.JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
         NodeList unknown = nativeMeta.getElementsByTagName("unknown");
-        assertEquals(0, unknown.getLength());
+        assertEquals(3, unknown.getLength());
     }
 
     // TODO: YCCK

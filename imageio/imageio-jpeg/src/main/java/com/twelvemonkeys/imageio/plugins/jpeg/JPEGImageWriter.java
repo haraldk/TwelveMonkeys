@@ -35,17 +35,18 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 
+import org.w3c.dom.NodeList;
+
 import javax.imageio.IIOImage;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
 import javax.imageio.event.IIOWriteWarningListener;
+import javax.imageio.metadata.IIOInvalidTreeException;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.*;
-import java.awt.color.ColorSpace;
-import java.awt.color.ICC_ColorSpace;
-import java.awt.color.ICC_Profile;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -185,23 +186,67 @@ public final class JPEGImageWriter extends ImageWriterBase {
         RenderedImage renderedImage = image.getRenderedImage();
         boolean overrideDestination = param != null && param.getDestinationType() != null;
         ImageTypeSpecifier destinationType = overrideDestination
-                                             ? param.getDestinationType()
-                                             : ImageTypeSpecifiers.createFromRenderedImage(renderedImage);
+                ? param.getDestinationType()
+                : ImageTypeSpecifiers.createFromRenderedImage(renderedImage);
 
-        ColorSpace cmykCS = destinationType.getColorModel().getColorSpace();
+        IIOMetadata metadata = convertCMYKMetadata(image.getMetadata(), destinationType, param);
 
-        IIOMetadata metadata = delegate.getDefaultImageMetadata(destinationType, param);
+        Raster raster = new InvertedRaster(getRaster(renderedImage));
 
+        // TODO: For YCCK we need oposite conversion
+//            for (int i = 0; i < data.length; i += 4) {
+//                YCbCrConverter.convertYCbCr2RGB(data, data, i);
+//            }
+
+        if (overrideDestination) {
+            // Avoid javax.imageio.IIOException: Invalid argument to native writeImage
+            param.setDestinationType(null);
+        }
+
+        try {
+            delegate.write(streamMetadata, new IIOImage(raster, null, metadata), param);
+        }
+        finally {
+            if (overrideDestination) {
+                param.setDestinationType(destinationType);
+            }
+        }
+    }
+
+    private IIOMetadata convertCMYKMetadata(IIOMetadata original, ImageTypeSpecifier destinationType, ImageWriteParam param) throws IIOInvalidTreeException {
         IIOMetadataNode jpegMeta = new IIOMetadataNode(JAVAX_IMAGEIO_JPEG_IMAGE_1_0);
-        jpegMeta.appendChild(new IIOMetadataNode("JPEGVariety")); // Just leave as default
+        jpegMeta.appendChild(new IIOMetadataNode("JPEGVariety")); // Just leave as default, we can't write JFIF
 
         IIOMetadataNode markerSequence = new IIOMetadataNode("markerSequence");
         jpegMeta.appendChild(markerSequence);
+
+        IIOMetadataNode originalTree = original != null
+                ? (IIOMetadataNode) original.getAsTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0)
+                : new IIOMetadataNode("emptyNode");
+
+        // Append original unknown nodes, if present, but filter out any ICC Profiles
+        NodeList unknowns = originalTree.getElementsByTagName("unknown");
+        for (int i = 0; i < unknowns.getLength(); i++) {
+            IIOMetadataNode unknown = (IIOMetadataNode) unknowns.item(i);
+
+            // TODO: If the cmykCS is not an ICC profile, maybe it makes sense to NOT filter here? that's a corner case...
+            if ("226".equals(unknown.getAttribute("MarkerTag"))) {
+                Object userObject = unknown.getUserObject();
+
+                if (userObject instanceof byte[] && ((byte[]) userObject).length >= "ICC_PROFILE".length()
+                        && "ICC_PROFILE".equals(new String((byte[]) userObject, 0, "ICC_PROFILE".length()))) {
+                    continue;
+                }
+            }
+
+            markerSequence.appendChild(unknown);
+        }
 
         IIOMetadataNode app14Adobe = new IIOMetadataNode("app14Adobe");
         app14Adobe.setAttribute("transform", "0"); // 0 for CMYK, 2 for YCCK
         markerSequence.appendChild(app14Adobe);
 
+        ColorSpace cmykCS = destinationType.getColorModel().getColorSpace();
         if (cmykCS instanceof ICC_ColorSpace) {
             ICC_Profile profile = ((ICC_ColorSpace) cmykCS).getProfile();
             byte[] profileData = profile.getData();
@@ -234,28 +279,16 @@ public final class JPEGImageWriter extends ImageWriterBase {
             }
         }
 
+        // Append original comment nodes, if present
+        NodeList comments = originalTree.getElementsByTagName("COM");
+        for (int i = 0; i < comments.getLength(); i++) {
+            markerSequence.appendChild(comments.item(i));
+        }
+
+        IIOMetadata metadata = delegate.getDefaultImageMetadata(destinationType, param);
         metadata.mergeTree(JAVAX_IMAGEIO_JPEG_IMAGE_1_0, jpegMeta);
 
-        Raster raster = new InvertedRaster(getRaster(renderedImage));
-
-        // TODO: For YCCK we need oposite conversion
-//            for (int i = 0; i < data.length; i += 4) {
-//                YCbCrConverter.convertYCbCr2RGB(data, data, i);
-//            }
-
-        if (overrideDestination) {
-            // Avoid javax.imageio.IIOException: Invalid argument to native writeImage
-            param.setDestinationType(null);
-        }
-
-        try {
-            delegate.write(streamMetadata, new IIOImage(raster, null, metadata), param);
-        }
-        finally {
-            if (overrideDestination) {
-                param.setDestinationType(destinationType);
-            }
-        }
+        return metadata;
     }
 
     // TODO: Candidate util method
