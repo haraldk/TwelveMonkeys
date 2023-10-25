@@ -243,7 +243,6 @@ public class JPEGImageWriterTest extends ImageWriterAbstractTest<JPEGImageWriter
         ImageWriter writer = createWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
 
-        // TODO: Add flag to allow removing the ICC profile from image
         ByteArrayOutputStream stream = transcode(reader, getClassLoaderResource("/jpeg/cmyk-sample-multiple-chunk-icc.jpg"), writer, ColorSpace.TYPE_CMYK, false);
 
         reader.reset();
