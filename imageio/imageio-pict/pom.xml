@@ -36,7 +36,8 @@
                     <instructions>
                         <Provide-Capability>
                             osgi.serviceloader;
-                            osgi.serviceloader=javax.imageio.spi.ImageReaderSpi;
+                            osgi.serviceloader=javax.imageio.spi.ImageReaderSpi,
+                            osgi.serviceloader;
                             osgi.serviceloader=javax.imageio.spi.ImageWriterSpi
                         </Provide-Capability>
                     </instructions>
