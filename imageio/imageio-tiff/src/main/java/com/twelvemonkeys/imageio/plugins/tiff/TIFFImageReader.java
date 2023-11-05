@@ -1325,12 +1325,12 @@ public final class TIFFImageReader extends ImageReaderBase {
                     // but has the correct offset to the JPEG stream in the StripOffsets tag.
                     long realJPEGOffset = jpegOffset;
 
-                    short expectedSOI = (short) (imageInput.readByte() << 8 | imageInput.readByte());
+                    short expectedSOI = (short) (imageInput.readByte() << 8 | (imageInput.readByte() & 0xff));
                     if (expectedSOI != (short) JPEG.SOI) {
                         if (stripTileOffsets != null && stripTileOffsets.length == 1) {
                             imageInput.seek(stripTileOffsets[0]);
 
-                            expectedSOI = (short) (imageInput.readByte() << 8 | imageInput.readByte());
+                            expectedSOI = (short) (imageInput.readByte() << 8 | (imageInput.readByte() & 0xff));
                             if (expectedSOI == (short) JPEG.SOI) {
                                 realJPEGOffset = stripTileOffsets[0];
                             }
@@ -1356,7 +1356,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                         // If the first tile stream starts with SOS, we'll correct offset/length
                         imageInput.seek(stripTileOffsets[0]);
 
-                        if ((short) (imageInput.readByte() << 8 | imageInput.readByte()) == (short) JPEG.SOS) {
+                        if ((short) (imageInput.readByte() << 8 | (imageInput.readByte() & 0xff)) == (short) JPEG.SOS) {
                             processWarningOccurred("Incorrect StripOffsets/TileOffsets, points to SOS marker, ignoring offsets/byte counts.");
                             int len = 2 + (imageInput.readUnsignedByte() << 8 | imageInput.readUnsignedByte());
                             stripTileOffsets[0] += len;
@@ -1530,7 +1530,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                                 // If the tile stream starts with SOS...
                                 if (x == 0 && y == 0) {
-                                    if ((short) (imageInput.readByte() << 8 | imageInput.readByte()) == (short) JPEG.SOS) {
+                                    if ((short) (imageInput.readByte() << 8 | (imageInput.readByte() & 0xff)) == (short) JPEG.SOS) {
                                         imageInput.seek(stripTileOffsets[i] + 14); // TODO: Read from SOS length from stream, in case of gray/CMYK
                                         length -= 14;
                                     }
