@@ -54,7 +54,7 @@ public final class SubStream extends FilterInputStream {
      */
     public SubStream(final InputStream stream, final long length) {
         super(Validate.notNull(stream, "stream"));
-        bytesLeft = length;
+        bytesLeft = Validate.isTrue(length >= 0, length, "length < 0: %s");
     }
 
     /**
@@ -63,10 +63,11 @@ public final class SubStream extends FilterInputStream {
      */
     @Override
     public void close() throws IOException {
-        // NOTE: Do not close the underlying stream
+        // NOTE: Do not close the underlying stream, but consume it
         while (bytesLeft > 0) {
-            //noinspection ResultOfMethodCallIgnored
-            skip(bytesLeft);
+            if (skip(bytesLeft) <= 0 && read() < 0) {
+                break;
+            }
         }
     }
 
@@ -115,7 +116,7 @@ public final class SubStream extends FilterInputStream {
 
     @Override
     public long skip(long length) throws IOException {
-        long skipped = super.skip(findMaxLen(length));// Skips 0 or more, never -1
+        long skipped = super.skip(findMaxLen(length)); // Skips 0 or more, never -1
         bytesLeft -= skipped;
 
         return skipped;

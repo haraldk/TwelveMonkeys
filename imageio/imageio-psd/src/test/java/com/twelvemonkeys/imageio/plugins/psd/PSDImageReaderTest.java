@@ -47,6 +47,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.color.*;
 import java.awt.image.*;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -694,6 +695,30 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
             assertRGBEquals("RGB differ at (4,4)", 0xff888888, image.getRGB(4, 4), 4);
         }
     }
+
+    @Test(timeout = 1000)
+    public void testBrokenPackBitsThrowsEOFException() throws IOException {
+        PSDImageReader imageReader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/broken-psd/short-packbits.psd"))) {
+            imageReader.setInput(stream);
+
+            assertEquals(1, imageReader.getNumImages(true));
+
+            assertEquals(427, imageReader.getWidth(0));
+            assertEquals(107, imageReader.getHeight(0));
+
+            try {
+                imageReader.read(0);
+
+                fail("Expected EOFException, is the test broken?");
+            }
+            catch (EOFException expected) {
+                assertTrue(expected.getMessage().contains("PackBits"));
+            }
+        }
+    }
+
 
     final static class FakeCMYKColorSpace extends ColorSpace {
         FakeCMYKColorSpace() {
