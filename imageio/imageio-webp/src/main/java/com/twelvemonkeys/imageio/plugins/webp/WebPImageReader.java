@@ -418,8 +418,18 @@ final class WebPImageReader extends ImageReaderBase {
         }
 
         types.add(rawImageType);
-        types.add(ImageTypeSpecifiers.createFromBufferedImageType(header.containsALPH ? BufferedImage.TYPE_INT_ARGB : BufferedImage.TYPE_INT_RGB));
-        types.add(ImageTypeSpecifiers.createFromBufferedImageType(header.containsALPH ? BufferedImage.TYPE_INT_ARGB_PRE : BufferedImage.TYPE_INT_BGR));
+
+        if (!header.containsALPH) {
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB));
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
+
+            // We can always decode into types with alpha
+            types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR));
+        }
+
+        types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB));
+        types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB_PRE));
+        types.add(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_4BYTE_ABGR_PRE));
 
         return types.iterator();
     }

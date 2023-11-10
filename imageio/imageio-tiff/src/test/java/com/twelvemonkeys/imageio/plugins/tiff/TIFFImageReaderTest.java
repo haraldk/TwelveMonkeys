@@ -191,7 +191,9 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/planar-yuv420-jpeg-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, uncompressed, striped
                 new TestData(getClassLoaderResource("/tiff/planar-yuv420-jpeg-lzw.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients,LZW compressed, striped
                 new TestData(getClassLoaderResource("/tiff/planar-yuv410-jpeg-uncompressed.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients, uncompressed, striped
-                new TestData(getClassLoaderResource("/tiff/planar-yuv410-jpeg-lzw.tif"), new Dimension(256, 64)) // YCbCr, JPEG coefficients,LZW compressed, striped
+                new TestData(getClassLoaderResource("/tiff/planar-yuv410-jpeg-lzw.tif"), new Dimension(256, 64)), // YCbCr, JPEG coefficients,LZW compressed, striped
+                // WebP compressed
+                new TestData(getClassLoaderResource("/tiff/webp_lossless_rgba_alpha_fully_opaque.tif"), new Dimension(20, 20)) // RGBA, WebP lossless
         );
     }
 

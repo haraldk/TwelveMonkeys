@@ -161,6 +161,12 @@
                 <version>${project.version}</version>
             </dependency>
 
+	        <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>imageio-webp</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
             <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-core</artifactId>
