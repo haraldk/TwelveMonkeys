@@ -15,8 +15,8 @@ import java.util.function.Predicate;
  * @author last modified by $Author: haraldk$
  * @version $Id: JPEGTileDecoder.java,v 1.0 09/11/2023 haraldk Exp$
  */
-class JPEGTileDecoder extends DelegateTileDecoder {
-    JPEGTileDecoder(final IIOReadWarningListener warningListener, final byte[] jpegTables, final ImageReadParam originalParam, final Predicate<ImageReader> needsConversion, final RasterConverter converter) throws IOException {
+final class JPEGTileDecoder extends DelegateTileDecoder {
+    JPEGTileDecoder(final IIOReadWarningListener warningListener, final byte[] jpegTables, final int numTiles, final ImageReadParam originalParam, final Predicate<ImageReader> needsConversion, final RasterConverter converter) throws IOException {
         super(warningListener, "JPEG", originalParam, needsConversion, converter);
 
         if (jpegTables != null) {
@@ -29,9 +29,9 @@ class JPEGTileDecoder extends DelegateTileDecoder {
             // http://docs.oracle.com/javase/6/docs/api/javax/imageio/metadata/doc-files/jpeg_metadata.html#abbrev
             delegate.getStreamMetadata();
         }
-        else {
+        else if (numTiles > 1) {
             warningListener.warningOccurred(delegate, "Missing JPEGTables for tiled/striped TIFF with compression: 7 (JPEG)");
-            // ...and the JPEG reader will probably choke on missing tables...
+            // ...and the JPEG reader might choke on missing tables...
         }
     }
 }

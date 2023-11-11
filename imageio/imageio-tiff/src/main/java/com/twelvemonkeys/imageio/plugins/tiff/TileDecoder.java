@@ -6,6 +6,8 @@ import java.awt.*;
 import java.awt.image.*;
 import java.io.IOException;
 
+import static com.twelvemonkeys.lang.Validate.notNull;
+
 /**
  * TileDecoder.
  *
@@ -18,7 +20,7 @@ abstract class TileDecoder implements AutoCloseable {
     protected final IIOReadWarningListener warningListener;
 
     public TileDecoder(IIOReadWarningListener warningListener) {
-        this.warningListener = warningListener;
+        this.warningListener = notNull(warningListener, "warningListener");
     }
 
     abstract void decodeTile(ImageInputStream input, Rectangle sourceRegion, Point destinationOffset, BufferedImage destination) throws IOException;

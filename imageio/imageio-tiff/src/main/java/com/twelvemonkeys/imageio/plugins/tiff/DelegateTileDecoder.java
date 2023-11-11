@@ -26,8 +26,7 @@ class DelegateTileDecoder extends TileDecoder {
     protected final ImageReader delegate;
     protected final ImageReadParam param;
 
-    // TODO: Naming... Is this only due to color space conversion? Is it because we need to read raster?
-    private final Predicate<ImageReader> needsConversion;
+    private final Predicate<ImageReader> needsRasterConversion;
     private final RasterConverter converter;
     private Boolean readRasterAndConvert;
 
@@ -35,11 +34,11 @@ class DelegateTileDecoder extends TileDecoder {
         this(warningListener, createDelegate(format), originalParam, imageReader -> false, null);
     }
 
-    DelegateTileDecoder(final IIOReadWarningListener warningListener, final String format, final ImageReadParam originalParam, final Predicate<ImageReader> needsConversion, final RasterConverter converter) throws IOException {
-        this(warningListener, createDelegate(format), originalParam, needsConversion, converter);
+    DelegateTileDecoder(final IIOReadWarningListener warningListener, final String format, final ImageReadParam originalParam, final Predicate<ImageReader> needsRasterConversion, final RasterConverter converter) throws IOException {
+        this(warningListener, createDelegate(format), originalParam, needsRasterConversion, converter);
     }
 
-    private DelegateTileDecoder(final IIOReadWarningListener warningListener, final ImageReader delegate, final ImageReadParam originalParam, final Predicate<ImageReader> needsConversion, final RasterConverter converter) {
+    private DelegateTileDecoder(final IIOReadWarningListener warningListener, final ImageReader delegate, final ImageReadParam originalParam, final Predicate<ImageReader> needsRasterConversion, final RasterConverter converter) {
         super(warningListener);
 
         this.delegate = notNull(delegate, "delegate");
@@ -48,7 +47,7 @@ class DelegateTileDecoder extends TileDecoder {
         param = delegate.getDefaultReadParam();
         param.setSourceSubsampling(originalParam.getSourceXSubsampling(), originalParam.getSourceYSubsampling(), 0, 0);
 
-        this.needsConversion = needsConversion;
+        this.needsRasterConversion = needsRasterConversion;
         this.converter = converter;
     }
 
@@ -57,7 +56,7 @@ class DelegateTileDecoder extends TileDecoder {
         // If it's the TwelveMonkeys one, we will be able to read JPEG Lossless etc.
         Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName(format);
         if (!readers.hasNext()) {
-            throw new IIOException("Could not instantiate " + format + "ImageReader");
+            throw new IIOException("No ImageReader registered for '" + format + "' format");
         }
 
         return readers.next();
@@ -70,7 +69,7 @@ class DelegateTileDecoder extends TileDecoder {
 
         if (readRasterAndConvert == null) {
             // All tiles in an image will use the same format, test once and cache result
-            readRasterAndConvert = needsConversion.test(delegate);
+            readRasterAndConvert = needsRasterConversion.test(delegate);
         }
 
         if (!readRasterAndConvert) {

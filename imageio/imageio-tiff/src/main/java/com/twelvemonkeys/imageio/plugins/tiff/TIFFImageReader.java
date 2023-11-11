@@ -1172,13 +1172,18 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                 break;
             }
-            case TIFFCustom.COMPRESSION_WEBP:
             case TIFFExtension.COMPRESSION_JPEG:
+            case TIFFCustom.COMPRESSION_WEBP:
+            case TIFFCustom.COMPRESSION_JBIG:
+            case TIFFCustom.COMPRESSION_JPEG2000:
                 readUsingDelegate(imageIndex, compression, interpretation, width, height, tilesAcross, tilesDown, stripTileWidth, stripTileHeight, srcRegion, stripTileOffsets, stripTileByteCounts, param, destination, samplesInTile);
                 break;
+
             case TIFFExtension.COMPRESSION_OLD_JPEG: {
                 // JPEG ('old-style' JPEG, later overridden in Technote2)
                 // http://www.remotesensing.org/libtiff/TIFFTechNote2.html
+                // TODO: Rewrite to use readUsingDelegate with special case handling inside OldJPEGTileDecoder
+
                 int srcRow = 0;
                 Boolean needsCSConversion = null;
 
@@ -1497,10 +1502,8 @@ public final class TIFFImageReader extends ImageReaderBase {
             case TIFFCustom.COMPRESSION_PIXARFILM:
             case TIFFCustom.COMPRESSION_PIXARLOG:
             case TIFFCustom.COMPRESSION_DCS:
-            case TIFFCustom.COMPRESSION_JBIG: // Doable with JBIG plugin?
             case TIFFCustom.COMPRESSION_SGILOG:
             case TIFFCustom.COMPRESSION_SGILOG24:
-            case TIFFCustom.COMPRESSION_JPEG2000: // Doable with JPEG2000 plugin?
                 throw new IIOException("Unsupported TIFF Compression value: " + compression);
 
             default:
@@ -1521,7 +1524,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         // JPEG ('new-style' JPEG)
 
         // Read data
-        try (TileDecoder tileDecoder = createTileDecoder(param, compression, interpretation, samplesInTile)) {
+        try (TileDecoder tileDecoder = createTileDecoder(param, compression, interpretation, tilesAcross * tilesDown, samplesInTile)) {
             processImageStarted(imageIndex); // Better yet, would be to delegate read progress here...
 
             int row = 0;
@@ -1569,37 +1572,39 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private DelegateTileDecoder createTileDecoder(ImageReadParam param, int compression, final int interpretation, final int samplesInTile) throws IOException {
-        if (compression == TIFFExtension.COMPRESSION_JPEG) {
-            // JPEG_TABLES should be a full JPEG 'abbreviated table specification', containing:
-            // SOI, DQT, DHT, (optional markers that we ignore)..., EOI
-            Entry tablesEntry = currentIFD.getEntryById(TIFF.TAG_JPEG_TABLES);
-            byte[] tablesValue = tablesEntry != null ? (byte[]) tablesEntry.getValue() : null;
+    private TileDecoder createTileDecoder(ImageReadParam param, int compression, final int interpretation, final int numTiles, final int samplesInTile) throws IOException {
+        try {
+            IIOReadWarningListener warningListener = (source, warning) -> processWarningOccurred(warning);
 
-            Predicate<ImageReader> needsConversion = (reader) -> needsCSConversion(compression, interpretation, readJPEGMetadataSafe(reader));
-            RasterConverter csConverter = (raster) -> {
-                switch (raster.getTransferType()) {
-                    case DataBuffer.TYPE_BYTE:
-                        normalizeColor(interpretation, samplesInTile, ((DataBufferByte) raster.getDataBuffer()).getData());
-                        break;
-                    case DataBuffer.TYPE_USHORT:
-                        normalizeColor(interpretation, samplesInTile, ((DataBufferUShort) raster.getDataBuffer()).getData());
-                        break;
-                    default:
-                        throw new IllegalStateException("Unsupported transfer type: " + raster.getTransferType());
-                }
-            };
+            if (compression == TIFFExtension.COMPRESSION_JPEG) {
+                // JPEG_TABLES should be a full JPEG 'abbreviated table specification', containing:
+                // SOI, DQT, DHT, (optional markers that we ignore)..., EOI
+                Entry tablesEntry = currentIFD.getEntryById(TIFF.TAG_JPEG_TABLES);
+                byte[] jpegTables = tablesEntry != null ? (byte[]) tablesEntry.getValue() : null;
 
-            return new JPEGTileDecoder((source, warning) -> processWarningOccurred(warning), tablesValue, param, needsConversion, csConverter);
+                Predicate<ImageReader> needsConversion = (reader) -> needsCSConversion(compression, interpretation, readJPEGMetadataSafe(reader));
+                RasterConverter normalize = (raster) -> normalizeColor(interpretation, samplesInTile, raster);
+
+                return new JPEGTileDecoder(warningListener, jpegTables, numTiles, param, needsConversion, normalize);
+            }
+            else if (compression == TIFFCustom.COMPRESSION_JBIG) {
+                // TODO: Create interop test suite using third party plugin.
+                //  LEAD Tools have one sample file: https://leadtools.com/support/forum/resource.ashx?a=545&b=1
+                //  Haven't found any plugins. There is however a JBIG2 plugin...
+                return new DelegateTileDecoder(warningListener, "JBIG", param);
+            }
+            else if (compression == TIFFCustom.COMPRESSION_JPEG2000) {
+                // TODO: Create interop test suite using third party plugin
+                //  LEAD Tools have one sample file: https://leadtools.com/support/forum/resource.ashx?a=545&b=1
+                //  The open source JAI JP2K reader decodes this as a fully black image...
+                return new DelegateTileDecoder(warningListener, "JPEG2000", param);
+            }
+            else if (compression == TIFFCustom.COMPRESSION_WEBP) {
+                return new DelegateTileDecoder(warningListener, "WebP", param);
+            }
         }
-        else if (compression == TIFFCustom.COMPRESSION_JBIG) {
-            return new DelegateTileDecoder((source, warning) -> processWarningOccurred(warning), "JBIG", param);
-        }
-        else if (compression == TIFFCustom.COMPRESSION_JPEG2000) {
-            return new DelegateTileDecoder((source, warning) -> processWarningOccurred(warning), "JP2K", param);
-        }
-        else if (compression == TIFFCustom.COMPRESSION_WEBP) {
-            return new DelegateTileDecoder((source, warning) -> processWarningOccurred(warning), "WebP", param);
+        catch (IIOException e) {
+            throw new IIOException("Unsupported TIFF Compression value: " + compression, e);
         }
 
         throw new IIOException("Unsupported TIFF Compression value: " + compression);
@@ -2162,6 +2167,19 @@ public final class TIFFImageReader extends ImageReaderBase {
                 }
 
                 break;
+        }
+    }
+
+    private void normalizeColor(int interpretation, int numBands, Raster raster) throws IOException {
+        switch (raster.getTransferType()) {
+            case DataBuffer.TYPE_BYTE:
+                normalizeColor(interpretation, numBands, ((DataBufferByte) raster.getDataBuffer()).getData());
+                break;
+            case DataBuffer.TYPE_USHORT:
+                normalizeColor(interpretation, numBands, ((DataBufferUShort) raster.getDataBuffer()).getData());
+                break;
+            default:
+                throw new IllegalStateException("Unsupported transfer type: " + raster.getTransferType());
         }
     }
 
