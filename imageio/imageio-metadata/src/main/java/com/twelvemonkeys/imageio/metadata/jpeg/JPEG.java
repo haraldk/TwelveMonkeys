@@ -88,7 +88,7 @@ public interface JPEG {
     // Start of Frame segment markers (SOFn).
     /** SOF0: Baseline DCT, Huffman coding. */
     int SOF0 = 0xFFC0;
-    /** SOF0: Extended DCT, Huffman coding. */
+    /** SOF1: Extended DCT, Huffman coding. */
     int SOF1 = 0xFFC1;
     /** SOF2: Progressive DCT, Huffman coding. */
     int SOF2 = 0xFFC2;

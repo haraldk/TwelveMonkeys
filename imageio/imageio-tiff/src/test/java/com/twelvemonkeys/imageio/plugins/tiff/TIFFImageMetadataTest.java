@@ -29,28 +29,6 @@
  */
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
-import static org.junit.Assert.*;
-
-import java.io.IOException;
-import java.net.URL;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.Set;
-
-import javax.imageio.ImageIO;
-import javax.imageio.metadata.IIOInvalidTreeException;
-import javax.imageio.metadata.IIOMetadata;
-import javax.imageio.metadata.IIOMetadataFormatImpl;
-import javax.imageio.metadata.IIOMetadataNode;
-import javax.imageio.spi.IIORegistry;
-import javax.imageio.stream.ImageInputStream;
-
-import org.junit.Test;
-import org.w3c.dom.Element;
-import org.w3c.dom.Node;
-import org.w3c.dom.NodeList;
-
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.tiff.Rational;
@@ -59,6 +37,27 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 import com.twelvemonkeys.lang.StringUtil;
+
+import org.junit.Test;
+import org.w3c.dom.Element;
+import org.w3c.dom.Node;
+import org.w3c.dom.NodeList;
+
+import javax.imageio.ImageIO;
+import javax.imageio.metadata.IIOInvalidTreeException;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
+import javax.imageio.spi.IIORegistry;
+import javax.imageio.stream.ImageInputStream;
+import java.io.IOException;
+import java.net.URL;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
+
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
+import static org.junit.Assert.*;
 
 /**
  * TIFFImageMetadataTest.
@@ -305,7 +304,7 @@ public class TIFFImageMetadataTest {
 
     @Test
     public void testMergeTreeStandardFormat() throws IOException {
-        TIFFImageMetadata metadata = (TIFFImageMetadata) createMetadata("/tiff/zackthecat.tif");
+        TIFFImageMetadata metadata = (TIFFImageMetadata) createMetadata("/tiff/old-style-jpeg-zackthecat.tif");
 
         String standardFormat = IIOMetadataFormatImpl.standardMetadataFormatName;
 

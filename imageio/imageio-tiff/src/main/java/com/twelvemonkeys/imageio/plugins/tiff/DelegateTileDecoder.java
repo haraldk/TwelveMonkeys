@@ -44,6 +44,10 @@ class DelegateTileDecoder extends TileDecoder {
         this.delegate = notNull(delegate, "delegate");
         delegate.addIIOReadWarningListener(warningListener);
 
+        if (TIFFImageReader.DEBUG) {
+            System.out.println("tile reading delegate: " + delegate);
+        }
+
         param = delegate.getDefaultReadParam();
         param.setSourceSubsampling(originalParam.getSourceXSubsampling(), originalParam.getSourceYSubsampling(), 0, 0);
 

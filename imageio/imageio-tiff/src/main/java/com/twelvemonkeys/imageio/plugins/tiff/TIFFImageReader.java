@@ -1189,8 +1189,8 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                 // TODO: Perhaps use the jpegTables param to the tiledecoder instead of re-creating a full JFIF stream...
                 TileStreamFactory tileStreamFactory = interChangeFormat
-                        ? new JIFTileStreamFactory(stripTileOffsets, stripTileByteCounts)
-                        : new JPEGTablesStreamFactory(stripTileOffsets, stripTileByteCounts, stripTileWidth, stripTileHeight, destRaster.getNumBands());
+                        ? new OldJPEGInterchangeFormatTileStreamFactory(stripTileOffsets, stripTileByteCounts)
+                        : new OldJPEGTablesStreamFactory(stripTileOffsets, stripTileByteCounts, stripTileWidth, stripTileHeight, destRaster.getNumBands());
                 readUsingDelegate(imageIndex, compression, interpretation, width, height, tilesAcross, tilesDown, stripTileWidth, stripTileHeight, srcRegion,
                         tileStreamFactory, param, destination, samplesInTile);
                 break;
@@ -1297,17 +1297,18 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     } 
 
-    final class JIFTileStreamFactory extends TileStreamFactory {
+    final class OldJPEGInterchangeFormatTileStreamFactory extends TileStreamFactory {
         private final byte[] jpegHeader;
         private long realJPEGOffset;
 
-        JIFTileStreamFactory(final long[] stripTileOffsets, final long[] stripTileByteCounts) throws IOException {
+        OldJPEGInterchangeFormatTileStreamFactory(final long[] stripTileOffsets, final long[] stripTileByteCounts) throws IOException {
             super(stripTileOffsets, stripTileByteCounts);
 
             // 513/JPEGInterchangeFormat (may be absent or 0)
             int jpegOffset = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, -1);
             // 514/JPEGInterchangeFormatLength (may be absent, or incorrect)
             int jpegLength = getValueAsIntWithDefault(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH, -1);
+
             // TODO: 515/JPEGRestartInterval (may be absent)
 
             // Currently ignored (for lossless only)
@@ -1329,13 +1330,13 @@ public final class TIFFImageReader extends ImageReaderBase {
             // but has the correct offset to the JPEG stream in the StripOffsets tag.
             realJPEGOffset = jpegOffset;
 
-            short expectedSOI = (short) (imageInput.readByte() << 8 | imageInput.readByte());
-            if (expectedSOI != (short) JPEG.SOI) {
+            int expectedSOI = ((imageInput.readByte() & 0xFF)  << 8 | (imageInput.readByte() & 0xFF));
+            if (expectedSOI != JPEG.SOI) {
                 if (stripTileOffsets != null && stripTileOffsets.length == 1) {
                     imageInput.seek(stripTileOffsets[0]);
 
-                    expectedSOI = (short) (imageInput.readByte() << 8 | imageInput.readByte());
-                    if (expectedSOI == (short) JPEG.SOI) {
+                    expectedSOI = ((imageInput.readByte() & 0xFF)  << 8 | (imageInput.readByte() & 0xFF));
+                    if (expectedSOI == JPEG.SOI) {
                         realJPEGOffset = stripTileOffsets[0];
                     }
                 }
@@ -1358,9 +1359,14 @@ public final class TIFFImageReader extends ImageReaderBase {
                 // If the first tile stream starts with SOS, we'll correct offset/length
                 imageInput.seek(stripTileOffsets[0]);
 
-                if ((short) (imageInput.readByte() << 8 | imageInput.readByte()) == (short) JPEG.SOS) {
+                if (((imageInput.readByte() & 0xFF)  << 8 | (imageInput.readByte() & 0xFF)) == JPEG.SOS) {
                     processWarningOccurred("Incorrect StripOffsets/TileOffsets, points to SOS marker, ignoring offsets/byte counts.");
-                    int len = 2 + (imageInput.readUnsignedByte() << 8 | imageInput.readUnsignedByte());
+                    int len = 2 + ((imageInput.readByte() & 0xFF)  << 8 | (imageInput.readByte() & 0xFF));
+
+                    // TODO: There might be data between tables and the SOS here...
+                    //  We forward warnings from the JPEG reading delegate about "Corrupt JPEG data: N extraneous bytes before marker 0xda" (SOS),
+                    //  We didn't do this before, as we didn't add a warning listener for Old JPEG/6...
+
                     stripTileOffsets[0] += len;
                     stripTileByteCounts[0] -= len;
                 }
@@ -1392,16 +1398,14 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    final class JPEGTablesStreamFactory extends TileStreamFactory {
+    final class OldJPEGTablesStreamFactory extends TileStreamFactory {
         private final int stripTileWidth;
         private final int stripTileHeight;
         private final int numBands;
         private final int subsampling;
-        private final byte[][] acTables;
-        private final byte[][] dcTables;
-        private final byte[][] qTables;
+        private final int processingMode;
 
-        JPEGTablesStreamFactory(final long[] stripTileOffsets, final long[] stripTileByteCounts, final int stripTileWidth, final int stripTileHeight, final int numBands) throws IOException {
+        OldJPEGTablesStreamFactory(final long[] stripTileOffsets, final long[] stripTileByteCounts, final int stripTileWidth, final int stripTileHeight, final int numBands) throws IOException {
             super(stripTileOffsets, stripTileByteCounts);
             this.stripTileWidth = stripTileWidth;
             this.stripTileHeight = stripTileHeight;
@@ -1409,69 +1413,14 @@ public final class TIFFImageReader extends ImageReaderBase {
 
             // The hard way: Read tables and re-create a full JFIF stream
 
-            // 519/JPEGQTables
-            // 520/JPEGDCTables
-            // 521/JPEGACTables
-
-            // These fields were originally intended to point to a list of offsets to the quantization tables, one per
-            // component. Each table consists of 64 BYTES (one for each DCT coefficient in the 8x8 block). The
-            // quantization tables are stored in zigzag order, and are compatible with the quantization tables
-            // usually found in a JPEG stream DQT marker.
-
-            // The original specification strongly recommended that, within the TIFF file, each component be
-            // assigned separate tables, and labelled this field as mandatory whenever the JPEGProc field specifies
-            // a DCT-based process.
-
-            // We've seen old-style JPEG in TIFF files where some or all Table offsets, contained the JPEGQTables,
-            // JPEGDCTables, and JPEGACTables tags are incorrect values beyond EOF. However, these files do always
-            // seem to contain a useful JPEGInterchangeFormat tag. Therefore, we recommend a careful attempt to read
-            // the Tables tags only as a last resort, if no table data is found in a JPEGInterchangeFormat stream.
-
-            // TODO: If any of the q/dc/ac tables are equal (or have same offset, even if "spec" violation),
-            // use only the first occurrence, and update selectors in SOF0 and SOS
-
-            long[] qTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_Q_TABLES, "JPEGQTables", true);
-            qTables = new byte[qTablesOffsets.length][64];
-            for (int j = 0; j < qTables.length; j++) {
-                imageInput.seek(qTablesOffsets[j]);
-                imageInput.readFully(qTables[j]);
-            }
-
-            long[] dcTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_DC_TABLES, "JPEGDCTables", true);
-            dcTables = new byte[dcTablesOffsets.length][];
-
-            for (int j = 0; j < dcTables.length; j++) {
-                imageInput.seek(dcTablesOffsets[j]);
-                byte[] lengths = new byte[16];
-
-                imageInput.readFully(lengths);
-
-                int length = 0;
-                for (int i = 0; i < 16; i++) {
-                    length += lengths[i] & 0xff;
-                }
-
-                dcTables[j] = new byte[16 + length];
-                System.arraycopy(lengths, 0, dcTables[j], 0, 16);
-                imageInput.readFully(dcTables[j], 16, length);
-            }
-
-            long[] acTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_AC_TABLES, "JPEGACTables", true);
-            acTables = new byte[acTablesOffsets.length][];
-            for (int j = 0; j < acTables.length; j++) {
-                imageInput.seek(acTablesOffsets[j]);
-                byte[] lengths = new byte[16];
-
-                imageInput.readFully(lengths);
-
-                int length = 0;
-                for (int i = 0; i < 16; i++) {
-                    length += lengths[i] & 0xff;
-                }
-
-                acTables[j] = new byte[16 + length];
-                System.arraycopy(lengths, 0, acTables[j], 0, 16);
-                imageInput.readFully(acTables[j], 16, length);
+            // 512/JPEGProc: 1=Baseline, 14=Lossless (with Huffman coding), no default, although 1 is assumed if absent
+            processingMode = getValueAsIntWithDefault(TIFF.TAG_OLD_JPEG_PROC, TIFFExtension.JPEG_PROC_BASELINE);
+            switch (processingMode) {
+                case TIFFExtension.JPEG_PROC_BASELINE:
+                case TIFFExtension.JPEG_PROC_LOSSLESS:
+                    break; // Supported
+                default:
+                    throw new IIOException("Unknown TIFF JPEGProcessingMode value: " + processingMode);
             }
 
             long[] yCbCrSubSampling = getValueAsLongArray(TIFF.TAG_YCBCR_SUB_SAMPLING, "YCbCrSubSampling", false);
@@ -1488,7 +1437,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
             // If the tile stream starts with SOS...
             if (tileIndex == 0) {
-                if ((short) (imageInput.readByte() << 8 | imageInput.readByte()) == (short) JPEG.SOS) {
+                if (((imageInput.readByte() & 0xFF)  << 8 | (imageInput.readByte() & 0xFF)) == JPEG.SOS) {
                     imageInput.seek(stripTileOffsets[tileIndex] + 14); // TODO: Read from SOS length from stream, in case of gray/CMYK
                     length -= 14;
                 }
@@ -1499,7 +1448,7 @@ public final class TIFFImageReader extends ImageReaderBase {
 
             return ImageIO.createImageInputStream(new SequenceInputStream(Collections.enumeration(
                     asList(
-                            createJFIFStream(numBands, stripTileWidth, stripTileHeight, qTables, dcTables, acTables, subsampling),
+                            createJFIFStream(numBands, stripTileWidth, stripTileHeight, processingMode, subsampling),
                             createStreamAdapter(imageInput, length),
                             new ByteArrayInputStream(new byte[] {(byte) 0xff, (byte) 0xd9}) // EOI
                     )
@@ -1512,51 +1461,67 @@ public final class TIFFImageReader extends ImageReaderBase {
             IIOReadWarningListener warningListener = (source, warning) -> processWarningOccurred(warning);
 
             switch (compression) {
-                case TIFFExtension.COMPRESSION_JPEG:
-                    // New style JPEG
-                case TIFFExtension.COMPRESSION_OLD_JPEG: {
+                case TIFFExtension.COMPRESSION_OLD_JPEG:
                     // JPEG ('old-style' JPEG, later overridden in Technote2)
                     // http://www.remotesensing.org/libtiff/TIFFTechNote2.html
+                case TIFFExtension.COMPRESSION_JPEG:
+                    // New style JPEG
 
-                    // JPEG_TABLES should be a full JPEG 'abbreviated table specification', containing:
-                    // SOI, DQT, DHT, (optional markers that we ignore)..., EOI
                     byte[] jpegTables = null;
 
                     if (compression == TIFFExtension.COMPRESSION_JPEG) {
+                        // JPEG_TABLES should be a full JPEG 'abbreviated table specification', containing:
+                        // SOI, DQT, DHT, (optional markers that we ignore)..., EOI
                         Entry tablesEntry = currentIFD.getEntryById(TIFF.TAG_JPEG_TABLES);
                         jpegTables = tablesEntry != null ? (byte[]) tablesEntry.getValue() : null;
                     }
                     else {
-                        // 512/JPEGProc: 1=Baseline, 14=Lossless (with Huffman coding), no default, although 1 is assumed if absent
-                        int mode = getValueAsIntWithDefault(TIFF.TAG_OLD_JPEG_PROC, TIFFExtension.JPEG_PROC_BASELINE);
-                        switch (mode) {
-                            case TIFFExtension.JPEG_PROC_BASELINE:
-                            case TIFFExtension.JPEG_PROC_LOSSLESS:
-                                break; // Supported
-                            default:
-                                throw new IIOException("Unknown TIFF JPEGProcessingMode value: " + mode);
-                        }
+                        if (currentIFD.getEntryById(TIFF.TAG_JPEG_INTERCHANGE_FORMAT) == null) {
+                            // 519/JPEGQTables
+                            // 520/JPEGDCTables
+                            // 521/JPEGACTables
 
-                        // TODO: Consider re-factoring the super-complicated stream stuff to just using jpegTable also for old style?
+                            // These fields were originally intended to point to a list of offsets to the quantization tables, one per
+                            // component. Each table consists of 64 BYTES (one for each DCT coefficient in the 8x8 block). The
+                            // quantization tables are stored in zigzag order, and are compatible with the quantization tables
+                            // usually found in a JPEG stream DQT marker.
+
+                            // The original specification strongly recommended that, within the TIFF file, each component be
+                            // assigned separate tables, and labelled this field as mandatory whenever the JPEGProc field specifies
+                            // a DCT-based process.
+
+                            // We've seen old-style JPEG in TIFF files where some or all Table offsets, contained the JPEGQTables,
+                            // JPEGDCTables, and JPEGACTables tags are incorrect values beyond EOF. However, these files do always
+                            // seem to contain a useful JPEGInterchangeFormat tag. Therefore, we recommend a careful attempt to read
+                            // the Tables tags only as a last resort, if no table data is found in a JPEGInterchangeFormat stream.
+                            long[] qTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_Q_TABLES, "JPEGQTables", true);
+                            long[] acTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_AC_TABLES, "JPEGACTables", true);
+                            long[] dcTablesOffsets = getValueAsLongArray(TIFF.TAG_OLD_JPEG_DC_TABLES, "JPEGDCTables", true);
+
+                            jpegTables = createJPEGTables(imageInput, qTablesOffsets, acTablesOffsets, dcTablesOffsets);
+                        }
                     }
 
                     Predicate<ImageReader> needsConversion = (reader) -> needsCSConversion(compression, interpretation, readJPEGMetadataSafe(reader));
                     RasterConverter normalize = (raster) -> normalizeColor(interpretation, samplesInTile, raster);
 
-                    return new JPEGTileDecoder(warningListener, jpegTables, numTiles, param, needsConversion, normalize);
-                }
+                    return new JPEGTileDecoder(warningListener, compression, jpegTables, numTiles, param, needsConversion, normalize);
+
                 case TIFFCustom.COMPRESSION_JBIG:
                     // TODO: Create interop test suite using third party plugin.
                     //  LEAD Tools have one sample file: https://leadtools.com/support/forum/resource.ashx?a=545&b=1
                     //  Haven't found any plugins. There is however a JBIG2 plugin...
                     return new DelegateTileDecoder(warningListener, "JBIG", param);
+
                 case TIFFCustom.COMPRESSION_JPEG2000:
                     // TODO: Create interop test suite using third party plugin
                     //  LEAD Tools have one sample file: https://leadtools.com/support/forum/resource.ashx?a=545&b=1
                     //  The open source JAI JP2K reader decodes this as a fully black image...
                     return new DelegateTileDecoder(warningListener, "JPEG2000", param);
+
                 case TIFFCustom.COMPRESSION_WEBP:
                     return new DelegateTileDecoder(warningListener, "WebP", param);
+
                 default:
                     throw new AssertionError("Unexpected TIFF Compression value: " + compression);
             }
@@ -1564,6 +1529,108 @@ public final class TIFFImageReader extends ImageReaderBase {
         catch (IIOException e) {
             throw new IIOException("Unsupported TIFF Compression value: " + compression, e);
         }
+    }
+
+    private static byte[] createJPEGTables(ImageInputStream imageInput, long[] qTablesOffsets, long[] acTablesOffsets, long[] dcTablesOffsets) throws IOException {
+//         FastByteArrayOutputStream stream = new FastByteArrayOutputStream(
+//                 2 +
+//                         5 * qTablesOffsets.length + qTablesOffsets.length * 64 +
+//                         5 * acTablesOffsets.length + acTablesOffsets.length * dcTables[0].length +
+//                         5 * dcTablesOffsets.length + dcTablesOffsets.length * acTables[0].length +
+//                         2
+//         );
+
+        // TODO: Create stream with DQT, DHT directly, instead of first building in-memory tables...
+
+        // TODO: If any of the q/dc/ac tables are equal (or have same offset, even if "spec" violation),
+        // use only the first occurrence, and update selectors in SOF0 and SOS
+
+        byte[][] qTables = new byte[qTablesOffsets.length][64];
+        for (int j = 0; j < qTables.length; j++) {
+            imageInput.seek(qTablesOffsets[j]);
+            imageInput.readFully(qTables[j]);
+        }
+
+        byte[][] acTables = new byte[acTablesOffsets.length][];
+        for (int j = 0; j < acTables.length; j++) {
+            imageInput.seek(acTablesOffsets[j]);
+            byte[] lengths = new byte[16];
+
+            imageInput.readFully(lengths);
+
+            int length = 0;
+            for (int i = 0; i < 16; i++) {
+                length += lengths[i] & 0xff;
+            }
+
+            acTables[j] = new byte[16 + length];
+            System.arraycopy(lengths, 0, acTables[j], 0, 16);
+            imageInput.readFully(acTables[j], 16, length);
+        }
+
+        byte[][] dcTables = new byte[dcTablesOffsets.length][];
+        for (int j = 0; j < dcTables.length; j++) {
+            imageInput.seek(dcTablesOffsets[j]);
+            byte[] lengths = new byte[16];
+
+            imageInput.readFully(lengths);
+
+            int length = 0;
+            for (int i = 0; i < 16; i++) {
+                length += lengths[i] & 0xff;
+            }
+
+            dcTables[j] = new byte[16 + length];
+            System.arraycopy(lengths, 0, dcTables[j], 0, 16);
+            imageInput.readFully(dcTables[j], 16, length);
+        }
+
+        return createJPEGTables(qTables, dcTables, acTables);
+    }
+
+    private static byte[] createJPEGTables(byte[][] qTables, byte[][] dcTables, byte[][] acTables) throws IOException {
+        FastByteArrayOutputStream stream = new FastByteArrayOutputStream(
+                2 +
+                        5 * qTables.length + qTables.length * qTables[0].length +
+                        5 * dcTables.length + dcTables.length * dcTables[0].length +
+                        5 * acTables.length + acTables.length * acTables[0].length +
+                        2
+        );
+
+        try (DataOutputStream out = new DataOutputStream(stream)) {
+            out.writeShort(JPEG.SOI);
+
+            // TODO: Consider merging if tables are equal
+            for (int tableIndex = 0; tableIndex < qTables.length; tableIndex++) {
+                byte[] table = qTables[tableIndex];
+                out.writeShort(JPEG.DQT);
+                out.writeShort(3 + table.length); // DQT length
+                out.writeByte(tableIndex); // Q table id
+                out.write(table); // Table data
+            }
+
+            // TODO: Consider merging if tables are equal
+            for (int tableIndex = 0; tableIndex < dcTables.length; tableIndex++) {
+                byte[] table = dcTables[tableIndex];
+                out.writeShort(JPEG.DHT);
+                out.writeShort(3 + table.length); // DHT length
+                out.writeByte(tableIndex & 0xf); // Huffman table id
+                out.write(table); // Table data
+            }
+
+            // TODO: Consider merging if tables are equal
+            for (int tableIndex = 0; tableIndex < acTables.length; tableIndex++) {
+                byte[] table = acTables[tableIndex];
+                out.writeShort(JPEG.DHT);
+                out.writeShort(3 + table.length); // DHT length
+                out.writeByte(0x10 + (tableIndex & 0xf)); // Huffman table id
+                out.write(table); // Table data
+            }
+
+            out.writeShort(JPEG.EOI);
+        }
+
+        return stream.toByteArray();
     }
 
     private InputStream createYCbCrUpsamplerStream(int photometricInterpretation, int planarConfiguration, int plane, int transferType,
@@ -1765,83 +1832,42 @@ public final class TIFFImageReader extends ImageReaderBase {
         return nodes.getLength() >= 1 ? (IIOMetadataNode) nodes.item(0) : null;
     }
 
-    private ImageReader createJPEGDelegate() throws IOException {
-        // We'll just use the default (first) reader
-        // If it's the TwelveMonkeys one, we will be able to read JPEG Lossless etc.
-        Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("JPEG");
-        if (!readers.hasNext()) {
-            throw new IIOException("Could not instantiate JPEGImageReader");
-        }
-
-        return readers.next();
-    }
-
-    private static InputStream createJFIFStream(int bands, int stripTileWidth, int stripTileHeight, byte[][] qTables, byte[][] dcTables, byte[][] acTables, int subsampling) throws IOException {
+    private static InputStream createJFIFStream(int bands, int stripTileWidth, int stripTileHeight, int process, int subsampling) throws IOException {
         FastByteArrayOutputStream stream = new FastByteArrayOutputStream(
                 2 +
-                        5 * qTables.length + qTables.length * qTables[0].length +
-                        5 * dcTables.length + dcTables.length * dcTables[0].length +
-                        5 * acTables.length + acTables.length * acTables[0].length +
                         2 + 2 + 6 + 3 * bands +
-                        8 + 2 * bands
+                        2 + 6 + 2 * bands
         );
 
-        DataOutputStream out = new DataOutputStream(stream);
+        try (DataOutputStream out = new DataOutputStream(stream)) {
+            out.writeShort(JPEG.SOI);
 
-        out.writeShort(JPEG.SOI);
+            out.writeShort(process == 1 ? JPEG.SOF0 : JPEG.SOF3);
+            out.writeShort(2 + 6 + 3 * bands); // SOF0 len
+            out.writeByte(8); // bits TODO: Consult raster/transfer type or BitsPerSample for 12/16 bits support
+            out.writeShort(stripTileHeight); // height
+            out.writeShort(stripTileWidth); // width
+            out.writeByte(bands); // Number of components
 
-        // TODO: Consider merging if tables are equal
-        for (int tableIndex = 0; tableIndex < qTables.length; tableIndex++) {
-            byte[] table = qTables[tableIndex];
-            out.writeShort(JPEG.DQT);
-            out.writeShort(3 + table.length); // DQT length
-            out.writeByte(tableIndex); // Q table id
-            out.write(table); // Table data
+            for (int comp = 0; comp < bands; comp++) {
+                out.writeByte(comp); // Component id
+                out.writeByte(comp == 0 ? subsampling : 0x11); // h/v subsampling
+                out.writeByte(comp); // Q table selector TODO: Consider merging if tables are equal
+            }
+
+            out.writeShort(JPEG.SOS);
+            out.writeShort(6 + 2 * bands); // SOS length
+            out.writeByte(bands); // Num comp
+
+            for (int component = 0; component < bands; component++) {
+                out.writeByte(component); // Comp id
+                out.writeByte(component == 0 ? component : 0x10 + (component & 0xf)); // dc/ac selector
+            }
+
+            out.writeByte(0); // Spectral selection start
+            out.writeByte(0); // Spectral selection end
+            out.writeByte(0); // Approx high & low
         }
-
-        // TODO: Consider merging if tables are equal
-        for (int tableIndex = 0; tableIndex < dcTables.length; tableIndex++) {
-            byte[] table = dcTables[tableIndex];
-            out.writeShort(JPEG.DHT);
-            out.writeShort(3 + table.length); // DHT length
-            out.writeByte(tableIndex & 0xf); // Huffman table id
-            out.write(table); // Table data
-        }
-
-        // TODO: Consider merging if tables are equal
-        for (int tableIndex = 0; tableIndex < acTables.length; tableIndex++) {
-            byte[] table = acTables[tableIndex];
-            out.writeShort(JPEG.DHT);
-            out.writeShort(3 + table.length); // DHT length
-            out.writeByte(0x10 + (tableIndex & 0xf)); // Huffman table id
-            out.write(table); // Table data
-        }
-
-        out.writeShort(JPEG.SOF0); // TODO: Use correct process for data
-        out.writeShort(2 + 6 + 3 * bands); // SOF0 len
-        out.writeByte(8); // bits TODO: Consult raster/transfer type or BitsPerSample for 12/16 bits support
-        out.writeShort(stripTileHeight); // height
-        out.writeShort(stripTileWidth); // width
-        out.writeByte(bands); // Number of components
-
-        for (int comp = 0; comp < bands; comp++) {
-            out.writeByte(comp); // Component id
-            out.writeByte(comp == 0 ? subsampling : 0x11); // h/v subsampling
-            out.writeByte(comp); // Q table selector TODO: Consider merging if tables are equal
-        }
-
-        out.writeShort(JPEG.SOS);
-        out.writeShort(6 + 2 * bands); // SOS length
-        out.writeByte(bands); // Num comp
-
-        for (int component = 0; component < bands; component++) {
-            out.writeByte(component); // Comp id
-            out.writeByte(component == 0 ? component : 0x10 + (component & 0xf)); // dc/ac selector
-        }
-
-        out.writeByte(0); // Spectral selection start
-        out.writeByte(0); // Spectral selection end
-        out.writeByte(0); // Approx high & low
 
         return stream.createInputStream();
     }

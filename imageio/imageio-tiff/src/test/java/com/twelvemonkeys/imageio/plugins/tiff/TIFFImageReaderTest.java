@@ -94,7 +94,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/ycbcr-cat.tif"), new Dimension(250, 325)), // YCbCr, LZW compressed
                 new TestData(getClassLoaderResource("/tiff/quad-jpeg.tif"), new Dimension(512, 384)), // YCbCr, JPEG compressed, striped
                 new TestData(getClassLoaderResource("/tiff/smallliz.tif"), new Dimension(160, 160)), // YCbCr, Old-Style JPEG compressed (full JFIF stream)
-                new TestData(getClassLoaderResource("/tiff/zackthecat.tif"), new Dimension(234, 213)), // YCbCr, Old-Style JPEG compressed (tables, no JFIF stream)
+                new TestData(getClassLoaderResource("/tiff/old-style-jpeg-zackthecat.tif"), new Dimension(234, 213)), // YCbCr, Old-Style JPEG compressed (tables, no JFIF stream)
                 new TestData(getClassLoaderResource("/tiff/test-single-gray-compression-type-2.tiff"), new Dimension(1728, 1146)), // Gray, CCITT type 2 compressed
                 new TestData(getClassLoaderResource("/tiff/cramps-tile.tif"), new Dimension(800, 607)), // Gray/WhiteIsZero, uncompressed, striped & tiled...
                 new TestData(getClassLoaderResource("/tiff/lzw-long-strings-sample.tif"), new Dimension(316, 173)), // RGBA, LZW compressed w/predictor
@@ -370,7 +370,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
 
     @Test
     public void testReadOldStyleWangMultiStrip2() throws IOException {
-        TestData testData = new TestData(getClassLoaderResource("/tiff/662260-color.tif"), new Dimension(1600, 1200));
+        TestData testData = new TestData(getClassLoaderResource("/tiff/old-style-jpeg-662260-color.tif"), new Dimension(1600, 1200));
 
         try (ImageInputStream stream = testData.getInputStream()) {
             TIFFImageReader reader = createReader();
@@ -384,7 +384,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             assertNotNull(image);
             assertEquals(testData.getDimension(0), new Dimension(image.getWidth(), image.getHeight()));
             verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Old-style JPEG"), contains("tables")));
-            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Incorrect StripOffsets/TileOffsets"), contains("SOS marker")));
+            verify(warningListener, atLeastOnce()).warningOccurred(eq(reader), and(contains("Incorrect StripByteCounts/TileByteCounts"), contains("JPEGInterchangeFormatLength")));
         }
     }
 
