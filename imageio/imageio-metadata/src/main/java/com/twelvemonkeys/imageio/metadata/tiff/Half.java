@@ -87,11 +87,6 @@ public final class Half extends Number implements Comparable<Half> {
         }
         else if (exponent != 0) {                   // Normalized value
             exponent += 0x1c000;                    // exp - 15 + 127
-
-            // Smooth transition
-            if (mantissa == 0 && exponent > 0x1c400) {
-                return Float.intBitsToFloat((shortBits & 0x8000) << 16 | exponent << 13 | 0x3ff);
-            }
         }
         else if (mantissa != 0) {                   // && exp == 0 -> subnormal
             exponent = 0x1c400;                     // Make it normal
