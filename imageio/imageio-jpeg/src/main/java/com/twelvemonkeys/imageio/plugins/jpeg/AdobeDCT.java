@@ -53,7 +53,7 @@ final class AdobeDCT extends Application {
     final int transform;
 
     private AdobeDCT(int version, int flags0, int flags1, int transform) {
-        super(JPEG.APP14, "Adobe", new byte[]{'A', 'd', 'o', 'b', 'e', 0, (byte) version, (byte) (flags0 >> 8), (byte) (flags0 & 0xff), (byte) (flags1 >> 8), (byte) (flags1 & 0xff), (byte) transform});
+        super(JPEG.APP14, "Adobe", new byte[]{'A', 'd', 'o', 'b', 'e', (byte) (version >> 8), (byte) (version & 0xff), (byte) (flags0 >> 8), (byte) (flags0 & 0xff), (byte) (flags1 >> 8), (byte) (flags1 & 0xff), (byte) transform});
 
         this.version = version; // 100 or 101
         this.flags0 = flags0;
@@ -72,11 +72,11 @@ final class AdobeDCT extends Application {
     public static AdobeDCT read(final DataInput data, final int length) throws IOException {
         // TODO: Investigate http://bugs.sun.com/bugdatabase/view_bug.do?bug_id=6355567: 33/35 byte Adobe APP14 markers
 
-        data.skipBytes(6); // A, d, o, b, e, \0
+        data.skipBytes(5); // A, d, o, b, e
 
-        // version (byte), flags (4bytes), color transform (byte: 0=unknown, 1=YCC, 2=YCCK)
+        // version (2 bytes), flags (4bytes), color transform (byte: 0=unknown, 1=YCC, 2=YCCK)
         return new AdobeDCT(
-                data.readUnsignedByte(),
+                data.readUnsignedShort(),
                 data.readUnsignedShort(),
                 data.readUnsignedShort(),
                 data.readUnsignedByte()

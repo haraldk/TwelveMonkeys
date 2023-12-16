@@ -43,13 +43,17 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
-import java.awt.color.ICC_Profile;
+import java.awt.color.*;
 import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.twelvemonkeys.lang.Validate.notNull;
 
@@ -144,8 +148,10 @@ public final class JPEGSegmentUtil {
     }
 
     static String asNullTerminatedAsciiString(final byte[] data, final int offset) {
+        // TODO: JPEG App segment identifiers are not always 0-terminated...
+        //  Need to rewrite. For now, make sure we read only ASCII non-control chars.
         for (int i = 0; i < data.length - offset; i++) {
-            if (data[offset + i] == 0 || i > 255) {
+            if (data[offset + i] < 20 || i > 255) {
                 return asAsciiString(data, offset, offset + i);
             }
         }
