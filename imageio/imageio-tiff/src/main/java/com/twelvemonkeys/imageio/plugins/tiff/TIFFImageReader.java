@@ -933,7 +933,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         return read(imageIndex, param, true);
     }
 
-    private BufferedImage read(int imageIndex, ImageReadParam param, boolean clamped) throws IOException {
+    private BufferedImage read(int imageIndex, ImageReadParam param, boolean normalize) throws IOException {
         readIFD(imageIndex);
 
         int width = getWidth(imageIndex);
@@ -1148,7 +1148,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                 }
 
                                 // Read a full strip/tile
-                                readStripTileData(clippedRow, srcRegion, xSub, ySub, b, samplesInTile, interpretation, destRaster, col, srcRow, colsInTile, rowsInTile, input, clamped);
+                                readStripTileData(clippedRow, srcRegion, xSub, ySub, b, samplesInTile, interpretation, destRaster, col, srcRow, colsInTile, rowsInTile, input, normalize);
                             }
                         }
 
@@ -1924,7 +1924,7 @@ public final class TIFFImageReader extends ImageReaderBase {
     private void readStripTileData(final Raster tileRowRaster, final Rectangle srcRegion, final int xSub, final int ySub,
                                    final int band, final int numBands, final int interpretation,
                                    final WritableRaster raster, final int startCol, final int startRow,
-                                   final int colsInTile, final int rowsInTile, final ImageInputStream input, final boolean clamped)
+                                   final int colsInTile, final int rowsInTile, final ImageInputStream input, final boolean normalize)
             throws IOException {
 
         DataBuffer dataBuffer = tileRowRaster.getDataBuffer();
@@ -2047,7 +2047,9 @@ public final class TIFFImageReader extends ImageReaderBase {
                     }
 
                     if (row >= srcRegion.y) {
-                        normalizeColor(interpretation, numBands, rowDataFloat, clamped);
+                        if (normalize) {
+                            normalizeColor(interpretation, numBands, rowDataFloat);
+                        }
 
                         // Subsample horizontal
                         if (xSub != 1) {
@@ -2357,11 +2359,9 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void normalizeColor(int photometricInterpretation, @SuppressWarnings("unused") int numBands, float[] data, boolean clamped) {
+    private void normalizeColor(int photometricInterpretation, @SuppressWarnings("unused") int numBands, float[] data) {
         // TODO: Allow param to decide tone mapping strategy, like in the HDRImageReader
-        if (clamped) {
-            clamp(data);
-        }
+        clamp(data);
 
         switch (photometricInterpretation) {
             case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
