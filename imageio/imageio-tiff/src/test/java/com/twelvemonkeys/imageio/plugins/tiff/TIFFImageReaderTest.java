@@ -985,6 +985,22 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     }
 
     @Test
+    public void testReadRasterGeotiff() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/geotiff.tif"))) {
+            reader.setInput(stream);
+            Raster rawRaster = reader.readRaster(0, null);
+            Raster normalizedRaster = reader.read(0, null).getRaster();
+            for (int y = 0; y < rawRaster.getHeight(); y++) {
+                for (int x = 0; x < rawRaster.getWidth(); x++) {
+                    assertNotEquals(rawRaster.getSample(x, y, 0), normalizedRaster.getSample(x, y, 0));
+                }
+            }
+        }
+    }
+
+    @Test
     public void testReadRaster() throws IOException {
         ImageReader reader = createReader();
 
@@ -1013,17 +1029,6 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                         data.getDimension(i).height, raster.getHeight()
                 );
             }
-        }
-    }
-
-    @Test
-    public void testReadRasterColorNormalization() throws IOException {
-        ImageReader reader = createReader();
-        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/ycbcr-cat.tif"))) {
-            reader.setInput(stream);
-            Raster rawRaster = reader.readRaster(0, null);
-            Raster normalizedRaster = reader.read(0, null).getRaster();
-            assertNotEquals(rawRaster.getSample(10, 10, 0), normalizedRaster.getSample(10, 10, 0), 0.0001f);
         }
     }
 }
