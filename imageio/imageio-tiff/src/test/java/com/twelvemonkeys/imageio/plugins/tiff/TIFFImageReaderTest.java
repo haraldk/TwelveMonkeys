@@ -57,6 +57,7 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -1012,6 +1013,17 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                         data.getDimension(i).height, raster.getHeight()
                 );
             }
+        }
+    }
+
+    @Test
+    public void testReadRasterColorNormalization() throws IOException {
+        ImageReader reader = createReader();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/ycbcr-cat.tif"))) {
+            reader.setInput(stream);
+            Raster rawRaster = reader.readRaster(0, null);
+            Raster normalizedRaster = reader.read(0, null).getRaster();
+            assertNotEquals(rawRaster.getSample(10, 10, 0), normalizedRaster.getSample(10, 10, 0), 0.0001f);
         }
     }
 }
