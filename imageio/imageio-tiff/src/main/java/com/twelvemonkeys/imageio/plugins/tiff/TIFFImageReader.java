@@ -1154,7 +1154,9 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                         // Need to do color normalization after reading all bands for planar
                         if (planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR) {
-                            normalizeColorPlanar(interpretation, destRaster);
+                            if (normalize) {
+                                normalizeColorPlanar(interpretation, destRaster);
+                            }
                         }
 
                         col += colsInTile;
@@ -1252,10 +1254,14 @@ public final class TIFFImageReader extends ImageReaderBase {
                                     // TODO: Refactor + duplicate this for all JPEG-in-TIFF cases
                                     switch (raster.getTransferType()) {
                                         case DataBuffer.TYPE_BYTE:
-                                            normalizeColor(interpretation, samplesInTile, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                            if (normalize) {
+                                                normalizeColor(interpretation, samplesInTile, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                            }
                                             break;
                                         case DataBuffer.TYPE_USHORT:
-                                            normalizeColor(interpretation, samplesInTile, ((DataBufferUShort) raster.getDataBuffer()).getData());
+                                            if (normalize) {
+                                                normalizeColor(interpretation, samplesInTile, ((DataBufferUShort) raster.getDataBuffer()).getData());
+                                            }
                                             break;
                                         default:
                                             throw new IllegalStateException("Unsupported transfer type: " + raster.getTransferType());
@@ -1418,7 +1424,9 @@ public final class TIFFImageReader extends ImageReaderBase {
                                         // Otherwise, it's likely CMYK or some other interpretation we don't need to convert.
                                         // We'll have to use readAsRaster and later apply color space conversion ourselves
                                         Raster raster = jpegReader.readRaster(0, jpegParam);
-                                        normalizeColor(interpretation, samplesInTile, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                        if (normalize) {
+                                            normalizeColor(interpretation, samplesInTile, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                        }
                                         destination.getRaster().setDataElements(offset.x, offset.y, raster);
                                     }
                                 }
@@ -1568,7 +1576,9 @@ public final class TIFFImageReader extends ImageReaderBase {
                                         // Otherwise, it's likely CMYK or some other interpretation we don't need to convert.
                                         // We'll have to use readAsRaster and later apply color space conversion ourselves
                                         Raster raster = jpegReader.readRaster(0, jpegParam);
-                                        normalizeColor(interpretation, samplesInTile, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                        if (normalize) {
+                                            normalizeColor(interpretation, samplesInTile, ((DataBufferByte) raster.getDataBuffer()).getData());
+                                        }
                                         destination.getRaster().setDataElements(offset.x, offset.y, raster);
                                     }
                                 }
@@ -1954,7 +1964,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                     input.readFully(rowDataByte);
 
                     if (row % ySub == 0 && row >= srcRegion.y) {
-                        if (!banded) {
+                        if (normalize && !banded) {
                             normalizeColor(interpretation, numBands, rowDataByte);
                         }
 
@@ -1985,7 +1995,9 @@ public final class TIFFImageReader extends ImageReaderBase {
                     input.readFully(rowDataShort, 0, rowDataShort.length);
 
                     if (row >= srcRegion.y) {
-                        normalizeColor(interpretation, numBands, rowDataShort);
+                        if (normalize) {
+                            normalizeColor(interpretation, numBands, rowDataShort);
+                        }
 
                         // Subsample horizontal
                         subsampleRow(rowDataShort, srcRegion.x * numBands, colsInTile,
@@ -2013,7 +2025,9 @@ public final class TIFFImageReader extends ImageReaderBase {
                     input.readFully(rowDataInt, 0, rowDataInt.length);
 
                     if (row >= srcRegion.y) {
-                        normalizeColor(interpretation, numBands, rowDataInt);
+                        if (normalize) {
+                            normalizeColor(interpretation, numBands, rowDataInt);
+                        }
 
                         // Subsample horizontal
                         subsampleRow(rowDataInt, srcRegion.x * numBands, colsInTile,
