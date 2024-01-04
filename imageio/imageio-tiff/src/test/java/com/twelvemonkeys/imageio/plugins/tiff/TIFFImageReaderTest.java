@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
-
 import org.junit.Test;
 
 import javax.imageio.IIOException;
@@ -44,7 +43,7 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.color.*;
+import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -56,11 +55,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Mockito.*;
 
@@ -987,14 +982,19 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
     @Test
     public void testReadRasterGeotiff() throws IOException {
         ImageReader reader = createReader();
-
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/geotiff.tif"))) {
             reader.setInput(stream);
             Raster rawRaster = reader.readRaster(0, null);
-            Raster normalizedRaster = reader.read(0, null).getRaster();
-            for (int y = 0; y < rawRaster.getHeight(); y++) {
-                for (int x = 0; x < rawRaster.getWidth(); x++) {
-                    assertNotEquals(rawRaster.getSample(x, y, 0), normalizedRaster.getSample(x, y, 0));
+            float[][] rawSquare = new float[][]{
+                    {6.577552E37f, 7.7754113E37f, 2.7962851E38f, 2.47137E38f, 2.0926236E38f},
+                    {3.2861367E38f, 2.6394106E38f, 2.455175E38f, 5.1006574E37f, 2.1506686E38f},
+                    {2.2375272E38f, 5.031465E37f, 1.8041708E38f, 2.9073664E38f, 2.2908213E38f},
+                    {1.255763E38f, 4.7818833E37f, 1.3102714E38f, 1.2462358E38f, 1.812381E36f},
+                    {1.5521211E38f, 1.5415674E38f, 2.8042234E38f, 1.0238707E38f, 1.5704234E38f},
+            };
+            for (int x = 0; x < rawSquare.length; x++) {
+                for (int y = 0; y < rawSquare[x].length; y++) {
+                    assertEquals(rawSquare[x][y], rawRaster.getSampleFloat(x, y, 0), 0.0001);
                 }
             }
         }
