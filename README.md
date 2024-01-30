@@ -322,8 +322,8 @@ To depend on the JPEG and TIFF plugin in your IDE or program, add all of the fol
 
 #### Deploying the plugins in a web app
 
-Because the `ImageIO` plugin registry (the `IIORegistry`) is "VM global", it doesn't by default work well with
-servlet contexts. This is especially evident if you load plugins from the `WEB-INF/lib` or `classes` folder.
+Because the `ImageIO` plugin registry (the `IIORegistry`) is "VM global", it does not work well with
+servlet contexts as-is. This is especially evident if you load plugins from the `WEB-INF/lib` or `classes` folder.
 Unless you add `ImageIO.scanForPlugins()` somewhere in your code, the plugins might never be available at all.
 
 In addition, servlet contexts dynamically loads and unloads classes (using a new class loader per context).
@@ -358,6 +358,16 @@ The context listener has no dependencies to the TwelveMonkeys ImageIO plugins, a
 or other ImageIO plugins as well.
 
 Another safe option, is to place the JAR files in the application server's shared or common lib folder. 
+
+##### Jakarta Servlet Support
+
+For those transitioning from the old `javax.servlet` to the new `jakarta.servlet` package, there is a separate 
+dependency available. It contains exactly the same servlet classes as mentioned above, but built against the new Jakarta EE
+packages. The dependency has the same group name and identifier as before, but a `jakarta` *classifier* appended, to 
+distinguish it from the non-Jakarta package.
+
+See the [Maven dependency example](#maven-dependency-example) for how to enable it with Maven. 
+Gradle or other build tools will have similar options.
 
 #### Including the plugins in a "fat" JAR
 
