@@ -77,7 +77,7 @@ public class SVGImageReaderSpiTest {
         ImageIO.setUseCache(false);
     }
 
-    private final ImageReaderSpi provider = new SVGImageReaderSpi();
+    final ImageReaderSpi provider = new SVGImageReaderSpi();
 
     @Test
     public void canDecodeInput() throws Exception {

@@ -31,13 +31,19 @@
 package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
+import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.lang.SystemUtil;
+
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
+import javax.xml.namespace.QName;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
 import java.io.EOFException;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.Locale;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
@@ -51,6 +57,11 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
 public final class SVGImageReaderSpi extends ImageReaderSpiBase {
 
     final static boolean SVG_READER_AVAILABLE = SystemUtil.isClassAvailable("com.twelvemonkeys.imageio.plugins.svg.SVGImageReader", SVGImageReaderSpi.class);
+
+    static final String XML_READER_DETECT =
+            "com.twelvemonkeys.imageio.plugins.svg.xmlReaderDetect";
+
+    static final QName SVG_ROOT = new QName("http://www.w3.org/2000/svg", "svg");
 
     /**
      * Creates an {@code SVGImageReaderSpi}.
@@ -70,6 +81,12 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
         // however it may not recognize all kinds of SVG documents.
         try {
             input.mark();
+
+            if (Boolean.getBoolean(XML_READER_DETECT)) {
+                InputStream stream = IIOUtil.createStreamAdapter(pInput);
+                return SVG_ROOT.getLocalPart().equals(DoctypeHandler
+                        .doctypeOf(new InputSource(stream)));
+            }
 
             // TODO: This is not ok for UTF-16 and other wide encodings
             // TODO: Use an XML (encoding) aware Reader instance instead
@@ -149,6 +166,10 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
         }
         catch (EOFException ignore) {
             // Possible for small files...
+            return false;
+        }
+        catch (SAXException e) {
+            // Malformed XML, or not an XML at all
             return false;
         }
         finally {
