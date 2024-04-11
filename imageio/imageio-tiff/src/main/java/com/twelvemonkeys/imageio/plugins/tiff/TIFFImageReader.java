@@ -1350,31 +1350,40 @@ public final class TIFFImageReader extends ImageReaderBase {
                 }
             }
 
-            if (stripTileOffsets == null || stripTileOffsets.length == 1 && realJPEGOffset == stripTileOffsets[0]) {
+            if (stripTileOffsets == null || stripTileOffsets.length == 1) {
                 // In this case, we'll just read everything as a single tile
                 jpegHeader = new byte[0];
+
+                if (stripTileOffsets != null) {
+                    stripTileOffsets[0] = realJPEGOffset;
+                }
             }
             else {
-                // Wang TIFF weirdness, see http://www.eztwain.com/wangtiff.htm
-                // If the first tile stream starts with SOS, we'll correct offset/length
                 imageInput.seek(stripTileOffsets[0]);
 
                 if (((imageInput.readByte() & 0xFF)  << 8 | (imageInput.readByte() & 0xFF)) == JPEG.SOS) {
+                    // Wang TIFF weirdness, see http://www.eztwain.com/wangtiff.htm
+                    // If the first tile stream starts with SOS, we'll correct offset/length
                     processWarningOccurred("Incorrect StripOffsets/TileOffsets, points to SOS marker, ignoring offsets/byte counts.");
-                    int len = 2 + ((imageInput.readByte() & 0xFF)  << 8 | (imageInput.readByte() & 0xFF));
 
-                    // TODO: There might be data between tables and the SOS here...
-                    //  We forward warnings from the JPEG reading delegate about "Corrupt JPEG data: N extraneous bytes before marker 0xda" (SOS),
-                    //  We didn't do this before, as we didn't add a warning listener for Old JPEG/6...
+                    int sosLength = 2 + ((imageInput.readByte() & 0xFF)  << 8 | (imageInput.readByte() & 0xFF));
 
-                    stripTileOffsets[0] += len;
-                    stripTileByteCounts[0] -= len;
+                    // TODO: Validate that values make sense?
+
+                    // We'll prepend each tile with a JFIF "header" (SOI...
+                    jpegHeader = new byte[Math.max(0, jpegLength + sosLength)];
+                    imageInput.seek(realJPEGOffset);
+                    imageInput.readFully(jpegHeader, 0, jpegLength);
+                    // ...SOS)
+                    imageInput.seek(stripTileOffsets[0]);
+                    imageInput.readFully(jpegHeader, jpegLength, sosLength);
+
+                    stripTileOffsets[0] += sosLength;
+                    stripTileByteCounts[0] -= sosLength;
                 }
-
-                // We'll prepend each tile with a JFIF "header" (SOI...SOS)
-                imageInput.seek(realJPEGOffset);
-                jpegHeader = new byte[Math.max(0, (int) (stripTileOffsets[0] - realJPEGOffset))];
-                imageInput.readFully(jpegHeader);
+                else {
+                    jpegHeader = new byte[0];
+                }
             }
 
             // In case of single tile, make sure we read the entire JFIF stream
@@ -1438,8 +1447,10 @@ public final class TIFFImageReader extends ImageReaderBase {
             // If the tile stream starts with SOS...
             if (tileIndex == 0) {
                 if (((imageInput.readByte() & 0xFF)  << 8 | (imageInput.readByte() & 0xFF)) == JPEG.SOS) {
-                    imageInput.seek(stripTileOffsets[tileIndex] + 14); // TODO: Read from SOS length from stream, in case of gray/CMYK
-                    length -= 14;
+                    int sosLength = 2 + ((imageInput.readByte() & 0xFF)  << 8 | (imageInput.readByte() & 0xFF));
+
+                    imageInput.seek(stripTileOffsets[tileIndex] + sosLength);
+                    length -= sosLength;
                 }
                 else {
                     imageInput.seek(stripTileOffsets[tileIndex]);
