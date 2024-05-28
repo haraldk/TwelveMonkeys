@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+
 import org.junit.Test;
 
 import javax.imageio.IIOException;
@@ -43,7 +44,7 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.color.ColorSpace;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -55,7 +56,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Mockito.*;
 
@@ -100,6 +104,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/signed-integral-8bit.tif"), new Dimension(439, 167)), // Gray, 8 bit *signed* integral
                 new TestData(getClassLoaderResource("/tiff/floatingpoint-16bit.tif"), new Dimension(151, 151)), // RGB, 16 bit floating point
                 new TestData(getClassLoaderResource("/tiff/floatingpoint-32bit.tif"), new Dimension(300, 100)), // RGB, 32 bit floating point
+                new TestData(getClassLoaderResource("/tiff/floatingpoint-64bit.tif"), new Dimension(64, 46)), // Gray, 64 bit floating point
                 new TestData(getClassLoaderResource("/tiff/general-cmm-error.tif"), new Dimension(1181, 860)), // RGB, LZW compression with broken/incompatible ICC profile
                 new TestData(getClassLoaderResource("/tiff/lzw-rgba-padded-icc.tif"), new Dimension(19, 11)), // RGBA, LZW compression with padded ICC profile
                 new TestData(getClassLoaderResource("/tiff/lzw-rgba-4444.tif"), new Dimension(64, 64)), // RGBA, LZW compression with UINT 4/4/4/4 + gray 2/2

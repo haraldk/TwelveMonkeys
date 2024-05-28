@@ -815,8 +815,11 @@ public final class TIFFImageReader extends ImageReaderBase {
                 if (bitsPerSample == 16 || bitsPerSample == 32) {
                     return DataBuffer.TYPE_FLOAT;
                 }
+                else if (bitsPerSample == 64) {
+                    return DataBuffer.TYPE_DOUBLE;
+                }
 
-                throw new IIOException("Unsupported BitsPerSample for SampleFormat 3/Floating Point (expected 16/32): " + bitsPerSample);
+                throw new IIOException("Unsupported BitsPerSample for SampleFormat 3/Floating Point (expected 16/32/64): " + bitsPerSample);
             default:
                 throw new IIOException("Unknown TIFF SampleFormat (expected 1, 2, 3 or 4): " + sampleFormat);
         }
@@ -1153,10 +1156,8 @@ public final class TIFFImageReader extends ImageReaderBase {
                         }
 
                         // Need to do color normalization after reading all bands for planar
-                        if (planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR) {
-                            if (normalize) {
-                                normalizeColorPlanar(interpretation, destRaster);
-                            }
+                        if (normalize && planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR) {
+                            normalizeColorPlanar(interpretation, destRaster);
                         }
 
                         col += colsInTile;
@@ -1252,19 +1253,17 @@ public final class TIFFImageReader extends ImageReaderBase {
                                     // We'll have to use readAsRaster and later apply color space conversion ourselves
                                     Raster raster = jpegReader.readRaster(0, jpegParam);
                                     // TODO: Refactor + duplicate this for all JPEG-in-TIFF cases
-                                    switch (raster.getTransferType()) {
-                                        case DataBuffer.TYPE_BYTE:
-                                            if (normalize) {
+                                    if (normalize) {
+                                        switch (raster.getTransferType()) {
+                                            case DataBuffer.TYPE_BYTE:
                                                 normalizeColor(interpretation, samplesInTile, ((DataBufferByte) raster.getDataBuffer()).getData());
-                                            }
-                                            break;
-                                        case DataBuffer.TYPE_USHORT:
-                                            if (normalize) {
+                                                break;
+                                            case DataBuffer.TYPE_USHORT:
                                                 normalizeColor(interpretation, samplesInTile, ((DataBufferUShort) raster.getDataBuffer()).getData());
-                                            }
-                                            break;
-                                        default:
-                                            throw new IllegalStateException("Unsupported transfer type: " + raster.getTransferType());
+                                                break;
+                                            default:
+                                                throw new IllegalStateException("Unsupported transfer type: " + raster.getTransferType());
+                                        }
                                     }
 
                                     destination.getRaster().setDataElements(offset.x, offset.y, raster);
@@ -2080,6 +2079,36 @@ public final class TIFFImageReader extends ImageReaderBase {
 
             break;
 
+            case DataBuffer.TYPE_DOUBLE:
+                /*for (int band = 0; band < bands; band++)*/ {
+                double[] rowDataDouble = ((DataBufferDouble) tileRowRaster.getDataBuffer()).getData(band);
+
+                for (int row = startRow; row < startRow + rowsInTile; row++) {
+                    if (row >= srcRegion.y + srcRegion.height) {
+                        break; // We're done with this tile
+                    }
+
+                    input.readFully(rowDataDouble, 0, rowDataDouble.length);
+
+                    if (row >= srcRegion.y) {
+                        if (normalize) {
+                            normalizeColor(interpretation, numBands, rowDataDouble);
+                        }
+
+                        // Subsample horizontal
+                        if (xSub != 1) {
+                            subsampleRow(rowDataDouble, srcRegion.x * numBands, colsInTile,
+                                    rowDataDouble, srcRegion.x * numBands / xSub, numBands, bitsPerSample, xSub);
+                        }
+
+                        destChannel.setDataElements(startCol, row - srcRegion.y, srcChannel);
+                    }
+                    // Else skip data
+                }
+            }
+
+            break;
+
             default:
                 throw new AssertionError("Unsupported data type: " + tileRowRaster.getTransferType());
         }
@@ -2091,13 +2120,24 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private void clamp(final float[] rowDataFloat) {
-        for (int i = 0; i < rowDataFloat.length; i++) {
-            if (rowDataFloat[i] > 1f) {
-                rowDataFloat[i] = 1f;
+    private void clamp(final float[] data) {
+        for (int i = 0; i < data.length; i++) {
+            if (data[i] > 1f) {
+                data[i] = 1f;
             }
-            else if (rowDataFloat[i] < 0f) {
-                rowDataFloat[i] = 0f;
+            else if (data[i] < 0f) {
+                data[i] = 0f;
+            }
+        }
+    }
+
+    private void clamp(final double[] data) {
+        for (int i = 0; i < data.length; i++) {
+            if (data[i] > 1d) {
+                data[i] = 1d;
+            }
+            else if (data[i] < 0d) {
+                data[i] = 0d;
             }
         }
     }
@@ -2382,6 +2422,28 @@ public final class TIFFImageReader extends ImageReaderBase {
                 // Inverse values
                 for (int i = 0; i < data.length; i++) {
                     data[i] = 1f - data[i];
+                }
+
+                break;
+
+            case TIFFExtension.PHOTOMETRIC_CIELAB:
+            case TIFFExtension.PHOTOMETRIC_ICCLAB:
+            case TIFFExtension.PHOTOMETRIC_ITULAB:
+            case TIFFExtension.PHOTOMETRIC_YCBCR:
+                // Not supported
+                break;
+        }
+    }
+
+    private void normalizeColor(int photometricInterpretation, @SuppressWarnings("unused") int numBands, double[] data) {
+        // TODO: Allow param to decide tone mapping strategy, like in the HDRImageReader
+        clamp(data);
+
+        switch (photometricInterpretation) {
+            case TIFFBaseline.PHOTOMETRIC_WHITE_IS_ZERO:
+                // Inverse values
+                for (int i = 0; i < data.length; i++) {
+                    data[i] = 1d - data[i];
                 }
 
                 break;
