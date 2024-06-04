@@ -142,7 +142,8 @@ final class PSDUtil {
 
         @Override
         public InputStream nextElement() {
-            return new SubStream(new DecoderStream(createStreamAdapter(stream, byteCounts[index++]), new PackBitsDecoder(), rowLength), rowLength);
+            // Add 128 bytes extra buffer as worst case if the encoder (GIMP) added garbage bytes at the end
+            return new SubStream(new DecoderStream(createStreamAdapter(stream, byteCounts[index++]), new PackBitsDecoder(), rowLength + 128), rowLength);
         }
     }
 }

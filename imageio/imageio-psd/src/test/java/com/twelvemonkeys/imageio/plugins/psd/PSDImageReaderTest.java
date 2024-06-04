@@ -109,7 +109,9 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 // CMYK, uncompressed + contains some uncommon MeSa (instead of 8BIM) resource blocks
                 new TestData(getClassLoaderResource("/psd/fruit-cmyk-MeSa-resource.psd"), new Dimension(400, 191)),
                 // 3 channel, RGB, 32 bit samples
-                new TestData(getClassLoaderResource("/psd/32bit5x5.psd"), new Dimension(5, 5))
+                new TestData(getClassLoaderResource("/psd/32bit5x5.psd"), new Dimension(5, 5)),
+                // 3 channel, RGB, written by GIMP, compressed with PackBits runs longer than the row length
+                new TestData(getClassLoaderResource("/psd/gimp-32x32-packbits-overflow.psd"), new Dimension(32, 32))
                 // TODO: Need more recent ZIP compressed PSD files from CS2/CS3+
         );
     }
