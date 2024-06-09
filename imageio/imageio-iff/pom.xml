@@ -9,7 +9,7 @@
     <artifactId>imageio-iff</artifactId>
     <name>TwelveMonkeys :: ImageIO :: IFF plugin</name>
     <description>
-        ImageIO plugin for Amiga/Electronic Arts Interchange Filed Format (IFF)
+        ImageIO plugin for Amiga/Electronic Arts Interchange File Format (IFF)
         type ILBM and PBM format.
     </description>
 
