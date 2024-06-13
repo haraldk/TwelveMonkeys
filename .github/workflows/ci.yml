@@ -65,7 +65,7 @@ jobs:
           report_paths: "**/target/surefire-reports/TEST*.xml"
           check_name: Unit Test Results for OpenJDK ${{ matrix.java }} on ${{ matrix.os }}
 
-  test_oracle:
+  test-oracle:
     name: Test Oracle JDK 8 with KCMS=${{ matrix.kcms }}
     runs-on: ubuntu-latest
     permissions:
@@ -101,7 +101,7 @@ jobs:
 
   release:
     name: Deploy
-    needs: [ test, test_oracle ]
+    needs: [ test, test-jdk8, test-oracle ]
     if: github.ref == 'refs/heads/master' # only perform on latest master
     runs-on: ubuntu-latest
     steps:
