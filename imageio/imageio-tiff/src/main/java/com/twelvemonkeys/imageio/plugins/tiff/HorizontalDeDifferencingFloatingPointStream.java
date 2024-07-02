@@ -64,10 +64,10 @@ final class HorizontalDeDifferencingFloatingPointStream extends InputStream {
         this.columns = Validate.isTrue(columns > 0, columns, "width must be greater than 0");
         this.samplesPerPixel = samplesPerPixel;
         Validate.isTrue(isValidBPS(bitsPerSample), bitsPerSample, "Unsupported bits per sample value: %s");
-        bytesPerSample = (samplesPerPixel * bitsPerSample + 7) / 8;
+        bytesPerSample = (bitsPerSample + 7) / 8;
 
         channel = Channels.newChannel(Validate.notNull(stream, "stream"));
-        buffer = ByteBuffer.allocate(columns * bytesPerSample)
+        buffer = ByteBuffer.allocate(columns * samplesPerPixel * bytesPerSample)
                            .order(byteOrder);
         fpRow = buffer.array().clone();
 

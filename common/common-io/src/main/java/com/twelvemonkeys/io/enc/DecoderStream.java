@@ -59,7 +59,7 @@ public final class DecoderStream extends FilterInputStream {
      * @see java.io.FilterInputStream#in
      */
     public DecoderStream(final InputStream stream, final Decoder decoder) {
-        // TODO: Let the decoder decide preferred buffer size 
+        // TODO: Let the decoder decide preferred buffer size
         this(stream, decoder, 1024);
     }
 
@@ -77,7 +77,7 @@ public final class DecoderStream extends FilterInputStream {
         super(stream);
 
         this.decoder = decoder;
-        buffer = ByteBuffer.allocate(bufferSize);
+        buffer = ByteBuffer.allocate(bufferSize); // TODO: Allow decoder to specify minimum buffer size
         buffer.flip();
     }
 
