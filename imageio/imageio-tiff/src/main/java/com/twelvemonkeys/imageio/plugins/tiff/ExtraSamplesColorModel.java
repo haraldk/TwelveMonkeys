@@ -33,11 +33,12 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 import com.twelvemonkeys.lang.Validate;
 
 import java.awt.*;
-import java.awt.color.ColorSpace;
+import java.awt.color.*;
 import java.awt.image.*;
 import java.util.Objects;
 
-import static java.awt.image.DataBuffer.getDataTypeSize;
+import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader.createOffsets;
+import static java.awt.image.DataBuffer.*;
 
 /**
  * ExtraSamplesColorModel.
@@ -55,10 +56,24 @@ final class ExtraSamplesColorModel extends ComponentColorModel {
     private final int componentSize;
 
     ExtraSamplesColorModel(ColorSpace cs, boolean hasAlpha, boolean isAlphaPremultiplied, int dataType, int extraComponents) {
-        super(cs, hasAlpha, isAlphaPremultiplied, Transparency.TRANSLUCENT, dataType);
+        this(cs, null, hasAlpha, isAlphaPremultiplied, dataType, extraComponents);
+    }
+
+    ExtraSamplesColorModel(ColorSpace cs, int[] bits, boolean hasAlpha, boolean isAlphaPremultiplied, int dataType, int extraComponents) {
+        super(cs, bits, hasAlpha, isAlphaPremultiplied, Transparency.TRANSLUCENT, dataType);
         Validate.isTrue(extraComponents > 0, "Extra components must be > 0");
         this.numComponents = cs.getNumComponents() + (hasAlpha ? 1 : 0) + extraComponents;
-        this.componentSize = getDataTypeSize(dataType);
+
+        if (bits != null) {
+            Validate.isTrue(bits.length == numComponents, "bits.length must be == " + numComponents);
+            this.componentSize = bits[0];
+            for (int bit : bits) {
+                Validate.isTrue(bit == componentSize, "Variable bits per component not supported");
+            }
+        }
+        else {
+            this.componentSize = getDataTypeSize(dataType);
+        }
     }
 
     @Override
@@ -159,5 +174,22 @@ final class ExtraSamplesColorModel extends ComponentColorModel {
     @Override
     public int hashCode() {
         return Objects.hash(super.hashCode(), numComponents, componentSize);
+    }
+
+    @Override
+    public SampleModel createCompatibleSampleModel(int w, int h) {
+        return new PixelInterleavedSampleModel(transferType, 1, 1, numComponents, numComponents, createOffsets(numComponents));
+    }
+
+    @Override
+    public WritableRaster createCompatibleWritableRaster(int w, int h) {
+        switch (transferType) {
+            case DataBuffer.TYPE_BYTE:
+            case DataBuffer.TYPE_USHORT:
+                return Raster.createInterleavedRaster(transferType, w, h, numComponents, null);
+            default:
+                SampleModel sampleModel = createCompatibleSampleModel(w, h);
+                return Raster.createWritableRaster(sampleModel, sampleModel.createDataBuffer(), null);
+        }
     }
 }

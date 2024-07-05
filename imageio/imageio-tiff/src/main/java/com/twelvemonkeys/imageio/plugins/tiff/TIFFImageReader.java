@@ -514,18 +514,27 @@ public final class TIFFImageReader extends ImageReaderBase {
 
                         cs = profile == null ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : ColorSpaces.createColorSpace(profile);
 
-                        if (cs == ColorSpace.getInstance(ColorSpace.CS_GRAY) && (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32)) {
+                        if (samplesPerPixel == significantSamples && cs == ColorSpace.getInstance(ColorSpace.CS_GRAY)
+                                && (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4 || bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32)) {
                             return ImageTypeSpecifiers.createGrayscale(bitsPerSample, dataType);
                         }
                         else if (bitsPerSample == 1 || bitsPerSample == 2 || bitsPerSample == 4) {
+                            if (samplesPerPixel != significantSamples) {
+                                throw new IIOException(String.format("ExtraSamples not supported for Bi-level/Gray TIFF with < 8 bitsPerSample: %d", bitsPerSample));
+                            }
+
                             // Use packed format for 1/2/4 bits
                             return ImageTypeSpecifiers.createPackedGrayscale(cs, bitsPerSample, dataType);
                         }
                         else if (bitsPerSample == 8 || bitsPerSample == 16 || bitsPerSample == 32) {
-                            return createImageTypeSpecifier(TIFFBaseline.PLANARCONFIG_CHUNKY, cs, dataType, significantSamples, samplesPerPixel, false, false);
+                            return createImageTypeSpecifier(planarConfiguration, cs, dataType, significantSamples, samplesPerPixel, hasAlpha, isAlphaPremultiplied);
                         }
                         else if (bitsPerSample % 2 == 0) {
-                            ColorModel colorModel = new ComponentColorModel(cs, new int[] {bitsPerSample}, false, false, Transparency.OPAQUE, dataType);
+                            int[] bits = new int[samplesPerPixel];
+                            Arrays.fill(bits, bitsPerSample);
+                            ColorModel colorModel = samplesPerPixel > significantSamples
+                                    ? new ExtraSamplesColorModel(cs, bits, false, false, dataType, samplesPerPixel - significantSamples)
+                                    : new ComponentColorModel(cs, bits, false, false, Transparency.OPAQUE, dataType);
                             return new ImageTypeSpecifier(colorModel, colorModel.createCompatibleSampleModel(1, 1));
                         }
 
@@ -709,7 +718,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
     }
 
-    private static int[] createOffsets(int samplesPerPixel) {
+    static int[] createOffsets(int samplesPerPixel) {
         int[] offsets = new int[samplesPerPixel];
         for (int i = 0; i < samplesPerPixel; i++) {
             offsets[i] = i;
