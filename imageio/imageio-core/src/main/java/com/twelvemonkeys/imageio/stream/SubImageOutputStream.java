@@ -37,14 +37,14 @@ import java.io.IOException;
 import static com.twelvemonkeys.lang.Validate.notNull;
 
 /**
- * ImageInputStream that writes through a delegate, but keeps local position and bit offset.
+ * ImageOutputStream that writes through a delegate, but keeps local position and bit offset.
  * Note: Flushing or closing this stream will *not* have an effect on the delegate.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: harald.kuhr$
  * @version $Id: SubImageOutputStream.java,v 1.0 30/03/15 harald.kuhr Exp$
  */
-public class SubImageOutputStream extends ImageOutputStreamImpl {
+public final class SubImageOutputStream extends ImageOutputStreamImpl {
     private final ImageOutputStream stream;
     private final long startPos;
 
