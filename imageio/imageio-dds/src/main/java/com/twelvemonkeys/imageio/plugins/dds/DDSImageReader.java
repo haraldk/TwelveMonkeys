@@ -7,9 +7,7 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
-import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -45,13 +43,19 @@ public final class DDSImageReader extends ImageReaderBase {
 	}
 
 	@Override
-	public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
+	public ImageTypeSpecifier getRawImageType(int imageIndex) throws IOException {
 		checkBounds(imageIndex);
 		readHeader();
 
-		// TODO changes based on format
-		ColorSpace sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-		return Collections.singletonList(ImageTypeSpecifiers.createInterleaved(sRGB, new int[]{0, 1, 2}, DataBuffer.TYPE_FLOAT, false, false)).iterator();
+		// TODO change based on format DXT1 4bpp / DXT1-nonalpha
+
+
+		return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB);
+	}
+
+	@Override
+	public Iterator<ImageTypeSpecifier> getImageTypes(int imageIndex) throws IOException {
+		return Collections.singletonList(getRawImageType(imageIndex)).iterator();
 	}
 
 	@Override
@@ -68,13 +72,13 @@ public final class DDSImageReader extends ImageReaderBase {
 		byte[] buffer = new byte[width * height * 4];
 		imageInput.read(buffer);
 
-		int[] pixels = DDSReader.read(buffer, DDSReader.ARGB, 0);
-		BufferedImage image = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
-		image.setRGB(0, 0, width, height, pixels, 0, width);
+		DDSReader dds = new DDSReader(header);
+		int[] pixels = dds.read(buffer, 0);
+		destination.setRGB(0, 0, width, height, pixels, 0, width);
 
 		processImageComplete();
 
-		return image;
+		return destination;
 	}
 
 	private void readHeader() throws IOException {
@@ -88,7 +92,8 @@ public final class DDSImageReader extends ImageReaderBase {
 	}
 
 	public static void main(final String[] args) throws IOException {
-		File file = new File("imageio/imageio-dds/src/test/resources/dds/dxt5.dds");
+		File file = new File("imageio/imageio-dds/src/test/resources/dds/stones.dxt5.dds");
+		//File file = new File("imageio/imageio-dds/src/test/resources/dds/dxt1-noalpha.dds");
 
 		BufferedImage image = ImageIO.read(file);
 

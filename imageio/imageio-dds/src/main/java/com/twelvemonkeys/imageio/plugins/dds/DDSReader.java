@@ -1,74 +1,40 @@
 /**
  * DDSReader.java
- *
+ * <p>
  * Copyright (c) 2015 Kenji Sasaki
  * Released under the MIT license.
  * https://github.com/npedotnet/DDSReader/blob/master/LICENSE
- *
+ * <p>
  * English document
  * https://github.com/npedotnet/DDSReader/blob/master/README.md
- *
+ * <p>
  * Japanese document
  * http://3dtech.jp/wiki/index.php?DDSReader
- *
  */
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
 public final class DDSReader {
 
-	public static final Order ARGB = new Order(16, 8, 0, 24);
 	public static final Order ABGR = new Order(0, 8, 16, 24);
+	public static final Order order = new Order(16, 8, 0, 24);
 
-	public static int getHeight(byte[] buffer) {
-		return (buffer[12] & 0xFF) | (buffer[13] & 0xFF) << 8 | (buffer[14] & 0xFF) << 16 | (buffer[15] & 0xFF) << 24;
+	private final DDSHeader header;
+
+
+	public DDSReader(DDSHeader header) {
+		this.header = header;
 	}
 
-	public static int getWidth(byte[] buffer) {
-		return (buffer[16] & 0xFF) | (buffer[17] & 0xFF) << 8 | (buffer[18] & 0xFF) << 16 | (buffer[19] & 0xFF) << 24;
-	}
-
-	public static int getMipmap(byte[] buffer) {
-		return (buffer[28] & 0xFF) | (buffer[29] & 0xFF) << 8 | (buffer[30] & 0xFF) << 16 | (buffer[31] & 0xFF) << 24;
-	}
-
-	public static int getPixelFormatFlags(byte[] buffer) {
-		return (buffer[80] & 0xFF) | (buffer[81] & 0xFF) << 8 | (buffer[82] & 0xFF) << 16 | (buffer[83] & 0xFF) << 24;
-	}
-
-	public static int getFourCC(byte[] buffer) {
-		return (buffer[84] & 0xFF) << 24 | (buffer[85] & 0xFF) << 16 | (buffer[86] & 0xFF) << 8 | (buffer[87] & 0xFF);
-	}
-
-	public static int getBitCount(byte[] buffer) {
-		return (buffer[88] & 0xFF) | (buffer[89] & 0xFF) << 8 | (buffer[90] & 0xFF) << 16 | (buffer[91] & 0xFF) << 24;
-	}
-
-	public static int getRedMask(byte[] buffer) {
-		return (buffer[92] & 0xFF) | (buffer[93] & 0xFF) << 8 | (buffer[94] & 0xFF) << 16 | (buffer[95] & 0xFF) << 24;
-	}
-
-	public static int getGreenMask(byte[] buffer) {
-		return (buffer[96] & 0xFF) | (buffer[97] & 0xFF) << 8 | (buffer[98] & 0xFF) << 16 | (buffer[99] & 0xFF) << 24;
-	}
-
-	public static int getBlueMask(byte[] buffer) {
-		return (buffer[100] & 0xFF) | (buffer[101] & 0xFF) << 8 | (buffer[102] & 0xFF) << 16 | (buffer[103] & 0xFF) << 24;
-	}
-
-	public static int getAlphaMask(byte[] buffer) {
-		return (buffer[104] & 0xFF) | (buffer[105] & 0xFF) << 8 | (buffer[106] & 0xFF) << 16 | (buffer[107] & 0xFF) << 24;
-	}
-
-	public static int[] read(byte[] buffer, Order order, int mipmapLevel) {
+	public int[] read(byte[] buffer, int mipmapLevel) {
 
 		// header
-		int width = getWidth(buffer);
-		int height = getHeight(buffer);
-		int mipmap = getMipmap(buffer);
+		int width = header.getWidth();
+		int height = header.getHeight();
+		int mipmap = header.getMipmap();
 
 		// type
-		int type = getType(buffer);
+		int type = getType(header);
 		if (type == 0) return null;
 
 		// offset
@@ -108,71 +74,71 @@ public final class DDSReader {
 		int[] pixels = null;
 		switch (type) {
 			case DXT1:
-				pixels = decodeDXT1(width, height, offset, buffer, order);
+				pixels = decodeDXT1(width, height, offset, buffer);
 				break;
 			case DXT2:
-				pixels = decodeDXT2(width, height, offset, buffer, order);
+				pixels = decodeDXT2(width, height, offset, buffer);
 				break;
 			case DXT3:
-				pixels = decodeDXT3(width, height, offset, buffer, order);
+				pixels = decodeDXT3(width, height, offset, buffer);
 				break;
 			case DXT4:
-				pixels = decodeDXT4(width, height, offset, buffer, order);
+				pixels = decodeDXT4(width, height, offset, buffer);
 				break;
 			case DXT5:
-				pixels = decodeDXT5(width, height, offset, buffer, order);
+				pixels = decodeDXT5(width, height, offset, buffer);
 				break;
 			case A1R5G5B5:
-				pixels = readA1R5G5B5(width, height, offset, buffer, order);
+				pixels = readA1R5G5B5(width, height, offset, buffer);
 				break;
 			case X1R5G5B5:
-				pixels = readX1R5G5B5(width, height, offset, buffer, order);
+				pixels = readX1R5G5B5(width, height, offset, buffer);
 				break;
 			case A4R4G4B4:
-				pixels = readA4R4G4B4(width, height, offset, buffer, order);
+				pixels = readA4R4G4B4(width, height, offset, buffer);
 				break;
 			case X4R4G4B4:
-				pixels = readX4R4G4B4(width, height, offset, buffer, order);
+				pixels = readX4R4G4B4(width, height, offset, buffer);
 				break;
 			case R5G6B5:
-				pixels = readR5G6B5(width, height, offset, buffer, order);
+				pixels = readR5G6B5(width, height, offset, buffer);
 				break;
 			case R8G8B8:
-				pixels = readR8G8B8(width, height, offset, buffer, order);
+				pixels = readR8G8B8(width, height, offset, buffer);
 				break;
 			case A8B8G8R8:
-				pixels = readA8B8G8R8(width, height, offset, buffer, order);
+				pixels = readA8B8G8R8(width, height, offset, buffer);
 				break;
 			case X8B8G8R8:
-				pixels = readX8B8G8R8(width, height, offset, buffer, order);
+				pixels = readX8B8G8R8(width, height, offset, buffer);
 				break;
 			case A8R8G8B8:
-				pixels = readA8R8G8B8(width, height, offset, buffer, order);
+				pixels = readA8R8G8B8(width, height, offset, buffer);
 				break;
 			case X8R8G8B8:
-				pixels = readX8R8G8B8(width, height, offset, buffer, order);
+				pixels = readX8R8G8B8(width, height, offset, buffer);
 				break;
 		}
 
 		return pixels;
 	}
 
-	private static int getType(byte[] buffer) {
+	private static int getType(DDSHeader header) {
 
 		int type = 0;
 
-		int flags = getPixelFormatFlags(buffer);
+		int flags = header.getPixelFormatFlags();
 
 		if ((flags & 0x04) != 0) {
 			// DXT
-			type = getFourCC(buffer);
+			type = header.getFourCC();
 		} else if ((flags & 0x40) != 0) {
 			// RGB
-			int bitCount = getBitCount(buffer);
-			int redMask = getRedMask(buffer);
-			int greenMask = getGreenMask(buffer);
-			int blueMask = getBlueMask(buffer);
-			int alphaMask = ((flags & 0x01) != 0) ? getAlphaMask(buffer) : 0; // 0x01 alpha
+			int bitCount = header.getBitCount();
+			int redMask = header.getRedMask();
+			int greenMask = header.getGreenMask();
+			int blueMask = header.getBlueMask();
+			int alphaMask = ((flags & 0x01) != 0) ? header.getAlphaMask() : 0; // 0x01 alpha
 			if (bitCount == 16) {
 				if (redMask == A1R5G5B5_MASKS[0] && greenMask == A1R5G5B5_MASKS[1] && blueMask == A1R5G5B5_MASKS[2] && alphaMask == A1R5G5B5_MASKS[3]) {
 					// A1R5G5B5
@@ -224,7 +190,7 @@ public final class DDSReader {
 
 	}
 
-	private static int[] decodeDXT1(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] decodeDXT1(int width, int height, int offset, byte[] buffer) {
 		int[] pixels = new int[width * height];
 		int index = offset;
 		int w = (width + 3) / 4;
@@ -241,24 +207,24 @@ public final class DDSReader {
 					int t1 = (buffer[index] & 0x0C) >> 2;
 					int t2 = (buffer[index] & 0x30) >> 4;
 					int t3 = (buffer[index++] & 0xC0) >> 6;
-					pixels[4 * width * i + 4 * j + width * k + 0] = getDXTColor(c0, c1, 0xFF, t0, order);
+					pixels[4 * width * i + 4 * j + width * k + 0] = getDXTColor(c0, c1, 0xFF, t0);
 					if (4 * j + 1 >= width) continue;
-					pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, 0xFF, t1, order);
+					pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, 0xFF, t1);
 					if (4 * j + 2 >= width) continue;
-					pixels[4 * width * i + 4 * j + width * k + 2] = getDXTColor(c0, c1, 0xFF, t2, order);
+					pixels[4 * width * i + 4 * j + width * k + 2] = getDXTColor(c0, c1, 0xFF, t2);
 					if (4 * j + 3 >= width) continue;
-					pixels[4 * width * i + 4 * j + width * k + 3] = getDXTColor(c0, c1, 0xFF, t3, order);
+					pixels[4 * width * i + 4 * j + width * k + 3] = getDXTColor(c0, c1, 0xFF, t3);
 				}
 			}
 		}
 		return pixels;
 	}
 
-	private static int[] decodeDXT2(int width, int height, int offset, byte[] buffer, Order order) {
-		return decodeDXT3(width, height, offset, buffer, order);
+	private static int[] decodeDXT2(int width, int height, int offset, byte[] buffer) {
+		return decodeDXT3(width, height, offset, buffer);
 	}
 
-	private static int[] decodeDXT3(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] decodeDXT3(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int w = (width + 3) / 4;
 		int h = (height + 3) / 4;
@@ -286,24 +252,24 @@ public final class DDSReader {
 					int t1 = (buffer[index] & 0x0C) >> 2;
 					int t2 = (buffer[index] & 0x30) >> 4;
 					int t3 = (buffer[index++] & 0xC0) >> 6;
-					pixels[4 * width * i + 4 * j + width * k + 0] = getDXTColor(c0, c1, alphaTable[4 * k + 0], t0, order);
+					pixels[4 * width * i + 4 * j + width * k + 0] = getDXTColor(c0, c1, alphaTable[4 * k + 0], t0);
 					if (4 * j + 1 >= width) continue;
-					pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, alphaTable[4 * k + 1], t1, order);
+					pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, alphaTable[4 * k + 1], t1);
 					if (4 * j + 2 >= width) continue;
-					pixels[4 * width * i + 4 * j + width * k + 2] = getDXTColor(c0, c1, alphaTable[4 * k + 2], t2, order);
+					pixels[4 * width * i + 4 * j + width * k + 2] = getDXTColor(c0, c1, alphaTable[4 * k + 2], t2);
 					if (4 * j + 3 >= width) continue;
-					pixels[4 * width * i + 4 * j + width * k + 3] = getDXTColor(c0, c1, alphaTable[4 * k + 3], t3, order);
+					pixels[4 * width * i + 4 * j + width * k + 3] = getDXTColor(c0, c1, alphaTable[4 * k + 3], t3);
 				}
 			}
 		}
 		return pixels;
 	}
 
-	private static int[] decodeDXT4(int width, int height, int offset, byte[] buffer, Order order) {
-		return decodeDXT5(width, height, offset, buffer, order);
+	private static int[] decodeDXT4(int width, int height, int offset, byte[] buffer) {
+		return decodeDXT5(width, height, offset, buffer);
 	}
 
-	private static int[] decodeDXT5(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] decodeDXT5(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int w = (width + 3) / 4;
 		int h = (height + 3) / 4;
@@ -344,20 +310,20 @@ public final class DDSReader {
 					int t1 = (buffer[index] & 0x0C) >> 2;
 					int t2 = (buffer[index] & 0x30) >> 4;
 					int t3 = (buffer[index++] & 0xC0) >> 6;
-					pixels[4 * width * i + 4 * j + width * k + 0] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k + 0]), t0, order);
+					pixels[4 * width * i + 4 * j + width * k + 0] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k + 0]), t0);
 					if (4 * j + 1 >= width) continue;
-					pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k + 1]), t1, order);
+					pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k + 1]), t1);
 					if (4 * j + 2 >= width) continue;
-					pixels[4 * width * i + 4 * j + width * k + 2] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k + 2]), t2, order);
+					pixels[4 * width * i + 4 * j + width * k + 2] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k + 2]), t2);
 					if (4 * j + 3 >= width) continue;
-					pixels[4 * width * i + 4 * j + width * k + 3] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k + 3]), t3, order);
+					pixels[4 * width * i + 4 * j + width * k + 3] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k + 3]), t3);
 				}
 			}
 		}
 		return pixels;
 	}
 
-	private static int[] readA1R5G5B5(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] readA1R5G5B5(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
@@ -372,7 +338,7 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readX1R5G5B5(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] readX1R5G5B5(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
@@ -387,7 +353,7 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readA4R4G4B4(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] readA4R4G4B4(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
@@ -402,7 +368,7 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readX4R4G4B4(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] readX4R4G4B4(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
@@ -417,7 +383,7 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readR5G6B5(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] readR5G6B5(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
@@ -432,7 +398,7 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readR8G8B8(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] readR8G8B8(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
@@ -445,7 +411,7 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readA8B8G8R8(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] readA8B8G8R8(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
@@ -458,7 +424,7 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readX8B8G8R8(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] readX8B8G8R8(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
@@ -472,7 +438,7 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readA8R8G8B8(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] readA8R8G8B8(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
@@ -485,7 +451,7 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readX8R8G8B8(int width, int height, int offset, byte[] buffer, Order order) {
+	private static int[] readX8R8G8B8(int width, int height, int offset, byte[] buffer) {
 		int index = offset;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
@@ -499,21 +465,21 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int getDXTColor(int c0, int c1, int a, int t, Order order) {
+	private static int getDXTColor(int c0, int c1, int a, int t) {
 		switch (t) {
 			case 0:
-				return getDXTColor1(c0, a, order);
+				return getDXTColor1(c0, a);
 			case 1:
-				return getDXTColor1(c1, a, order);
+				return getDXTColor1(c1, a);
 			case 2:
-				return (c0 > c1) ? getDXTColor2_1(c0, c1, a, order) : getDXTColor1_1(c0, c1, a, order);
+				return (c0 > c1) ? getDXTColor2_1(c0, c1, a) : getDXTColor1_1(c0, c1, a);
 			case 3:
-				return (c0 > c1) ? getDXTColor2_1(c1, c0, a, order) : 0;
+				return (c0 > c1) ? getDXTColor2_1(c1, c0, a) : 0;
 		}
 		return 0;
 	}
 
-	private static int getDXTColor2_1(int c0, int c1, int a, Order order) {
+	private static int getDXTColor2_1(int c0, int c1, int a) {
 		// 2*c0/3 + c1/3
 		int r = (2 * BIT5[(c0 & 0xFC00) >> 11] + BIT5[(c1 & 0xFC00) >> 11]) / 3;
 		int g = (2 * BIT6[(c0 & 0x07E0) >> 5] + BIT6[(c1 & 0x07E0) >> 5]) / 3;
@@ -521,7 +487,7 @@ public final class DDSReader {
 		return (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
 	}
 
-	private static int getDXTColor1_1(int c0, int c1, int a, Order order) {
+	private static int getDXTColor1_1(int c0, int c1, int a) {
 		// (c0+c1) / 2
 		int r = (BIT5[(c0 & 0xFC00) >> 11] + BIT5[(c1 & 0xFC00) >> 11]) / 2;
 		int g = (BIT6[(c0 & 0x07E0) >> 5] + BIT6[(c1 & 0x07E0) >> 5]) / 2;
@@ -529,7 +495,7 @@ public final class DDSReader {
 		return (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
 	}
 
-	private static int getDXTColor1(int c, int a, Order order) {
+	private static int getDXTColor1(int c, int a) {
 		int r = BIT5[(c & 0xFC00) >> 11];
 		int g = BIT6[(c & 0x07E0) >> 5];
 		int b = BIT5[(c & 0x001F)];
@@ -577,11 +543,11 @@ public final class DDSReader {
 	}
 
 	// Image Type
-	private static final int DXT1 = (0x44585431);
-	private static final int DXT2 = (0x44585432);
-	private static final int DXT3 = (0x44585433);
-	private static final int DXT4 = (0x44585434);
-	private static final int DXT5 = (0x44585435);
+	private static final int DXT1 = (0x31545844);
+	private static final int DXT2 = (0x32545844);
+	private static final int DXT3 = (0x33545844);
+	private static final int DXT4 = (0x34545844);
+	private static final int DXT5 = (0x35545844);
 	private static final int A1R5G5B5 = ((1 << 16) | 2);
 	private static final int X1R5G5B5 = ((2 << 16) | 2);
 	private static final int A4R4G4B4 = ((3 << 16) | 2);
@@ -608,9 +574,6 @@ public final class DDSReader {
 	// BIT4 = 17 * index;
 	private static final int[] BIT5 = {0, 8, 16, 25, 33, 41, 49, 58, 66, 74, 82, 90, 99, 107, 115, 123, 132, 140, 148, 156, 165, 173, 181, 189, 197, 206, 214, 222, 230, 239, 247, 255};
 	private static final int[] BIT6 = {0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89, 93, 97, 101, 105, 109, 113, 117, 121, 125, 130, 134, 138, 142, 146, 150, 154, 158, 162, 166, 170, 174, 178, 182, 186, 190, 194, 198, 202, 206, 210, 215, 219, 223, 227, 231, 235, 239, 243, 247, 251, 255};
-
-	private DDSReader() {
-	}
 
 	private static final class Order {
 		Order(int redShift, int greenShift, int blueShift, int alphaShift) {
