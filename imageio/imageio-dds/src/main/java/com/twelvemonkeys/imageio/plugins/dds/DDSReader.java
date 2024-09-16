@@ -16,7 +16,6 @@ package com.twelvemonkeys.imageio.plugins.dds;
 
 public final class DDSReader {
 
-	public static final Order ABGR = new Order(0, 8, 16, 24);
 	public static final Order order = new Order(16, 8, 0, 24);
 
 	private final DDSHeader header;
