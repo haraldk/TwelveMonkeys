@@ -14,6 +14,9 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
+import javax.imageio.stream.ImageInputStream;
+import java.io.IOException;
+
 public final class DDSReader {
 
 	public static final Order order = new Order(16, 8, 0, 24);
@@ -25,19 +28,22 @@ public final class DDSReader {
 		this.header = header;
 	}
 
-	public int[] read(byte[] buffer, int mipmapLevel) {
+	public int[] read(ImageInputStream imageInput, int mipmapLevel) throws IOException {
 
 		// header
 		int width = header.getWidth();
 		int height = header.getHeight();
 		int mipmap = header.getMipmap();
 
+		byte[] buffer = new byte[width * height * 4];
+		int len = imageInput.read(buffer);
+
 		// type
 		int type = getType(header);
 		if (type == 0) return null;
 
 		// offset
-		int offset = 128; // header size
+		int offset = 0; // header size
 		if (mipmapLevel > 0 && mipmapLevel < mipmap) {
 			for (int i = 0; i < mipmapLevel; i++) {
 				switch (type) {

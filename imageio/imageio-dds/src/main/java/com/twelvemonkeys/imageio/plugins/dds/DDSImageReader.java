@@ -10,8 +10,10 @@ import javax.imageio.spi.ImageReaderSpi;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 
 public final class DDSImageReader extends ImageReaderBase {
 
@@ -68,12 +70,8 @@ public final class DDSImageReader extends ImageReaderBase {
 
 		BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
 
-		// TODO
-		byte[] buffer = new byte[width * height * 4];
-		imageInput.read(buffer);
-
 		DDSReader dds = new DDSReader(header);
-		int[] pixels = dds.read(buffer, 0);
+		int[] pixels = dds.read(imageInput, 0);
 		destination.setRGB(0, 0, width, height, pixels, 0, width);
 
 		processImageComplete();
@@ -92,11 +90,45 @@ public final class DDSImageReader extends ImageReaderBase {
 	}
 
 	public static void main(final String[] args) throws IOException {
-		File file = new File("imageio/imageio-dds/src/test/resources/dds/stones.dxt5.dds");
-		//File file = new File("imageio/imageio-dds/src/test/resources/dds/dxt1-noalpha.dds");
 
-		BufferedImage image = ImageIO.read(file);
+		String parentDir = "imageio/imageio-dds/src/test/resources/dds";
 
-		showIt(image, file.getName());
+		List<File> testFiles = new ArrayList<>();
+		testFiles.add(new File(parentDir, "dds_A1R5G5B5.dds"));
+		testFiles.add(new File(parentDir, "dds_A1R5G5B5_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_A4R4G4B4.dds"));
+		testFiles.add(new File(parentDir, "dds_A4R4G4B4_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_A8B8G8R8.dds"));
+		testFiles.add(new File(parentDir, "dds_A8B8G8R8_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_A8R8G8B8.dds"));
+		testFiles.add(new File(parentDir, "dds_A8R8G8B8_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_DXT1.dds"));
+		testFiles.add(new File(parentDir, "dds_DXT1_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_DXT2.dds"));
+		testFiles.add(new File(parentDir, "dds_DXT2_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_DXT3.dds"));
+		testFiles.add(new File(parentDir, "dds_DXT3_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_DXT4.dds"));
+		testFiles.add(new File(parentDir, "dds_DXT4_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_DXT5.dds"));
+		testFiles.add(new File(parentDir, "dds_DXT5_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_R5G6B5.dds"));
+		testFiles.add(new File(parentDir, "dds_R5G6B5_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_R8G8B8.dds"));
+		testFiles.add(new File(parentDir, "dds_R8G8B8_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_X1R5G5B5.dds"));
+		testFiles.add(new File(parentDir, "dds_X1R5G5B5_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_X4R4G4B4.dds"));
+		testFiles.add(new File(parentDir, "dds_X4R4G4B4_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_X8B8G8R8.dds"));
+		testFiles.add(new File(parentDir, "dds_X8B8G8R8_mipmap.dds"));
+		testFiles.add(new File(parentDir, "dds_X8R8G8B8.dds"));
+		testFiles.add(new File(parentDir, "dds_X8R8G8B8_mipmap.dds"));
+
+		for (File file : testFiles) {
+			BufferedImage image = ImageIO.read(file);
+			showIt(image, file.getName());
+		}
+
 	}
 }
