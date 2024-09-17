@@ -67,12 +67,19 @@ public final class DDSImageReader extends ImageReaderBase {
 
 		int width = getWidth(imageIndex);
 		int height = getHeight(imageIndex);
-
 		BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
+
+		processImageStarted(imageIndex);
 
 		DDSReader dds = new DDSReader(header);
 		int[] pixels = dds.read(imageInput, 0);
 		destination.setRGB(0, 0, width, height, pixels, 0, width);
+
+		// TODO: break read into raster line and add progress and abort checks
+		processImageProgress(100f);
+		if (abortRequested()) {
+			processReadAborted();
+		}
 
 		processImageComplete();
 
