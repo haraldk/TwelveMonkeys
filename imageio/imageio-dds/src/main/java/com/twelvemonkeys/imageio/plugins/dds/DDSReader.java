@@ -14,6 +14,7 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
+import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 
@@ -35,100 +36,86 @@ public final class DDSReader {
 		int height = header.getHeight();
 		int mipmap = header.getMipmap();
 
-		byte[] buffer = new byte[width * height * 4];
-		int len = imageInput.read(buffer);
+		if (mipmapLevel > mipmap) {
+			throw new IIOException("Invalid mipmap level: " + mipmapLevel);
+		}
 
 		// type
-		int type = getType(header);
-		if (type == 0) return null;
+		int type = getType();
 
-		// offset
-		int offset = 0; // header size
-		if (mipmapLevel > 0 && mipmapLevel < mipmap) {
-			for (int i = 0; i < mipmapLevel; i++) {
-				switch (type) {
-					case DXT1:
-						offset += 8 * ((width + 3) / 4) * ((height + 3) / 4);
-						break;
-					case DXT2:
-					case DXT3:
-					case DXT4:
-					case DXT5:
-						offset += 16 * ((width + 3) / 4) * ((height + 3) / 4);
-						break;
-					case A1R5G5B5:
-					case X1R5G5B5:
-					case A4R4G4B4:
-					case X4R4G4B4:
-					case R5G6B5:
-					case R8G8B8:
-					case A8B8G8R8:
-					case X8B8G8R8:
-					case A8R8G8B8:
-					case X8R8G8B8:
-						offset += (type & 0xFF) * width * height;
-						break;
-				}
-				width /= 2;
-				height /= 2;
-			}
-			if (width <= 0) width = 1;
-			if (height <= 0) height = 1;
+		// length
+		int len = getLength(type, width, height);
+		byte[] buffer = new byte[len];
+		imageInput.readFully(buffer);
+
+		for (int i = 1; i < mipmapLevel; i++) {
+			width /= 2;
+			height /= 2;
+
+			// length
+			len = getLength(type, width, height);
+			buffer = new byte[len];
+			imageInput.readFully(buffer);
 		}
+		if (width <= 0) width = 1;
+		if (height <= 0) height = 1;
+
+		header.setWidth(width);
+		header.setHeight(height);
 
 		int[] pixels = null;
 		switch (type) {
 			case DXT1:
-				pixels = decodeDXT1(width, height, offset, buffer);
+				pixels = decodeDXT1(width, height, buffer);
 				break;
 			case DXT2:
-				pixels = decodeDXT2(width, height, offset, buffer);
+				pixels = decodeDXT2(width, height, buffer);
 				break;
 			case DXT3:
-				pixels = decodeDXT3(width, height, offset, buffer);
+				pixels = decodeDXT3(width, height, buffer);
 				break;
 			case DXT4:
-				pixels = decodeDXT4(width, height, offset, buffer);
+				pixels = decodeDXT4(width, height, buffer);
 				break;
 			case DXT5:
-				pixels = decodeDXT5(width, height, offset, buffer);
+				pixels = decodeDXT5(width, height, buffer);
 				break;
 			case A1R5G5B5:
-				pixels = readA1R5G5B5(width, height, offset, buffer);
+				pixels = readA1R5G5B5(width, height, buffer);
 				break;
 			case X1R5G5B5:
-				pixels = readX1R5G5B5(width, height, offset, buffer);
+				pixels = readX1R5G5B5(width, height, buffer);
 				break;
 			case A4R4G4B4:
-				pixels = readA4R4G4B4(width, height, offset, buffer);
+				pixels = readA4R4G4B4(width, height, buffer);
 				break;
 			case X4R4G4B4:
-				pixels = readX4R4G4B4(width, height, offset, buffer);
+				pixels = readX4R4G4B4(width, height, buffer);
 				break;
 			case R5G6B5:
-				pixels = readR5G6B5(width, height, offset, buffer);
+				pixels = readR5G6B5(width, height, buffer);
 				break;
 			case R8G8B8:
-				pixels = readR8G8B8(width, height, offset, buffer);
+				pixels = readR8G8B8(width, height, buffer);
 				break;
 			case A8B8G8R8:
-				pixels = readA8B8G8R8(width, height, offset, buffer);
+				pixels = readA8B8G8R8(width, height, buffer);
 				break;
 			case X8B8G8R8:
-				pixels = readX8B8G8R8(width, height, offset, buffer);
+				pixels = readX8B8G8R8(width, height, buffer);
 				break;
 			case A8R8G8B8:
-				pixels = readA8R8G8B8(width, height, offset, buffer);
+				pixels = readA8R8G8B8(width, height, buffer);
 				break;
 			case X8R8G8B8:
-				pixels = readX8R8G8B8(width, height, offset, buffer);
+				pixels = readX8R8G8B8(width, height, buffer);
 				break;
 		}
 
 		return pixels;
 	}
 
-	private static int getType(DDSHeader header) {
+	private int getType() throws IIOException {
 
 		int type = 0;
 
@@ -191,13 +178,41 @@ public final class DDSReader {
 			// YUV or LUMINANCE image
 		}
 
-		return type;
+		if (type == 0) {
+			throw new IIOException("Unknown image type: " + Integer.toHexString(type));
+		}
 
+		return type;
 	}
 
-	private static int[] decodeDXT1(int width, int height, int offset, byte[] buffer) {
+	private static int getLength(int type, int width, int height) throws IIOException {
+		switch (type) {
+			case DXT1:
+				return 8 * ((width + 3) / 4) * ((height + 3) / 4);
+			case DXT2:
+			case DXT3:
+			case DXT4:
+			case DXT5:
+				return 16 * ((width + 3) / 4) * ((height + 3) / 4);
+			case A1R5G5B5:
+			case X1R5G5B5:
+			case A4R4G4B4:
+			case X4R4G4B4:
+			case R5G6B5:
+			case R8G8B8:
+			case A8B8G8R8:
+			case X8B8G8R8:
+			case A8R8G8B8:
+			case X8R8G8B8:
+				return (type & 0xFF) * width * height;
+			default:
+				throw new IIOException("Unknown type: " + Integer.toHexString(type));
+		}
+	}
+
+	private static int[] decodeDXT1(int width, int height, byte[] buffer) {
 		int[] pixels = new int[width * height];
-		int index = offset;
+		int index = 0;
 		int w = (width + 3) / 4;
 		int h = (height + 3) / 4;
 		for (int i = 0; i < h; i++) {
@@ -225,12 +240,12 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] decodeDXT2(int width, int height, int offset, byte[] buffer) {
-		return decodeDXT3(width, height, offset, buffer);
+	private static int[] decodeDXT2(int width, int height, byte[] buffer) {
+		return decodeDXT3(width, height, buffer);
 	}
 
-	private static int[] decodeDXT3(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] decodeDXT3(int width, int height, byte[] buffer) {
+		int index = 0;
 		int w = (width + 3) / 4;
 		int h = (height + 3) / 4;
 		int[] pixels = new int[width * height];
@@ -270,12 +285,12 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] decodeDXT4(int width, int height, int offset, byte[] buffer) {
-		return decodeDXT5(width, height, offset, buffer);
+	private static int[] decodeDXT4(int width, int height, byte[] buffer) {
+		return decodeDXT5(width, height, buffer);
 	}
 
-	private static int[] decodeDXT5(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] decodeDXT5(int width, int height, byte[] buffer) {
+		int index = 0;
 		int w = (width + 3) / 4;
 		int h = (height + 3) / 4;
 		int[] pixels = new int[width * height];
@@ -328,8 +343,8 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readA1R5G5B5(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] readA1R5G5B5(int width, int height, byte[] buffer) {
+		int index = 0;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
 			int rgba = (buffer[index] & 0xFF) | (buffer[index + 1] & 0xFF) << 8;
@@ -343,8 +358,8 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readX1R5G5B5(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] readX1R5G5B5(int width, int height, byte[] buffer) {
+		int index = 0;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
 			int rgba = (buffer[index] & 0xFF) | (buffer[index + 1] & 0xFF) << 8;
@@ -358,8 +373,8 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readA4R4G4B4(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] readA4R4G4B4(int width, int height, byte[] buffer) {
+		int index = 0;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
 			int rgba = (buffer[index] & 0xFF) | (buffer[index + 1] & 0xFF) << 8;
@@ -373,8 +388,8 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readX4R4G4B4(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] readX4R4G4B4(int width, int height, byte[] buffer) {
+		int index = 0;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
 			int rgba = (buffer[index] & 0xFF) | (buffer[index + 1] & 0xFF) << 8;
@@ -388,8 +403,8 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readR5G6B5(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] readR5G6B5(int width, int height, byte[] buffer) {
+		int index = 0;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
 			int rgba = (buffer[index] & 0xFF) | (buffer[index + 1] & 0xFF) << 8;
@@ -403,8 +418,8 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readR8G8B8(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] readR8G8B8(int width, int height, byte[] buffer) {
+		int index = 0;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
 			int b = buffer[index++] & 0xFF;
@@ -416,8 +431,8 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readA8B8G8R8(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] readA8B8G8R8(int width, int height, byte[] buffer) {
+		int index = 0;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
 			int r = buffer[index++] & 0xFF;
@@ -429,8 +444,8 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readX8B8G8R8(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] readX8B8G8R8(int width, int height, byte[] buffer) {
+		int index = 0;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
 			int r = buffer[index++] & 0xFF;
@@ -443,8 +458,8 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readA8R8G8B8(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] readA8R8G8B8(int width, int height, byte[] buffer) {
+		int index = 0;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
 			int b = buffer[index++] & 0xFF;
@@ -456,8 +471,8 @@ public final class DDSReader {
 		return pixels;
 	}
 
-	private static int[] readX8R8G8B8(int width, int height, int offset, byte[] buffer) {
-		int index = offset;
+	private static int[] readX8R8G8B8(int width, int height, byte[] buffer) {
+		int index = 0;
 		int[] pixels = new int[width * height];
 		for (int i = 0; i < height * width; i++) {
 			int b = buffer[index++] & 0xFF;
