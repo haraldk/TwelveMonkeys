@@ -49,9 +49,6 @@ public final class DDSImageReader extends ImageReaderBase {
 		checkBounds(imageIndex);
 		readHeader();
 
-		// TODO change based on format DXT1 4bpp / DXT1-nonalpha
-
-
 		return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB);
 	}
 
@@ -68,7 +65,7 @@ public final class DDSImageReader extends ImageReaderBase {
 		processImageStarted(imageIndex);
 
 		DDSReader dds = new DDSReader(header);
-		int[] pixels = dds.read(imageInput, 0);
+		int[] pixels = dds.read(imageInput, imageIndex);
 
 		int width = getWidth(imageIndex);
 		int height = getHeight(imageIndex);
