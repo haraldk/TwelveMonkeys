@@ -63,67 +63,48 @@ public final class DDSReader {
 		header.setWidth(width);
 		header.setHeight(height);
 
-		int[] pixels = null;
 		switch (type) {
 			case DXT1:
-				pixels = decodeDXT1(width, height, buffer);
-				break;
+				return decodeDXT1(width, height, buffer);
 			case DXT2:
-				pixels = decodeDXT2(width, height, buffer);
-				break;
+				return decodeDXT2(width, height, buffer);
 			case DXT3:
-				pixels = decodeDXT3(width, height, buffer);
-				break;
+				return decodeDXT3(width, height, buffer);
 			case DXT4:
-				pixels = decodeDXT4(width, height, buffer);
-				break;
+				return decodeDXT4(width, height, buffer);
 			case DXT5:
-				pixels = decodeDXT5(width, height, buffer);
-				break;
+				return decodeDXT5(width, height, buffer);
 			case A1R5G5B5:
-				pixels = readA1R5G5B5(width, height, buffer);
-				break;
+				return readA1R5G5B5(width, height, buffer);
 			case X1R5G5B5:
-				pixels = readX1R5G5B5(width, height, buffer);
-				break;
+				return readX1R5G5B5(width, height, buffer);
 			case A4R4G4B4:
-				pixels = readA4R4G4B4(width, height, buffer);
-				break;
+				return readA4R4G4B4(width, height, buffer);
 			case X4R4G4B4:
-				pixels = readX4R4G4B4(width, height, buffer);
-				break;
+				return readX4R4G4B4(width, height, buffer);
 			case R5G6B5:
-				pixels = readR5G6B5(width, height, buffer);
-				break;
+				return readR5G6B5(width, height, buffer);
 			case R8G8B8:
-				pixels = readR8G8B8(width, height, buffer);
-				break;
+				return readR8G8B8(width, height, buffer);
 			case A8B8G8R8:
-				pixels = readA8B8G8R8(width, height, buffer);
-				break;
+				return readA8B8G8R8(width, height, buffer);
 			case X8B8G8R8:
-				pixels = readX8B8G8R8(width, height, buffer);
-				break;
+				return readX8B8G8R8(width, height, buffer);
 			case A8R8G8B8:
-				pixels = readA8R8G8B8(width, height, buffer);
-				break;
+				return readA8R8G8B8(width, height, buffer);
 			case X8R8G8B8:
-				pixels = readX8R8G8B8(width, height, buffer);
-				break;
+				return readX8R8G8B8(width, height, buffer);
+			default:
+				throw new IIOException("Unsupported type: " + type);
 		}
-
-		return pixels;
 	}
 
 	private int getType() throws IIOException {
-
-		int type = 0;
-
 		int flags = header.getPixelFormatFlags();
 
 		if ((flags & 0x04) != 0) {
 			// DXT
-			type = header.getFourCC();
+			return header.getFourCC();
 		} else if ((flags & 0x40) != 0) {
 			// RGB
 			int bitCount = header.getBitCount();
@@ -134,55 +115,51 @@ public final class DDSReader {
 			if (bitCount == 16) {
 				if (redMask == A1R5G5B5_MASKS[0] && greenMask == A1R5G5B5_MASKS[1] && blueMask == A1R5G5B5_MASKS[2] && alphaMask == A1R5G5B5_MASKS[3]) {
 					// A1R5G5B5
-					type = A1R5G5B5;
+					return A1R5G5B5;
 				} else if (redMask == X1R5G5B5_MASKS[0] && greenMask == X1R5G5B5_MASKS[1] && blueMask == X1R5G5B5_MASKS[2] && alphaMask == X1R5G5B5_MASKS[3]) {
 					// X1R5G5B5
-					type = X1R5G5B5;
+					return X1R5G5B5;
 				} else if (redMask == A4R4G4B4_MASKS[0] && greenMask == A4R4G4B4_MASKS[1] && blueMask == A4R4G4B4_MASKS[2] && alphaMask == A4R4G4B4_MASKS[3]) {
 					// A4R4G4B4
-					type = A4R4G4B4;
+					return A4R4G4B4;
 				} else if (redMask == X4R4G4B4_MASKS[0] && greenMask == X4R4G4B4_MASKS[1] && blueMask == X4R4G4B4_MASKS[2] && alphaMask == X4R4G4B4_MASKS[3]) {
 					// X4R4G4B4
-					type = X4R4G4B4;
+					return X4R4G4B4;
 				} else if (redMask == R5G6B5_MASKS[0] && greenMask == R5G6B5_MASKS[1] && blueMask == R5G6B5_MASKS[2] && alphaMask == R5G6B5_MASKS[3]) {
 					// R5G6B5
-					type = R5G6B5;
+					return R5G6B5;
 				} else {
-					// Unsupported 16bit RGB image
+					throw new IIOException("Unsupported 16bit RGB image.");
 				}
 			} else if (bitCount == 24) {
 				if (redMask == R8G8B8_MASKS[0] && greenMask == R8G8B8_MASKS[1] && blueMask == R8G8B8_MASKS[2] && alphaMask == R8G8B8_MASKS[3]) {
 					// R8G8B8
-					type = R8G8B8;
+					return R8G8B8;
 				} else {
-					// Unsupported 24bit RGB image
+					throw new IIOException("Unsupported 24bit RGB image.");
 				}
 			} else if (bitCount == 32) {
 				if (redMask == A8B8G8R8_MASKS[0] && greenMask == A8B8G8R8_MASKS[1] && blueMask == A8B8G8R8_MASKS[2] && alphaMask == A8B8G8R8_MASKS[3]) {
 					// A8B8G8R8
-					type = A8B8G8R8;
+					return A8B8G8R8;
 				} else if (redMask == X8B8G8R8_MASKS[0] && greenMask == X8B8G8R8_MASKS[1] && blueMask == X8B8G8R8_MASKS[2] && alphaMask == X8B8G8R8_MASKS[3]) {
 					// X8B8G8R8
-					type = X8B8G8R8;
+					return X8B8G8R8;
 				} else if (redMask == A8R8G8B8_MASKS[0] && greenMask == A8R8G8B8_MASKS[1] && blueMask == A8R8G8B8_MASKS[2] && alphaMask == A8R8G8B8_MASKS[3]) {
 					// A8R8G8B8
-					type = A8R8G8B8;
+					return A8R8G8B8;
 				} else if (redMask == X8R8G8B8_MASKS[0] && greenMask == X8R8G8B8_MASKS[1] && blueMask == X8R8G8B8_MASKS[2] && alphaMask == X8R8G8B8_MASKS[3]) {
 					// X8R8G8B8
-					type = X8R8G8B8;
+					return X8R8G8B8;
 				} else {
-					// Unsupported 32bit RGB image
+					throw new IIOException("Unsupported 32bit RGB image.");
 				}
+			} else {
+				throw new IIOException("Unsupported bit count: " + bitCount);
 			}
 		} else {
-			// YUV or LUMINANCE image
+			throw new IIOException("Unsupported YUV or LUMINANCE image.");
 		}
-
-		if (type == 0) {
-			throw new IIOException("Unknown image type: " + Integer.toHexString(type));
-		}
-
-		return type;
 	}
 
 	private static int getLength(int type, int width, int height) throws IIOException {
