@@ -7,7 +7,7 @@ import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
-public final class DDSHeader {
+final class DDSHeader {
 
     // https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dx-graphics-dds-pguide
     private int flags;
@@ -23,7 +23,7 @@ public final class DDSHeader {
     private int blueMask;
     private int alphaMask;
 
-    static DDSHeader read(final ImageInputStream imageInput) throws IOException {
+    public static DDSHeader read(final ImageInputStream imageInput) throws IOException {
         DDSHeader header = new DDSHeader();
 
         imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
