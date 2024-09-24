@@ -38,7 +38,7 @@ public final class DDSHeader {
 		// https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header
 		int dwSize = imageInput.readInt(); // [4,7]
 		if (dwSize != DDS.HEADER_SIZE) {
-			throw new IIOException("Invalid header size: " + dwSize);
+			throw new IIOException(String.format("Invalid DDS header size (expected %d): %d",  DDS.HEADER_SIZE, dwSize);
 		}
 
 		// Verify flags
