@@ -30,16 +30,15 @@
 
 package com.twelvemonkeys.imageio.reference;
 
+import com.sun.imageio.plugins.png.PNGImageReader;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
-
-import com.sun.imageio.plugins.png.PNGImageReader;
 import org.junit.Test;
 
 import javax.imageio.IIOException;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
-import java.awt.*;
+import java.awt.Dimension;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -86,8 +85,7 @@ public class PNGImageReaderTest extends ImageReaderAbstractTest<PNGImageReader> 
     public void testSetDestinationTypeIllegal() throws IOException {
         try {
             super.testSetDestinationTypeIllegal();
-        }
-        catch (IIOException expected) {
+        } catch (IIOException expected) {
             // Known bug
         }
     }

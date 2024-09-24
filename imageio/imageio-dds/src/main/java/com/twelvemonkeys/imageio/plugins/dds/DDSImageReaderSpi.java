@@ -10,37 +10,37 @@ import java.util.Locale;
 
 public final class DDSImageReaderSpi extends ImageReaderSpiBase {
 
-	public DDSImageReaderSpi() {
-		super(new DDSProviderInfo());
-	}
+    public DDSImageReaderSpi() {
+        super(new DDSProviderInfo());
+    }
 
-	@Override
-	public boolean canDecodeInput(final Object source) throws IOException {
-		if (!(source instanceof ImageInputStream)) {
-			return false;
-		}
+    @Override
+    public boolean canDecodeInput(final Object source) throws IOException {
+        if (!(source instanceof ImageInputStream)) {
+            return false;
+        }
 
-		ImageInputStream stream = (ImageInputStream) source;
+        ImageInputStream stream = (ImageInputStream) source;
 
-		stream.mark();
+        stream.mark();
 
-		try {
-			byte[] magic = new byte[DDS.MAGIC.length];
-			stream.readFully(magic);
+        try {
+            byte[] magic = new byte[DDS.MAGIC.length];
+            stream.readFully(magic);
 
-			return Arrays.equals(DDS.MAGIC, magic);
-		} finally {
-			stream.reset();
-		}
-	}
+            return Arrays.equals(DDS.MAGIC, magic);
+        } finally {
+            stream.reset();
+        }
+    }
 
-	@Override
-	public ImageReader createReaderInstance(Object extension) throws IOException {
-		return new DDSImageReader(this);
-	}
+    @Override
+    public ImageReader createReaderInstance(Object extension) throws IOException {
+        return new DDSImageReader(this);
+    }
 
-	@Override
-	public String getDescription(Locale locale) {
-		return "Direct DrawSurface (DDS) Image Reader";
-	}
+    @Override
+    public String getDescription(Locale locale) {
+        return "Direct DrawSurface (DDS) Image Reader";
+    }
 }
