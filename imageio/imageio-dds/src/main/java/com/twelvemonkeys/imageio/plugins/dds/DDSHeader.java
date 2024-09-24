@@ -2,18 +2,18 @@ package com.twelvemonkeys.imageio.plugins.dds;
 
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
+import java.awt.Dimension;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 
 final class DDSHeader {
 
     // https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dx-graphics-dds-pguide
     private int flags;
-    private int width;
-    private int height;
-    private int mipmap;
+
+    private int mipMapCount;
+    private Dimension[] dimensions;
 
     private int pixelFormatFlags;
     private int fourCC;
@@ -25,7 +25,7 @@ final class DDSHeader {
 
     public static DDSHeader read(final ImageInputStream imageInput) throws IOException {
         DDSHeader header = new DDSHeader();
-        
+
         // Read MAGIC bytes [0,3]
         byte[] magic = new byte[DDS.MAGIC.length];
         imageInput.readFully(magic);
@@ -50,13 +50,15 @@ final class DDSHeader {
         }
 
         // Read Height & Width
-        header.height = imageInput.readInt(); // [12,15]
-        header.width = imageInput.readInt();  // [16,19]
-
+        int dwHeight = imageInput.readInt(); // [12,15]
+        int dwWidth = imageInput.readInt();  // [16,19]
 
         int dwPitchOrLinearSize = imageInput.readInt(); // [20,23]
         int dwDepth = imageInput.readInt(); // [24,27]
-        header.mipmap = imageInput.readInt(); // [28,31]
+        header.mipMapCount = imageInput.readInt(); // [28,31]
+
+        // build dimensions list
+        header.addDimensions(dwWidth, dwHeight);
 
         byte[] dwReserved1 = new byte[11 * 4];  // [32,75]
         imageInput.readFully(dwReserved1);
@@ -82,28 +84,35 @@ final class DDSHeader {
         return header;
     }
 
+    private void addDimensions(int width, int height) {
+        dimensions = new Dimension[getMipMapCount()];
+
+        int w = width;
+        int h = height;
+        for (int i = 0; i < getMipMapCount(); i++) {
+            dimensions[i] = new Dimension(w, h);
+            w /= 2;
+            h /= 2;
+        }
+    }
+
     private boolean getFlag(int mask) {
         return (flags & mask) != 0;
     }
 
-    public int getWidth() {
-        return width;
+    public int getWidth(int imageIndex) {
+        int lim = dimensions[imageIndex].width;
+        return (lim <= 0) ? 1 : lim;
     }
 
-    public void setWidth(int width) {
-        this.width = width;
+    public int getHeight(int imageIndex) {
+        int lim =  dimensions[imageIndex].height;
+        return (lim <= 0) ? 1 : lim;
     }
 
-    public int getHeight() {
-        return height;
-    }
-
-    public void setHeight(int height) {
-        this.height = height;
-    }
-
-    public int getMipmap() {
-        return mipmap;
+    public int getMipMapCount() {
+        // 0 = (unused) or 1 = (1 level), but still only one 'base' image
+        return (mipMapCount == 0) ? 1 : mipMapCount;
     }
 
     public int getAlphaMask() {

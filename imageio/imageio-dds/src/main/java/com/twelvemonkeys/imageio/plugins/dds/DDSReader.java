@@ -29,39 +29,21 @@ final class DDSReader {
         this.header = header;
     }
 
-    public int[] read(ImageInputStream imageInput, int mipmapLevel) throws IOException {
-
-        // header
-        int width = header.getWidth();
-        int height = header.getHeight();
-        int mipmap = header.getMipmap();
-
-        if (mipmapLevel > mipmap) {
-            throw new IIOException("Invalid mipmap level: " + mipmapLevel);
-        }
+    public int[] read(ImageInputStream imageInput, int imageIndex) throws IOException {
 
         // type
         DDSType type = getType();
 
-        // length
-        int len = getLength(type, width, height);
-        byte[] buffer = new byte[len];
-        imageInput.readFully(buffer);
-
-        for (int i = 1; i < mipmapLevel; i++) {
-            width /= 2;
-            height /= 2;
-
-            // length
-            len = getLength(type, width, height);
+        // offset buffer to index mipmap image
+        byte[] buffer = null;
+        for (int i = 0; i <= imageIndex; i++) {
+            int len = getLength(type, i);
             buffer = new byte[len];
             imageInput.readFully(buffer);
         }
-        if (width <= 0) width = 1;
-        if (height <= 0) height = 1;
 
-        header.setWidth(width);
-        header.setHeight(height);
+        int width = header.getWidth(imageIndex);
+        int height = header.getHeight(imageIndex);
 
         switch (type) {
             case DXT1:
@@ -163,7 +145,10 @@ final class DDSReader {
         }
     }
 
-    private static int getLength(DDSType type, int width, int height) throws IIOException {
+    private int getLength(DDSType type, int imageIndex) throws IIOException {
+        int width = header.getWidth(imageIndex);
+        int height = header.getHeight(imageIndex);
+
         switch (type) {
             case DXT1:
                 return 8 * ((width + 3) / 4) * ((height + 3) / 4);

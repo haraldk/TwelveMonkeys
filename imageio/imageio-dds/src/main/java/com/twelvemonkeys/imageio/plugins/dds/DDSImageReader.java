@@ -34,7 +34,7 @@ public final class DDSImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
         readHeader();
 
-        return header.getWidth();
+        return header.getWidth(imageIndex);
     }
 
     @Override
@@ -42,7 +42,14 @@ public final class DDSImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
         readHeader();
 
-        return header.getHeight();
+        return header.getHeight(imageIndex);
+    }
+
+    @Override
+    public int getNumImages(final boolean allowSearch) throws IOException {
+        readHeader();
+
+        return header.getMipMapCount();
     }
 
     @Override
