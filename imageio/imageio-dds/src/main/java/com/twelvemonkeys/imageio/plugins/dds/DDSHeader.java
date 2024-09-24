@@ -25,9 +25,7 @@ final class DDSHeader {
 
     public static DDSHeader read(final ImageInputStream imageInput) throws IOException {
         DDSHeader header = new DDSHeader();
-
-        imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
-
+        
         // Read MAGIC bytes [0,3]
         byte[] magic = new byte[DDS.MAGIC.length];
         imageInput.readFully(magic);

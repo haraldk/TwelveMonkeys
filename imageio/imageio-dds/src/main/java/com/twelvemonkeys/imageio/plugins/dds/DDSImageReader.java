@@ -10,6 +10,7 @@ import javax.imageio.spi.ImageReaderSpi;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -86,6 +87,7 @@ public final class DDSImageReader extends ImageReaderBase {
 
     private void readHeader() throws IOException {
         if (header == null) {
+            imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
             header = DDSHeader.read(imageInput);
 
             imageInput.flushBefore(imageInput.getStreamPosition());
