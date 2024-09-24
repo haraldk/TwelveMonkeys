@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
  * feel free to modify it to suit your needs.
  * <p>
  * Ported to Java and restructured by Kenneth Russell.
- * posted to http://www.graphics.cornell.edu/~bjw/
+ * posted to <a href="https://www.graphics.cornell.edu/~bjw/">www.graphics.cornell.edu/~bjw/</a>
  * written by Bruce Walter  (bjw@graphics.cornell.edu)  5/26/95
  * based on code written by Greg Ward
  * </p>
