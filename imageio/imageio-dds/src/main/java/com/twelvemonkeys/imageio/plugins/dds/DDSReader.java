@@ -18,7 +18,7 @@ import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 
-public final class DDSReader {
+final class DDSReader {
 
     public static final Order order = new Order(16, 8, 0, 24);
 

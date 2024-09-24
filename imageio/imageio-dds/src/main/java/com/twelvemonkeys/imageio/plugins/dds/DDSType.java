@@ -2,7 +2,7 @@ package com.twelvemonkeys.imageio.plugins.dds;
 
 import javax.imageio.IIOException;
 
-public enum DDSType {
+enum DDSType {
 
     DXT1(0x31545844),
     DXT2(0x32545844),

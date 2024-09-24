@@ -23,7 +23,7 @@ public final class DDSHeader {
     private int blueMask;
     private int alphaMask;
 
-    public static DDSHeader read(final ImageInputStream imageInput) throws IOException {
+    static DDSHeader read(final ImageInputStream imageInput) throws IOException {
         DDSHeader header = new DDSHeader();
 
         imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
