@@ -3,6 +3,7 @@ package com.twelvemonkeys.imageio.plugins.dds;
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
+import java.math.BigInteger;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 
@@ -31,7 +32,7 @@ public final class DDSHeader {
         byte[] magic = new byte[DDS.MAGIC.length];
         imageInput.readFully(magic);
         if (!Arrays.equals(DDS.MAGIC, magic)) {
-            throw new IIOException(String.format("Not a DDS file. Expected DDS magic %02x, read %02x", Arrays.toString(DDS.MAGIC), magic));
+            throw new IIOException(String.format("Not a DDS file. Expected DDS magic %s, read %s", String.format("%08x", new BigInteger(1, DDS.MAGIC)), String.format("%08x", new BigInteger(1, magic))));
         }
 
         // DDS_HEADER structure
