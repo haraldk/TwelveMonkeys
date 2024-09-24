@@ -31,7 +31,7 @@ public final class DDSHeader {
 		byte[] magic = new byte[DDS.MAGIC.length];
 		imageInput.readFully(magic);
 		if (!Arrays.equals(DDS.MAGIC, magic)) {
-			throw new IIOException("Unsupported MAGIC bytes.");
+			throw new IIOException(String.format("Not a DDS file. Expected DDS magic %02x, read %02x", DDS.MAGIC, magic));
 		}
 
 		// DDS_HEADER structure
