@@ -23,14 +23,14 @@ final class DDSHeader {
     private int blueMask;
     private int alphaMask;
 
-    public static DDSHeader read(final ImageInputStream imageInput) throws IOException {
+    static DDSHeader read(final ImageInputStream imageInput) throws IOException {
         DDSHeader header = new DDSHeader();
 
         // Read MAGIC bytes [0,3]
         byte[] magic = new byte[DDS.MAGIC.length];
         imageInput.readFully(magic);
         if (!Arrays.equals(DDS.MAGIC, magic)) {
-            throw new IIOException(String.format("Not a DDS file. Expected DDS magic %08x, read %08x", new BigInteger(1, DDS.MAGIC), new BigInteger(1, magic)));
+            throw new IIOException(String.format("Not a DDS file. Expected DDS magic 0x%08x', read 0x%08x", new BigInteger(DDS.MAGIC), new BigInteger(magic)));
         }
 
         // DDS_HEADER structure
@@ -42,11 +42,11 @@ final class DDSHeader {
 
         // Verify flags
         header.flags = imageInput.readInt(); // [8,11]
-        if (header.getFlag(DDS.FLAG_CAPS
-                & DDS.FLAG_HEIGHT
-                & DDS.FLAG_WIDTH
-                & DDS.FLAG_PIXELFORMAT)) {
-            throw new IIOException("Required DDS Flag missing in header: " + Integer.toHexString(header.flags));
+        if (!header.getFlag(DDS.FLAG_CAPS
+                | DDS.FLAG_HEIGHT
+                | DDS.FLAG_WIDTH
+                | DDS.FLAG_PIXELFORMAT)) {
+            throw new IIOException("Required DDS Flag missing in header: " + Integer.toBinaryString(header.flags));
         }
 
         // Read Height & Width
@@ -55,7 +55,9 @@ final class DDSHeader {
 
         int dwPitchOrLinearSize = imageInput.readInt(); // [20,23]
         int dwDepth = imageInput.readInt(); // [24,27]
-        header.mipMapCount = imageInput.readInt(); // [28,31]
+
+        // 0 = (unused) or 1 = (1 level), but still one 'base' image
+        header.mipMapCount = Math.max(1, imageInput.readInt()); // [28,31]
 
         // build dimensions list
         header.addDimensions(dwWidth, dwHeight);
@@ -85,11 +87,11 @@ final class DDSHeader {
     }
 
     private void addDimensions(int width, int height) {
-        dimensions = new Dimension[getMipMapCount()];
+        dimensions = new Dimension[mipMapCount];
 
         int w = width;
         int h = height;
-        for (int i = 0; i < getMipMapCount(); i++) {
+        for (int i = 0; i < mipMapCount; i++) {
             dimensions[i] = new Dimension(w, h);
             w /= 2;
             h /= 2;
@@ -100,50 +102,45 @@ final class DDSHeader {
         return (flags & mask) != 0;
     }
 
-    public int getWidth(int imageIndex) {
+    int getWidth(int imageIndex) {
         int lim = dimensions[imageIndex].width;
         return (lim <= 0) ? 1 : lim;
     }
 
-    public int getHeight(int imageIndex) {
+    int getHeight(int imageIndex) {
         int lim =  dimensions[imageIndex].height;
         return (lim <= 0) ? 1 : lim;
     }
 
-    public int getMipMapCount() {
-        // 0 = (unused) or 1 = (1 level), but still only one 'base' image
-        return (mipMapCount == 0) ? 1 : mipMapCount;
+    int getMipMapCount() {
+        return mipMapCount;
     }
 
-    public int getAlphaMask() {
-        return alphaMask;
-    }
-
-    public int getBitCount() {
+    int getBitCount() {
         return bitCount;
     }
 
-    public int getBlueMask() {
-        return blueMask;
-    }
-
-    public int getFlags() {
-        return flags;
-    }
-
-    public int getFourCC() {
+    int getFourCC() {
         return fourCC;
     }
 
-    public int getGreenMask() {
-        return greenMask;
-    }
-
-    public int getPixelFormatFlags() {
+    int getPixelFormatFlags() {
         return pixelFormatFlags;
     }
 
-    public int getRedMask() {
+    int getRedMask() {
         return redMask;
+    }
+
+    int getGreenMask() {
+        return greenMask;
+    }
+
+    int getBlueMask() {
+        return blueMask;
+    }
+
+    int getAlphaMask() {
+        return alphaMask;
     }
 }

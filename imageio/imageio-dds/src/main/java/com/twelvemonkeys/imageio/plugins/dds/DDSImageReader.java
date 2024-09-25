@@ -1,5 +1,7 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
+
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
@@ -7,14 +9,14 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
+
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
 public final class DDSImageReader extends ImageReaderBase {
 
@@ -47,6 +49,7 @@ public final class DDSImageReader extends ImageReaderBase {
 
     @Override
     public int getNumImages(final boolean allowSearch) throws IOException {
+        assertInput();
         readHeader();
 
         return header.getMipMapCount();
@@ -79,12 +82,28 @@ public final class DDSImageReader extends ImageReaderBase {
         int height = getHeight(imageIndex);
 
         BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
-        destination.setRGB(0, 0, width, height, pixels, 0, width);
 
-        // TODO: break read into raster line and add progress and abort checks
-        processImageProgress(100f);
-        if (abortRequested()) {
-            processReadAborted();
+        Rectangle srcRegion = new Rectangle();
+        Rectangle destRegion = new Rectangle();
+
+        computeRegions(param, width, height, destination, srcRegion, destRegion);
+
+        int srcXStep = param != null ? param.getSourceXSubsampling() : 1;
+        int srcYStep = param != null ? param.getSourceYSubsampling() : 1;
+        int srcMaxY = srcRegion.y + srcRegion.height;
+
+        for (int srcY = srcRegion.y, destY = destRegion.y; srcY < srcMaxY; srcY += srcYStep, destY++) {
+            int offset = width * srcY + srcRegion.x;
+
+            subsampleRow(pixels, offset, width, pixels, offset, 1, 32, srcXStep);
+            destination.setRGB(destRegion.x, destY, destRegion.width, 1, pixels, offset, width);
+
+            if (abortRequested()) {
+                processReadAborted();
+                break;
+            }
+
+            processImageProgress(100f * srcY / srcRegion.height);
         }
 
         processImageComplete();
@@ -104,45 +123,10 @@ public final class DDSImageReader extends ImageReaderBase {
     }
 
     public static void main(final String[] args) throws IOException {
-
-        String parentDir = "imageio/imageio-dds/src/test/resources/dds";
-
-        List<File> testFiles = new ArrayList<>();
-        testFiles.add(new File(parentDir, "dds_A1R5G5B5.dds"));
-        testFiles.add(new File(parentDir, "dds_A1R5G5B5_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_A4R4G4B4.dds"));
-        testFiles.add(new File(parentDir, "dds_A4R4G4B4_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_A8B8G8R8.dds"));
-        testFiles.add(new File(parentDir, "dds_A8B8G8R8_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_A8R8G8B8.dds"));
-        testFiles.add(new File(parentDir, "dds_A8R8G8B8_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_DXT1.dds"));
-        testFiles.add(new File(parentDir, "dds_DXT1_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_DXT2.dds"));
-        testFiles.add(new File(parentDir, "dds_DXT2_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_DXT3.dds"));
-        testFiles.add(new File(parentDir, "dds_DXT3_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_DXT4.dds"));
-        testFiles.add(new File(parentDir, "dds_DXT4_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_DXT5.dds"));
-        testFiles.add(new File(parentDir, "dds_DXT5_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_R5G6B5.dds"));
-        testFiles.add(new File(parentDir, "dds_R5G6B5_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_R8G8B8.dds"));
-        testFiles.add(new File(parentDir, "dds_R8G8B8_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_X1R5G5B5.dds"));
-        testFiles.add(new File(parentDir, "dds_X1R5G5B5_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_X4R4G4B4.dds"));
-        testFiles.add(new File(parentDir, "dds_X4R4G4B4_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_X8B8G8R8.dds"));
-        testFiles.add(new File(parentDir, "dds_X8B8G8R8_mipmap.dds"));
-        testFiles.add(new File(parentDir, "dds_X8R8G8B8.dds"));
-        testFiles.add(new File(parentDir, "dds_X8R8G8B8_mipmap.dds"));
-
-        for (File file : testFiles) {
+        for (String arg : args) {
+            File file = new File(arg);
             BufferedImage image = ImageIO.read(file);
             showIt(image, file.getName());
         }
-
     }
 }

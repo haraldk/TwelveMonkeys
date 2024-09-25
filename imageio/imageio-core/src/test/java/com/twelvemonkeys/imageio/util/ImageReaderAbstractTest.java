@@ -1391,6 +1391,8 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     public void testSetDestination() throws IOException {
         ImageReader reader = createReader();
         TestData data = getTestData().get(0);
+        Dimension size = data.getDimension(0);
+
         reader.setInput(data.getInputStream());
 
         ImageReadParam param = reader.getDefaultReadParam();
@@ -1398,7 +1400,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         while (types.hasNext()) {
             ImageTypeSpecifier type = types.next();
 
-            BufferedImage destination = type.createBufferedImage(50, 50);
+            BufferedImage destination = type.createBufferedImage(size.width, size.height);
             param.setDestination(destination);
 
             BufferedImage result = null;
@@ -1448,13 +1450,15 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     public void testSetDestinationIllegal() throws IOException {
         final ImageReader reader = createReader();
         TestData data = getTestData().get(0);
+        Dimension size = data.getDimension(0);
+
         reader.setInput(data.getInputStream());
 
         List<ImageTypeSpecifier> illegalTypes = createIllegalTypes(reader.getImageTypes(0));
 
         ImageReadParam param = reader.getDefaultReadParam();
         for (ImageTypeSpecifier illegalType : illegalTypes) {
-            BufferedImage destination = illegalType.createBufferedImage(50, 50);
+            BufferedImage destination = illegalType.createBufferedImage(size.width, size.height);
             param.setDestination(destination);
 
             try {
@@ -1755,11 +1759,12 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         ImageReader reader = createReader();
 
         for (TestData testData : getTestDataForAffineTransformOpCompatibility()) {
+            Dimension size = testData.getDimension(0);
             try (ImageInputStream input = testData.getInputStream()) {
                 reader.setInput(input);
 
                 ImageReadParam param = reader.getDefaultReadParam();
-                param.setSourceRegion(new Rectangle(min(reader.getWidth(0), 64), min(reader.getHeight(0), 64)));
+                param.setSourceRegion(new Rectangle(size.width, size.height));
 
                 BufferedImage originalImage = reader.read(0, param);
 

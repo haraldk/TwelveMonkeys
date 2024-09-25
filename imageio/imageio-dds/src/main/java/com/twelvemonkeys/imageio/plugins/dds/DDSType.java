@@ -1,7 +1,5 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
-import javax.imageio.IIOException;
-
 enum DDSType {
 
     DXT1(0x31545844),
@@ -30,12 +28,13 @@ enum DDSType {
         return value;
     }
 
-    public static DDSType parse(int type) throws IIOException {
-        for (DDSType t : DDSType.values()) {
-            if (type == t.value()) {
-                return t;
+    public static DDSType valueOf(int value) {
+        for (DDSType type : DDSType.values()) {
+            if (value == type.value()) {
+                return type;
             }
         }
-        throw new IIOException("Unknown type: " + Integer.toHexString(type));
+
+        throw new IllegalArgumentException(String.format("Unknown type: 0x%08x", value));
     }
 }

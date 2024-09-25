@@ -20,16 +20,15 @@ import java.io.IOException;
 
 final class DDSReader {
 
-    public static final Order order = new Order(16, 8, 0, 24);
+    static final Order ARGB_ORDER = new Order(16, 8, 0, 24);
 
     private final DDSHeader header;
 
-
-    public DDSReader(DDSHeader header) {
+    DDSReader(DDSHeader header) {
         this.header = header;
     }
 
-    public int[] read(ImageInputStream imageInput, int imageIndex) throws IOException {
+    int[] read(ImageInputStream imageInput, int imageIndex) throws IOException {
 
         // type
         DDSType type = getType();
@@ -87,7 +86,7 @@ final class DDSReader {
         if ((flags & 0x04) != 0) {
             // DXT
             int type = header.getFourCC();
-            return DDSType.parse(type);
+            return DDSType.valueOf(type);
         } else if ((flags & 0x40) != 0) {
             // RGB
             int bitCount = header.getBitCount();
@@ -316,7 +315,7 @@ final class DDSReader {
             int g = BIT5[(rgba & A1R5G5B5_MASKS[1]) >> 5];
             int b = BIT5[(rgba & A1R5G5B5_MASKS[2])];
             int a = 255 * ((rgba & A1R5G5B5_MASKS[3]) >> 15);
-            pixels[i] = (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+            pixels[i] = (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
         }
         return pixels;
     }
@@ -331,7 +330,7 @@ final class DDSReader {
             int g = BIT5[(rgba & X1R5G5B5_MASKS[1]) >> 5];
             int b = BIT5[(rgba & X1R5G5B5_MASKS[2])];
             int a = 255;
-            pixels[i] = (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+            pixels[i] = (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
         }
         return pixels;
     }
@@ -346,7 +345,7 @@ final class DDSReader {
             int g = 17 * ((rgba & A4R4G4B4_MASKS[1]) >> 4);
             int b = 17 * ((rgba & A4R4G4B4_MASKS[2]));
             int a = 17 * ((rgba & A4R4G4B4_MASKS[3]) >> 12);
-            pixels[i] = (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+            pixels[i] = (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
         }
         return pixels;
     }
@@ -361,7 +360,7 @@ final class DDSReader {
             int g = 17 * ((rgba & A4R4G4B4_MASKS[1]) >> 4);
             int b = 17 * ((rgba & A4R4G4B4_MASKS[2]));
             int a = 255;
-            pixels[i] = (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+            pixels[i] = (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
         }
         return pixels;
     }
@@ -376,7 +375,7 @@ final class DDSReader {
             int g = BIT6[((rgba & R5G6B5_MASKS[1]) >> 5)];
             int b = BIT5[((rgba & R5G6B5_MASKS[2]))];
             int a = 255;
-            pixels[i] = (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+            pixels[i] = (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
         }
         return pixels;
     }
@@ -389,7 +388,7 @@ final class DDSReader {
             int g = buffer[index++] & 0xFF;
             int r = buffer[index++] & 0xFF;
             int a = 255;
-            pixels[i] = (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+            pixels[i] = (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
         }
         return pixels;
     }
@@ -402,7 +401,7 @@ final class DDSReader {
             int g = buffer[index++] & 0xFF;
             int b = buffer[index++] & 0xFF;
             int a = buffer[index++] & 0xFF;
-            pixels[i] = (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+            pixels[i] = (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
         }
         return pixels;
     }
@@ -416,7 +415,7 @@ final class DDSReader {
             int b = buffer[index++] & 0xFF;
             int a = 255;
             index++;
-            pixels[i] = (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+            pixels[i] = (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
         }
         return pixels;
     }
@@ -429,7 +428,7 @@ final class DDSReader {
             int g = buffer[index++] & 0xFF;
             int r = buffer[index++] & 0xFF;
             int a = buffer[index++] & 0xFF;
-            pixels[i] = (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+            pixels[i] = (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
         }
         return pixels;
     }
@@ -443,7 +442,7 @@ final class DDSReader {
             int r = buffer[index++] & 0xFF;
             int a = 255;
             index++;
-            pixels[i] = (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+            pixels[i] = (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
         }
         return pixels;
     }
@@ -467,7 +466,7 @@ final class DDSReader {
         int r = (2 * BIT5[(c0 & 0xFC00) >> 11] + BIT5[(c1 & 0xFC00) >> 11]) / 3;
         int g = (2 * BIT6[(c0 & 0x07E0) >> 5] + BIT6[(c1 & 0x07E0) >> 5]) / 3;
         int b = (2 * BIT5[c0 & 0x001F] + BIT5[c1 & 0x001F]) / 3;
-        return (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+        return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
     }
 
     private static int getDXTColor1_1(int c0, int c1, int a) {
@@ -475,14 +474,14 @@ final class DDSReader {
         int r = (BIT5[(c0 & 0xFC00) >> 11] + BIT5[(c1 & 0xFC00) >> 11]) / 2;
         int g = (BIT6[(c0 & 0x07E0) >> 5] + BIT6[(c1 & 0x07E0) >> 5]) / 2;
         int b = (BIT5[c0 & 0x001F] + BIT5[c1 & 0x001F]) / 2;
-        return (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+        return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
     }
 
     private static int getDXTColor1(int c, int a) {
         int r = BIT5[(c & 0xFC00) >> 11];
         int g = BIT6[(c & 0x07E0) >> 5];
         int b = BIT5[(c & 0x001F)];
-        return (a << order.alphaShift) | (r << order.redShift) | (g << order.greenShift) | (b << order.blueShift);
+        return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
     }
 
     private static int getDXT5Alpha(int a0, int a1, int t) {
