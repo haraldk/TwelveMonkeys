@@ -30,7 +30,7 @@ final class DDSHeader {
         byte[] magic = new byte[DDS.MAGIC.length];
         imageInput.readFully(magic);
         if (!Arrays.equals(DDS.MAGIC, magic)) {
-            throw new IIOException(String.format("Not a DDS file. Expected DDS magic %s, read %s", String.format("%08x", new BigInteger(1, DDS.MAGIC)), String.format("%08x", new BigInteger(1, magic))));
+            throw new IIOException(String.format("Not a DDS file. Expected DDS magic %08x, read %08x", new BigInteger(1, DDS.MAGIC), new BigInteger(1, magic)));
         }
 
         // DDS_HEADER structure
