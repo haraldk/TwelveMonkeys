@@ -139,6 +139,69 @@ public class IIOUtilTest {
         assertArrayEquals(expected, output);
     }
 
+    @Test
+    public void subsampleRowPeriod1ByteSameArray() {
+        byte[] inputOutput = {-1, 0, (byte) 0xAA, 0, -1};
+        byte[] expected = {-1, 0, (byte) 0xAA, 0, -1};
+
+        IIOUtil.subsampleRow(inputOutput, 0, inputOutput.length, inputOutput, 0, 1, 8, 1);
+
+        assertArrayEquals(expected, inputOutput);
+    }
+
+    @Test
+    public void subsampleRowPeriod1ByteDifferentArray() {
+        byte[] input = {-1, 0, (byte) 0xAA, 0, -1};
+        byte[] output = new byte[input.length];
+        byte[] expected = {-1, 0, (byte) 0xAA, 0, -1};
+
+        IIOUtil.subsampleRow(input, 0, input.length, output, 0, 1, 8, 1);
+
+        assertArrayEquals(expected, output);
+    }
+
+    @Test
+    public void subsampleRowPeriod1ShortSameArray() {
+        short[] inputOutput = {-1, 0, (short) 0xAA77, 0, -1};
+        short[] expected = {-1, 0, (short) 0xAA77, 0, -1};
+
+        IIOUtil.subsampleRow(inputOutput, 0, inputOutput.length, inputOutput, 0, 4, 4, 1);
+
+        assertArrayEquals(expected, inputOutput);
+    }
+
+    @Test
+    public void subsampleRowPeriod1ShortDifferentArray() {
+        short[] input = {-1, 0, (short) 0xAA77, 0, -1};
+        short[] output = new short[input.length];
+        short[] expected = {-1, 0, (short) 0xAA77, 0, -1};
+
+        IIOUtil.subsampleRow(input, 0, input.length, output, 0, 1, 16, 1);
+
+        assertArrayEquals(expected, output);
+    }
+
+    @Test
+    public void subsampleRowPeriod1IntSameArray() {
+        int[] inputOutput = {-1, 0, 0xAA997755, 0, -1};
+        int[] expected = {-1, 0, 0xAA997755, 0, -1};
+
+        IIOUtil.subsampleRow(inputOutput, 0, inputOutput.length, inputOutput, 0, 1, 32, 1);
+
+        assertArrayEquals(expected, inputOutput);
+    }
+
+    @Test
+    public void subsampleRowPeriod1IntDifferentArray() {
+        int[] input = {-1, 0, 0xAA997755, 0, -1};
+        int[] output = new int[input.length];
+        int[] expected = {-1, 0, 0xAA997755, 0, -1};
+
+        IIOUtil.subsampleRow(input, 0, input.length, output, 0, 4, 8, 1);
+
+        assertArrayEquals(expected, output);
+    }
+
     private int divCeil(int numerator, int denominator) {
         return (numerator + denominator - 1) / denominator;
     }

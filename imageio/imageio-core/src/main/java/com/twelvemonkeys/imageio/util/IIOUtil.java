@@ -232,6 +232,10 @@ public final class IIOUtil {
                                     int samplesPerPixel, int bitsPerSample, int samplePeriod) {
         // Period == 1 is a no-op...
         if (samplePeriod == 1) {
+            if (srcRow != destRow) {
+                System.arraycopy(srcRow, srcPos, destRow, destPos, srcWidth);
+            }
+
             return;
         }
 
@@ -275,6 +279,10 @@ public final class IIOUtil {
                                     int samplesPerPixel, int bitsPerSample, int samplePeriod) {
         // Period == 1 is a no-op...
         if (samplePeriod == 1) {
+            if (srcRow != destRow) {
+                System.arraycopy(srcRow, srcPos, destRow, destPos, srcWidth);
+            }
+
             return;
         }
 
@@ -297,6 +305,10 @@ public final class IIOUtil {
                                     int samplesPerPixel, int bitsPerSample, int samplePeriod) {
         // Period == 1 is a no-op...
         if (samplePeriod == 1) {
+            if (srcRow != destRow) {
+                System.arraycopy(srcRow, srcPos, destRow, destPos, srcWidth);
+            }
+
             return;
         }
 
