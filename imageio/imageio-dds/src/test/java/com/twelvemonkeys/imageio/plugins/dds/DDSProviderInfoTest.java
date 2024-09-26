@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Paul Allen, Harald Kuhr
+ * Copyright (c) 2024, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,47 +30,20 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
-import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
+import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
+import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfoTest;
 
-import javax.imageio.ImageReader;
-import javax.imageio.stream.ImageInputStream;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Locale;
-
-public final class DDSImageReaderSpi extends ImageReaderSpiBase {
-
-    public DDSImageReaderSpi() {
-        super(new DDSProviderInfo());
-    }
+/**
+ * DDSProviderInfoTest.
+ *
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ * @author last modified by $Author: harald.kuhr$
+ * @version $Id: DDSProviderInfoTest.java,v 1.0 02/06/16 harald.kuhr Exp$
+ */
+public class DDSProviderInfoTest extends ReaderWriterProviderInfoTest {
 
     @Override
-    public boolean canDecodeInput(final Object source) throws IOException {
-        if (!(source instanceof ImageInputStream)) {
-            return false;
-        }
-
-        ImageInputStream stream = (ImageInputStream) source;
-
-        stream.mark();
-
-        try {
-            byte[] magic = new byte[DDS.MAGIC.length];
-            stream.readFully(magic);
-
-            return Arrays.equals(DDS.MAGIC, magic);
-        } finally {
-            stream.reset();
-        }
-    }
-
-    @Override
-    public ImageReader createReaderInstance(Object extension) throws IOException {
-        return new DDSImageReader(this);
-    }
-
-    @Override
-    public String getDescription(Locale locale) {
-        return "Direct DrawSurface (DDS) Image Reader";
+    protected ReaderWriterProviderInfo createProviderInfo() {
+        return new DDSProviderInfo();
     }
 }
