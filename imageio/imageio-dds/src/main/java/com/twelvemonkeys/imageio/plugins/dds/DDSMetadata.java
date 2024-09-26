@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Paul Allen, Harald Kuhr
+ * Copyright (c) 2024, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -30,22 +30,29 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
-@SuppressWarnings("unused")
-interface DDS {
-    byte[] MAGIC = new byte[]{'D', 'D', 'S', ' '};
-    int HEADER_SIZE = 124;
+import javax.imageio.ImageTypeSpecifier;
 
-    // Header Flags
-    int FLAG_CAPS = 0x1;              // Required in every .dds file.
-    int FLAG_HEIGHT = 0x2;            // Required in every .dds file.
-    int FLAG_WIDTH = 0x4;             // Required in every .dds file.
-    int FLAG_PITCH = 0x8;             // Required when pitch is provided for an uncompressed texture.
-    int FLAG_PIXELFORMAT = 0x1000;    // Required in every .dds file.
-    int FLAG_MIPMAPCOUNT = 0x20000;   // Required in a mipmapped texture.
-    int FLAG_LINEARSIZE = 0x80000;    // Required when pitch is provided for a compressed texture.
-    int FLAG_DEPTH = 0x800000;        // Required in a depth texture.
+import com.twelvemonkeys.imageio.StandardImageMetadataSupport;
 
-    // Pixel Format Flags
-    int PIXEL_FORMAT_FLAG_FOURCC = 0x04;
-    int PIXEL_FORMAT_FLAG_RGB = 0x40;
+final class DDSMetadata extends StandardImageMetadataSupport {
+    DDSMetadata(ImageTypeSpecifier type, DDSHeader header) {
+        super(builder(type)
+                      .withCompressionTypeName(compressionName(header))
+                      .withFormatVersion("1.0")
+        );
+    }
+
+    private static String compressionName(DDSHeader header) {
+        // If the fourCC is valid, compression is one of the DXTn versions, otherwise None
+        int flags = header.getPixelFormatFlags();
+
+        if ((flags & DDS.PIXEL_FORMAT_FLAG_FOURCC) != 0) {
+            // DXTn
+            DDSType type = DDSType.valueOf(header.getFourCC());
+
+            return type.name();
+        }
+
+        return "None";
+    }
 }

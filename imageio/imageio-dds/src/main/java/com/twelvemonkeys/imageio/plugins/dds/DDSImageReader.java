@@ -38,6 +38,7 @@ import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 
 import java.awt.*;
@@ -90,6 +91,7 @@ public final class DDSImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
         readHeader();
 
+        // TODO: Implement for the specific formats...
         return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB);
     }
 
@@ -139,6 +141,13 @@ public final class DDSImageReader extends ImageReaderBase {
         processImageComplete();
 
         return destination;
+    }
+
+    @Override
+    public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
+        ImageTypeSpecifier imageType = getRawImageType(imageIndex);
+
+        return new DDSMetadata(imageType, header);
     }
 
     private void readHeader() throws IOException {

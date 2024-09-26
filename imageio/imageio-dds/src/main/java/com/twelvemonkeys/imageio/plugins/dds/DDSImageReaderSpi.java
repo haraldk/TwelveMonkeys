@@ -65,7 +65,7 @@ public final class DDSImageReaderSpi extends ImageReaderSpiBase {
     }
 
     @Override
-    public ImageReader createReaderInstance(Object extension) throws IOException {
+    public ImageReader createReaderInstance(Object extension) {
         return new DDSImageReader(this);
     }
 

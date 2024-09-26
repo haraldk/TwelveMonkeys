@@ -53,6 +53,7 @@ final class DDSHeader {
     private int blueMask;
     private int alphaMask;
 
+    @SuppressWarnings("unused")
     static DDSHeader read(final ImageInputStream imageInput) throws IOException {
         DDSHeader header = new DDSHeader();
 
