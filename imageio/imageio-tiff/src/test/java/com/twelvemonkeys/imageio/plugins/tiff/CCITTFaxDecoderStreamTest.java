@@ -157,8 +157,13 @@ public class CCITTFaxDecoderStreamTest {
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
-        new DataInputStream(stream).readFully(bytes);
+
+        DataInputStream dataInputStream = new DataInputStream(stream);
+        dataInputStream.readFully(bytes);
         assertArrayEquals(imageData, bytes);
+
+        assertEquals(-1, dataInputStream.read());
+        assertEquals(-1, dataInputStream.read(new byte[1]));
     }
 
     @Test
@@ -168,8 +173,13 @@ public class CCITTFaxDecoderStreamTest {
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
-        new DataInputStream(stream).readFully(bytes);
+
+        DataInputStream dataInputStream = new DataInputStream(stream);
+        dataInputStream.readFully(bytes);
         assertArrayEquals(imageData, bytes);
+
+        assertEquals(-1, dataInputStream.read());
+        assertEquals(-1, dataInputStream.read(new byte[1]));
     }
 
     @Test
@@ -179,8 +189,13 @@ public class CCITTFaxDecoderStreamTest {
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
-        new DataInputStream(stream).readFully(bytes);
+
+        DataInputStream dataInputStream = new DataInputStream(stream);
+        dataInputStream.readFully(bytes);
         assertArrayEquals(imageData, bytes);
+
+        assertEquals(-1, dataInputStream.read());
+        assertEquals(-1, dataInputStream.read(new byte[1]));
     }
 
     @Test
@@ -265,7 +280,7 @@ public class CCITTFaxDecoderStreamTest {
         new DataInputStream(inputStream).readFully(data);
 
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(data),
-                6, TIFFExtension.COMPRESSION_CCITT_T6, 0L);
+                6, 6, TIFFExtension.COMPRESSION_CCITT_T6, 0L, false);
 
         byte[] bytes = new byte[6]; // 6 x 6 pixel, 1 bpp => 6 bytes
         new DataInputStream(stream).readFully(bytes);
@@ -274,8 +289,8 @@ public class CCITTFaxDecoderStreamTest {
         byte[] imageData = Arrays.copyOf(((DataBufferByte) image.getData().getDataBuffer()).getData(), 6);
         assertArrayEquals(imageData, bytes);
 
-        // Ideally, we should have no more data now, but the stream don't know that...
-        // assertEquals("Should contain no more data", -1, stream.read());
+         assertEquals("Should contain no more data", -1, stream.read());
+         assertEquals("Should contain no more data", -1, stream.read(new byte[1]));
     }
 
     @Test

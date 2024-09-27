@@ -1134,7 +1134,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                                 int compressedStripTileWidth = planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR && b > 0 && yCbCrSubsampling != null
                                                                ? ((stripTileWidth + yCbCrSubsampling[0] - 1) / yCbCrSubsampling[0])
                                                                : stripTileWidth;
-                                adapter = createDecompressorStream(compression, compressedStripTileWidth, samplesInTile, adapter);
+                                adapter = createDecompressorStream(compression, compressedStripTileWidth, stripTileHeight, samplesInTile, adapter);
                                 adapter = createUnpredictorStream(predictor, compressedStripTileWidth, samplesInTile, bitsPerSample, adapter, imageInput.getByteOrder());
                                 adapter = createYCbCrUpsamplerStream(interpretation, planarConfiguration, b, rowRaster.getTransferType(), yCbCrSubsampling, yCbCrPos, colsInTile, adapter, imageInput.getByteOrder());
 
@@ -2506,7 +2506,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         return (short) Math.max(0, Math.min(0xffff, val));
     }
 
-    private InputStream createDecompressorStream(final int compression, final int width, final int bands, InputStream stream) throws IOException {
+    private InputStream createDecompressorStream(final int compression, final int width, final int height, final int bands, InputStream stream) throws IOException {
         switch (compression) {
             case TIFFBaseline.COMPRESSION_NONE:
                 return stream;
@@ -2527,7 +2527,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                 if (overrideCCITTCompression == -1) {
                     overrideCCITTCompression = findCCITTType(compression, stream);
                 }
-                return new CCITTFaxDecoderStream(stream, width, overrideCCITTCompression, getCCITTOptions(compression), compression == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
+                return new CCITTFaxDecoderStream(stream, width, height, overrideCCITTCompression, getCCITTOptions(compression), compression == TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE);
             default:
                 throw new IllegalArgumentException("Unsupported TIFF compression: " + compression);
         }
