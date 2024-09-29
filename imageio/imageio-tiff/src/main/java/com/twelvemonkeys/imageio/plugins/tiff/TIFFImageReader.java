@@ -809,6 +809,7 @@ public final class TIFFImageReader extends ImageReaderBase {
             case TIFFBaseline.SAMPLEFORMAT_UINT:
                 return bitsPerSample <= 8 ? DataBuffer.TYPE_BYTE : bitsPerSample <= 16 ? DataBuffer.TYPE_USHORT : DataBuffer.TYPE_INT;
             case TIFFExtension.SAMPLEFORMAT_INT:
+            case TIFFExtension.SAMPLEFORMAT_COMPLEXINT:
                 switch (bitsPerSample) {
                     case 8:
                         return DataBuffer.TYPE_BYTE;
@@ -818,9 +819,10 @@ public final class TIFFImageReader extends ImageReaderBase {
                         return DataBuffer.TYPE_INT;
                 }
 
-                throw new IIOException("Unsupported BitsPerSample for SampleFormat 2/Signed Integer (expected 8/16/32): " + bitsPerSample);
+                throw new IIOException("Unsupported BitsPerSample for SampleFormat 2/Signed Integer, 5/Complex Integer (expected 8/16/32): " + bitsPerSample);
 
             case TIFFExtension.SAMPLEFORMAT_FP:
+            case TIFFExtension.SAMPLEFORMAT_COMPLEXIEEEFP:
                 if (bitsPerSample == 16 || bitsPerSample == 32) {
                     return DataBuffer.TYPE_FLOAT;
                 }
@@ -828,9 +830,9 @@ public final class TIFFImageReader extends ImageReaderBase {
                     return DataBuffer.TYPE_DOUBLE;
                 }
 
-                throw new IIOException("Unsupported BitsPerSample for SampleFormat 3/Floating Point (expected 16/32/64): " + bitsPerSample);
+                throw new IIOException("Unsupported BitsPerSample for SampleFormat 3/Floating Point, 6/Complex Floating Point (expected 16/32/64): " + bitsPerSample);
             default:
-                throw new IIOException("Unknown TIFF SampleFormat (expected 1, 2, 3 or 4): " + sampleFormat);
+                throw new IIOException("Unknown TIFF SampleFormat (expected 1, 2, 3, 4, 5 or 6): " + sampleFormat);
         }
     }
 
