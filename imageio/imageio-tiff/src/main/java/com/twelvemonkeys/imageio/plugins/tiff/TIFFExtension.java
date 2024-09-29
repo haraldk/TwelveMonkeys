@@ -71,6 +71,10 @@ interface TIFFExtension {
     int SAMPLEFORMAT_INT = 2;
     int SAMPLEFORMAT_FP = 3;
     int SAMPLEFORMAT_UNDEFINED = 4;
+    /** Complex signed integer */
+    int SAMPLEFORMAT_COMPLEXINT = 5;
+    /** Complex IEEE floating point */
+    int SAMPLEFORMAT_COMPLEXIEEEFP = 6;
 
     int YCBCR_POSITIONING_CENTERED = 1;
     int YCBCR_POSITIONING_COSITED = 2;
