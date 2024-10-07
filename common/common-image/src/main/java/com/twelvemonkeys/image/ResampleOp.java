@@ -55,9 +55,7 @@
 package com.twelvemonkeys.image;
 
 import java.awt.*;
-import java.awt.geom.AffineTransform;
-import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
+import java.awt.geom.*;
 import java.awt.image.*;
 
 /**
@@ -103,15 +101,6 @@ import java.awt.image.*;
  * BufferedImage scaled = new ResampleOp(w, h).filter(temp, null);
  * </pre></blockquote>
  * <p>
- * For maximum performance, this class will use native code, through
- * <a href="http://www.yeo.id.au/jmagick/">JMagick</a>, when available.
- * Otherwise, the class will silently fall back to pure Java mode.
- * Native code may be disabled globally, by setting the system property
- * {@code com.twelvemonkeys.image.accel} to {@code false}.
- * To allow debug of the native code, set the system property
- * {@code com.twelvemonkeys.image.magick.debug} to {@code true}.
- * </p>
- * <p>
  * This {@code BufferedImageOp} is based on C example code found in
  * <a href="http://www.acm.org/tog/GraphicsGems/">Graphics Gems III</a>,
  * Filtered Image Rescaling, by Dale Schumacher (with additional improvments by
@@ -138,9 +127,6 @@ import java.awt.image.*;
  */
 // TODO: Consider using AffineTransformOp for more operations!?
 public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
-
-    // NOTE: These MUST correspond to ImageMagick filter types, for the
-    // MagickAccelerator to work consistently (see magick.FilterType).
 
     /**
      * Undefined interpolation, filter method will use default filter.
@@ -295,11 +281,10 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
             new Value(KEY_RESAMPLE_INTERPOLATION, "Blackman-Sinc", FILTER_BLACKMAN_SINC);
 
     // Member variables
-    // Package access, to allow access from MagickAccelerator
-    int width;
-    int height;
+    private final int width;
+    private final int height;
 
-    int filterType;
+    private final int filterType;
 
     /**
      * RendereingHints.Key implementation, works only with Value values.
@@ -547,16 +532,6 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
                 // Fall through
         }
 
-        // Try to use native ImageMagick code
-        BufferedImage result = MagickAccelerator.filter(this, input, output);
-        if (result != null) {
-            return result;
-        }
-
-        // Otherwise, continue in pure Java mode
-
-        // TODO: What if output != null and wrong size? Create new? Render on only a part? Document?
-
         // If filter type != POINT or BOX and input has IndexColorModel, convert
         // to true color, with alpha reflecting that of the original color model.
         BufferedImage temp;
@@ -571,7 +546,7 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
 
         // Create or convert output to a suitable image
         // TODO: OPTIMIZE: Don't really need to convert all types to same as input
-        result = output != null && temp.getType() != BufferedImage.TYPE_CUSTOM ? /*output*/ ImageUtil.toBuffered(output, temp.getType()) : createCompatibleDestImage(temp, null);
+        BufferedImage result = output != null && temp.getType() != BufferedImage.TYPE_CUSTOM ? /*output*/ ImageUtil.toBuffered(output, temp.getType()) : createCompatibleDestImage(temp, null);
 
         resample(temp, result, filter);
 
@@ -1280,12 +1255,12 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
     /*
     *	image rescaling routine
     */
-    class Contributor {
+    static class Contributor {
         int pixel;
         double weight;
     }
 
-    class ContributorList {
+    static class ContributorList {
         int n;/* number of contributors (may be < p.length) */
         Contributor[] p;/* pointer to list of contributions */
     }

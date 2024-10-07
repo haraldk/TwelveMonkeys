@@ -1,6 +1,0 @@
-TODO:
-    Remove compile-time dependency on JMagick:
-        - Extract interface for MagickAccelerator
-        - Move implementation to separate module
-        - Instantiate impl via reflection
-DONE:
