@@ -30,13 +30,11 @@
 
 package com.twelvemonkeys.lang;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 import java.util.Properties;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * PlatformTest
@@ -121,7 +119,7 @@ public class PlatformTest {
         assertEquals(Platform.Architecture.X86, platform.getArchitecture());
     }
 
-    @Ignore("Known issue, needs resolve")
+    @Disabled("Known issue, needs resolve")
     @Test
     public void testCreateWindows686() {
         Platform platform = new Platform(createProperties("Windows", "5.1", "686"));
@@ -129,7 +127,7 @@ public class PlatformTest {
         assertEquals(Platform.Architecture.X86, platform.getArchitecture());
     }
 
-    @Ignore("Known issue, needs resolve")
+    @Disabled("Known issue, needs resolve")
     @Test
     public void testCreateLinuxX86() {
         Platform platform = new Platform(createProperties("Linux", "3.0.18", "x86"));

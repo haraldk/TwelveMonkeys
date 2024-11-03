@@ -30,12 +30,10 @@
 
 package com.twelvemonkeys.util;
 
-
-import org.junit.Test;
-
 import java.util.Iterator;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * StringTokenIteratorTestCase
@@ -56,88 +54,88 @@ public class StringTokenIteratorTest extends TokenIteratorAbstractTest {
     @Test
     public void testEmptyDelimiter() {
         Iterator iterator = createTokenIterator("", "");
-        assertFalse("Empty string has elements", iterator.hasNext());
+        assertFalse(iterator.hasNext(), "Empty string has elements");
     }
 
     @Test
     public void testSingleToken() {
         Iterator iterator = createTokenIterator("A");
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("A", iterator.next());
-        assertFalse("String has more than one element", iterator.hasNext());
+        assertFalse(iterator.hasNext(), "String has more than one element");
     }
 
     @Test
     public void testSingleTokenEmptyDelimiter() {
         Iterator iterator = createTokenIterator("A", "");
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("A", iterator.next());
-        assertFalse("String has more than one element", iterator.hasNext());
+        assertFalse(iterator.hasNext(), "String has more than one element");
     }
 
     @Test
     public void testSingleTokenSingleDelimiter() {
         Iterator iterator = createTokenIterator("A", ",");
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("A", iterator.next());
-        assertFalse("String has more than one element", iterator.hasNext());
+        assertFalse(iterator.hasNext(), "String has more than one element");
     }
 
     @Test
     public void testSingleSeparatorDefaultDelimiter() {
         Iterator iterator = createTokenIterator("A B C D");
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("A", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("B", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("C", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("D", iterator.next());
-        assertFalse("String has more than one element", iterator.hasNext());
+        assertFalse(iterator.hasNext(), "String has more than one element");
     }
 
     @Test
     public void testSingleSeparator() {
         Iterator iterator = createTokenIterator("A,B,C", ",");
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("A", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("B", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("C", iterator.next());
-        assertFalse("String has more than one element", iterator.hasNext());
+        assertFalse(iterator.hasNext(), "String has more than one element");
     }
 
     @Test
     public void testMultipleSeparatorDefaultDelimiter() {
         Iterator iterator = createTokenIterator("A B   C\nD\t\t \nE");
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("A", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("B", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("C", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("D", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("E", iterator.next());
-        assertFalse("String has more than one element", iterator.hasNext());
+        assertFalse(iterator.hasNext(), "String has more than one element");
     }
 
     @Test
     public void testMultipleSeparator() {
         Iterator iterator = createTokenIterator("A,B,;,C...D, ., ,E", " ,.;:");
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("A", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("B", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("C", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("D", iterator.next());
-        assertTrue("String has no elements", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "String has no elements");
         assertEquals("E", iterator.next());
-        assertFalse("String has more than one element", iterator.hasNext());
+        assertFalse(iterator.hasNext(), "String has more than one element");
     }
 }

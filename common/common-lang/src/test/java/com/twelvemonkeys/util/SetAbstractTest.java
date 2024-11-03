@@ -44,12 +44,10 @@
  */
 package com.twelvemonkeys.util;
 
-import org.junit.Test;
-
 import java.util.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Abstract test class for {@link Set} methods and contracts.
@@ -79,14 +77,12 @@ public abstract class SetAbstractTest extends CollectionAbstractTest {
     public void verifyAll() {
         super.verifyAll();
 
-        assertEquals("Sets should be equal", confirmed, collection);
-        assertEquals("Sets should have equal hashCodes",
-                     confirmed.hashCode(), collection.hashCode());
+        assertEquals(confirmed, collection, "Sets should be equal");
+        assertEquals(confirmed.hashCode(), collection.hashCode(), "Sets should have equal hashCodes");
         Collection set = makeConfirmedCollection();
         Iterator iterator = collection.iterator();
         while (iterator.hasNext()) {
-            assertTrue("Set.iterator should only return unique elements",
-                       set.add(iterator.next()));
+            assertTrue(set.add(iterator.next()), "Set.iterator should only return unique elements");
         }
     }
 
@@ -180,23 +176,20 @@ public abstract class SetAbstractTest extends CollectionAbstractTest {
     @Test
     public void testSetEquals() {
         resetEmpty();
-        assertEquals("Empty sets should be equal",
-                     getSet(), getConfirmedSet());
+        assertEquals(getSet(), getConfirmedSet(), "Empty sets should be equal");
         verifyAll();
 
         Collection set2 = makeConfirmedCollection();
         set2.add("foo");
-        assertTrue("Empty set shouldn't equal nonempty set",
-                   !getSet().equals(set2));
+        assertTrue(!getSet().equals(set2), "Empty set shouldn't equal nonempty set");
 
         resetFull();
-        assertEquals("Full sets should be equal", getSet(), getConfirmedSet());
+        assertEquals(getSet(), getConfirmedSet(), "Full sets should be equal");
         verifyAll();
 
         set2.clear();
         set2.addAll(Arrays.asList(getOtherElements()));
-        assertTrue("Sets with different contents shouldn't be equal",
-                   !getSet().equals(set2));
+        assertTrue(!getSet().equals(set2), "Sets with different contents shouldn't be equal");
     }
 
     /**
@@ -205,11 +198,9 @@ public abstract class SetAbstractTest extends CollectionAbstractTest {
     @Test
     public void testSetHashCode() {
         resetEmpty();
-        assertEquals("Empty sets have equal hashCodes",
-                     getSet().hashCode(), getConfirmedSet().hashCode());
+        assertEquals(getSet().hashCode(), getConfirmedSet().hashCode(), "Empty sets have equal hashCodes");
 
         resetFull();
-        assertEquals("Equal sets have equal hashCodes",
-                     getSet().hashCode(), getConfirmedSet().hashCode());
+        assertEquals(getSet().hashCode(), getConfirmedSet().hashCode(), "Equal sets have equal hashCodes");
     }
 }

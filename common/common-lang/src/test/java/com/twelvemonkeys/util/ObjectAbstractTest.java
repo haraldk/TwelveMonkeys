@@ -44,12 +44,10 @@
  */
 package com.twelvemonkeys.util;
 
-import org.junit.Test;
-
 import java.io.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Abstract test class for {@link Object} methods and contracts.
@@ -119,7 +117,7 @@ public abstract class ObjectAbstractTest {
     @Test
     public void testObjectEqualsSelf() {
         Object obj = makeObject();
-        assertEquals("A Object should equal itself", obj, obj);
+        assertEquals(obj, obj, "A Object should equal itself");
     }
 
     @Test
@@ -131,25 +129,24 @@ public abstract class ObjectAbstractTest {
     @Test
     public void testObjectHashCodeEqualsSelfHashCode() {
         Object obj = makeObject();
-        assertEquals("hashCode should be repeatable", obj.hashCode(), obj.hashCode());
+        assertEquals(obj.hashCode(), obj.hashCode(), "hashCode should be repeatable");
     }
 
     @Test
     public void testObjectHashCodeEqualsContract() {
         Object obj1 = makeObject();
         if (obj1.equals(obj1)) {
-            assertEquals(
-                "[1] When two objects are equal, their hashCodes should be also.",
-                obj1.hashCode(), obj1.hashCode());
+            assertEquals(obj1.hashCode(), obj1.hashCode(),
+                    "[1] When two objects are equal, their hashCodes should be also.");
         }
         Object obj2 = makeObject();
         if (obj1.equals(obj2)) {
             assertEquals(
-                "[2] When two objects are equal, their hashCodes should be also.",
-                obj1.hashCode(), obj2.hashCode());
+                obj1.hashCode(), obj2.hashCode(),
+                    "[2] When two objects are equal, their hashCodes should be also.");
             assertTrue(
-                "When obj1.equals(obj2) is true, then obj2.equals(obj1) should also be true",
-                obj2.equals(obj1));
+                obj2.equals(obj1),
+                    "When obj1.equals(obj2) is true, then obj2.equals(obj1) should also be true");
         }
     }
 
@@ -166,7 +163,7 @@ public abstract class ObjectAbstractTest {
             Object dest = in.readObject();
             in.close();
             if (isEqualsCheckable()) {
-                assertEquals("obj != deserialize(serialize(obj))", obj, dest);
+                assertEquals(obj, dest, "obj != deserialize(serialize(obj))");
             }
         }
     }
@@ -199,8 +196,8 @@ public abstract class ObjectAbstractTest {
             if (object instanceof Serializable) {
                 String name = getCanonicalEmptyCollectionName(object);
                 assertTrue(
-                    "Canonical empty collection (" + name + ") is not in CVS",
-                    new File(name).exists());
+                    new File(name).exists(),
+                        "Canonical empty collection (" + name + ") is not in CVS");
             }
         }
     }
@@ -216,8 +213,8 @@ public abstract class ObjectAbstractTest {
             if (object instanceof Serializable) {
                 String name = getCanonicalFullCollectionName(object);
                 assertTrue(
-                    "Canonical full collection (" + name + ") is not in CVS",
-                    new File(name).exists());
+                    new File(name).exists(),
+                        "Canonical full collection (" + name + ") is not in CVS");
             }
         }
     }

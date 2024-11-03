@@ -30,12 +30,10 @@
 
 package com.twelvemonkeys.util;
 
-import org.junit.Test;
-
 import java.util.Iterator;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * TokenIteratorAbstractTestCase
@@ -80,7 +78,7 @@ public abstract class TokenIteratorAbstractTest {
     @Test
     public void testEmptyString() {
         Iterator iterator = createTokenIterator("");
-        assertFalse("Empty string has elements", iterator.hasNext());
+        assertFalse(iterator.hasNext(), "Empty string has elements");
     }
 
 }

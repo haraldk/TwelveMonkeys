@@ -30,14 +30,13 @@
 
 package com.twelvemonkeys.lang;
 
-import org.junit.Test;
-
 import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * BeanUtilTestCase
@@ -161,10 +160,8 @@ public class BeanUtilTest {
         }
 
         assertNotNull(bean.getAmbiguous());
-        assertEquals("String converted rather than invoking setAmbiguous(String), ordering not predictable",
-                     "one", bean.getAmbiguous());
-        assertSame("String converted rather than invoking setAmbiguous(String), ordering not predictable",
-                   value, bean.getAmbiguous());
+        assertEquals("one", bean.getAmbiguous(), "String converted rather than invoking setAmbiguous(String), ordering not predictable");
+        assertSame(value, bean.getAmbiguous(), "String converted rather than invoking setAmbiguous(String), ordering not predictable");
     }
 
     @Test
@@ -184,10 +181,10 @@ public class BeanUtilTest {
         }
 
         assertNotNull(bean.getAmbiguous());
-        assertEquals("Integer converted rather than invoking setAmbiguous(Integer), ordering not predictable",
-                2, bean.getAmbiguous());
-        assertSame("Integer converted rather than invoking setAmbiguous(Integer), ordering not predictable",
-                   value, bean.getAmbiguous());
+        assertEquals(2, bean.getAmbiguous(),
+                "Integer converted rather than invoking setAmbiguous(Integer), ordering not predictable");
+        assertSame(value, bean.getAmbiguous(),
+                "Integer converted rather than invoking setAmbiguous(Integer), ordering not predictable");
     }
 
     @Test
@@ -207,10 +204,8 @@ public class BeanUtilTest {
         }
 
         assertNotNull(bean.getAmbiguous());
-        assertEquals("Object converted rather than invoking setAmbiguous(Object), ordering not predictable",
-                     value.getClass(), bean.getAmbiguous().getClass());
-        assertSame("Object converted rather than invoking setAmbiguous(Object), ordering not predictable",
-                   value, bean.getAmbiguous());
+        assertEquals(value.getClass(), bean.getAmbiguous().getClass(), "Object converted rather than invoking setAmbiguous(Object), ordering not predictable");
+        assertSame(value, bean.getAmbiguous(), "Object converted rather than invoking setAmbiguous(Object), ordering not predictable");
     }
 
     static class TestBean {

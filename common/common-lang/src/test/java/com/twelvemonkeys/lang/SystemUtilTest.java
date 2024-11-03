@@ -30,7 +30,7 @@
 
 package com.twelvemonkeys.lang;
 
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
 /**
  * SystemUtilTest
@@ -39,6 +39,6 @@ import org.junit.Ignore;
  * @author last modified by $Author: haraldk$
  * @version $Id: SystemUtilTest.java,v 1.0 11.04.12 16:21 haraldk Exp$
  */
-@Ignore
+@Disabled
 public class SystemUtilTest {
 }
