@@ -30,8 +30,8 @@
 
 package com.twelvemonkeys.image;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -40,7 +40,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * ResampleOpTestCase
@@ -124,7 +124,7 @@ public class ResampleOpTest {
             }
         }
 
-        assertEquals("Filter threw exceptions: ", Collections.EMPTY_LIST, exceptions);
+        assertEquals(Collections.EMPTY_LIST, exceptions, "Filter threw exceptions: ");
     }
 
     // 1x1
@@ -358,7 +358,7 @@ public class ResampleOpTest {
         }
     }
 
-    @Ignore("Not for general unit testing")
+    @Disabled("Not for general unit testing")
     @Test
     public void testTime() {
         int iterations = 1000;

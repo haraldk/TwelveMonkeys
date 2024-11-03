@@ -30,17 +30,16 @@
 
 package com.twelvemonkeys.image;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.awt.*;
 import java.awt.color.*;
 import java.awt.image.*;
 import java.net.URL;
+import java.time.Duration;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * BufferedImageFactoryTestCase
@@ -50,50 +49,58 @@ import static org.junit.Assert.assertTrue;
  * @version $Id: BufferedImageFactoryTestCase.java,v 1.0 May 7, 2010 12:40:08 PM haraldk Exp$
  */
 public class BufferedImageFactoryTest {
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullImage() {
-        new BufferedImageFactory((Image) null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            new BufferedImageFactory((Image) null);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullProducer() {
-        new BufferedImageFactory((ImageProducer) null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            new BufferedImageFactory((ImageProducer) null);
+        });
     }
 
     // NPE in Toolkit, ok
-    @Test(expected = RuntimeException.class)
+    @Test
     public void testGetBufferedImageErrorSourceByteArray() {
-        Image source = Toolkit.getDefaultToolkit().createImage((byte[]) null);
-
-        new BufferedImageFactory(source);
+        assertThrows(RuntimeException.class, () -> {
+            Image source = Toolkit.getDefaultToolkit().createImage((byte[]) null);
+            new BufferedImageFactory(source);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetBufferedImageErrorSourceImageProducer() {
         Image source = Toolkit.getDefaultToolkit().createImage((ImageProducer) null);
-
-        new BufferedImageFactory(source);
+        assertThrows(IllegalArgumentException.class, () -> {
+            new BufferedImageFactory(source);
+        });
     }
 
     // TODO: This is a quite serious bug, however, the bug is in the Toolkit, allowing such images in the first place...
     // In any case, there's not much we can do, except until someone is bored and kills the app/thread... :-P
-    @Ignore("Bug in Toolkit")
-    @Test(timeout = 1000, expected = ImageConversionException.class)
+    @Disabled("Bug in Toolkit")
+    @Test
     public void testGetBufferedImageErrorSourceString() {
-        Image source = Toolkit.getDefaultToolkit().createImage((String) null);
-
-        BufferedImageFactory factory = new BufferedImageFactory(source);
-        factory.getBufferedImage();
+        assertTimeout(Duration.ofMillis(1000), () -> {
+            Image source = Toolkit.getDefaultToolkit().createImage((String) null);
+            BufferedImageFactory factory = new BufferedImageFactory(source);
+            assertThrows(ImageConversionException.class, factory::getBufferedImage);
+        });
     }
 
     // This is a little random, and it would be nicer if we could throw an IllegalArgumentException on create.
     // Unfortunately, the API doesn't allow this...
-    @Test(timeout = 1000, expected = ImageConversionException.class)
+    @Test
     public void testGetBufferedImageErrorSourceURL() {
-        Image source = Toolkit.getDefaultToolkit().createImage(getClass().getResource("/META-INF/MANIFEST.MF"));
-
-        BufferedImageFactory factory = new BufferedImageFactory(source);
-        factory.getBufferedImage();
+        assertTimeout(Duration.ofMillis(1000), () -> {
+            Image source = Toolkit.getDefaultToolkit().createImage((String) null);
+            BufferedImageFactory factory = new BufferedImageFactory(source);
+            assertThrows(ImageConversionException.class, factory::getBufferedImage);
+        });
     }
 
     @Test
@@ -165,7 +172,7 @@ public class BufferedImageFactoryTest {
 
         assertEquals(3, colorModel.getNumColorComponents());
         assertEquals(ColorSpace.getInstance(ColorSpace.CS_sRGB), colorModel.getColorSpace());
-        assertTrue(colorModel instanceof IndexColorModel);
+        assertInstanceOf(IndexColorModel.class, colorModel);
 
         assertTrue(colorModel.hasAlpha());
         assertEquals(4, colorModel.getNumComponents());
@@ -196,7 +203,7 @@ public class BufferedImageFactoryTest {
 
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
-                assertEquals("RGB[" + x + ", " + y + "]", original.getRGB(x * 2, y * 2), image.getRGB(x, y));
+                assertEquals(original.getRGB(x * 2, y * 2), image.getRGB(x, y), "RGB[" + x + ", " + y + "]");
             }
         }
     }
@@ -219,7 +226,7 @@ public class BufferedImageFactoryTest {
 
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
-                assertEquals("RGB[" + x + ", " + y + "]", original.getRGB(40 + x, 40 + y), image.getRGB(x, y));
+                assertEquals(original.getRGB(40 + x, 40 + y), image.getRGB(x, y), "RGB[" + x + ", " + y + "]");
             }
         }
     }
@@ -243,7 +250,7 @@ public class BufferedImageFactoryTest {
 
         for (int y = 0; y < image.getHeight(); y++) {
             for (int x = 0; x < image.getWidth(); x++) {
-                assertEquals("RGB[" + x + ", " + y + "]", original.getRGB(40 + x * 2, 40 + y * 2), image.getRGB(x, y));
+                assertEquals(original.getRGB(40 + x * 2, 40 + y * 2), image.getRGB(x, y), "RGB[" + x + ", " + y + "]");
             }
         }
     }
