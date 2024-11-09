@@ -1,14 +1,14 @@
 package com.twelvemonkeys.imageio.stream;
 
-import org.junit.Test;
-
 import javax.imageio.ImageIO;
 import javax.imageio.spi.ImageInputStreamSpi;
+import java.io.EOFException;
 import java.io.IOException;
 import java.lang.reflect.ParameterizedType;
 import java.util.Locale;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 abstract class ImageInputStreamSpiTest<T> {
     protected final ImageInputStreamSpi provider = createProvider();
@@ -42,14 +42,14 @@ abstract class ImageInputStreamSpiTest<T> {
         assertNotNull(provider.getDescription(Locale.ENGLISH));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void createNull() throws IOException {
-        provider.createInputStreamInstance(null);
+        assertThrows(IllegalArgumentException.class, () -> provider.createInputStreamInstance(null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void createNullCached() throws IOException {
-        provider.createInputStreamInstance(null, true, ImageIO.getCacheDirectory());
+        assertThrows(IllegalArgumentException.class, () -> provider.createInputStreamInstance(null, true, ImageIO.getCacheDirectory()));
     }
 
     @Test

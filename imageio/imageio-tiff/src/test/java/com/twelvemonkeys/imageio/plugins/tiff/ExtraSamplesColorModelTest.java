@@ -33,14 +33,13 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 import com.twelvemonkeys.image.ResampleOp;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 
-import org.junit.Test;
-
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.util.Hashtable;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.Assert.*;
 
 public class ExtraSamplesColorModelTest {
 

@@ -31,11 +31,11 @@
 package com.twelvemonkeys.imageio.metadata;
 
 import com.twelvemonkeys.lang.ObjectAbstractTest;
-import org.junit.Test;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * DirectoryTest
@@ -65,9 +65,9 @@ public abstract class DirectoryAbstractTest extends ObjectAbstractTest {
         assertEquals(0, directory.size());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullEntries() {
-        createDirectory(Collections.<Entry>singleton(null));
+        assertThrows(IllegalArgumentException.class, () -> createDirectory(Collections.<Entry>singleton(null)));
     }
 
     @Test

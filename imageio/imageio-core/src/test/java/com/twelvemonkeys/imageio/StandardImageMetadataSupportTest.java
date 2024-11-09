@@ -7,9 +7,9 @@ import com.twelvemonkeys.imageio.StandardImageMetadataSupport.SubimageInterpreta
 import com.twelvemonkeys.imageio.StandardImageMetadataSupport.TextEntry;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
-import org.junit.Test;
 import org.w3c.dom.NodeList;
 
+import javax.imageio.IIOException;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.image.*;
@@ -23,22 +23,23 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import static com.twelvemonkeys.imageio.StandardImageMetadataSupport.builder;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class StandardImageMetadataSupportTest {
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void createNullBuilder() {
-        new StandardImageMetadataSupport(null);
+        assertThrows(IllegalArgumentException.class, () -> new StandardImageMetadataSupport(null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void createNullType() {
-        new StandardImageMetadataSupport(builder(null));
+        assertThrows(IllegalArgumentException.class, () -> new StandardImageMetadataSupport(builder(null)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void builderNullType() {
-        builder(null).build();
+        assertThrows(IllegalArgumentException.class, () -> builder(null).build());
     }
 
     @Test
@@ -89,10 +90,10 @@ public class StandardImageMetadataSupportTest {
         assertEquals("TRUE", compressionLossless.getAttribute("value"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void withCompressionLossyIllegal() {
-        builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
-                .withCompressionLossless(false);
+        assertThrows(IllegalArgumentException.class, () -> builder(ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY))
+                .withCompressionLossless(false));
     }
 
     @Test

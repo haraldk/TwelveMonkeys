@@ -33,7 +33,6 @@ package com.twelvemonkeys.imageio.path;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
-import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
@@ -48,8 +47,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeTrue;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assumptions.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * PathsTest.
@@ -63,9 +63,9 @@ public class PathsTest {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReadPathNull() throws IOException {
-        Paths.readPath(null);
+        assertThrows(IllegalArgumentException.class, () -> Paths.readPath(null));
     }
 
     @Test
@@ -127,14 +127,14 @@ public class PathsTest {
         assertPathEquals(readExpectedPath("/ser/grape-path.ser"), path);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testApplyClippingPathNullPath() {
-        Paths.applyClippingPath(null, new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY));
+        assertThrows(IllegalArgumentException.class, () -> Paths.applyClippingPath(null, new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testApplyClippingPathNullSource() {
-        Paths.applyClippingPath(new GeneralPath(), null);
+        assertThrows(IllegalArgumentException.class, () -> Paths.applyClippingPath(new GeneralPath(), null));
     }
 
     @Test
@@ -165,9 +165,9 @@ public class PathsTest {
     }
 
     @SuppressWarnings("ConstantConditions")
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testApplyClippingPathNullDestination() {
-        Paths.applyClippingPath(new GeneralPath(), new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY), null);
+        assertThrows(IllegalArgumentException.class, () -> Paths.applyClippingPath(new GeneralPath(), new BufferedImage(1, 1, BufferedImage.TYPE_BYTE_GRAY), null));
     }
 
     @Test
@@ -199,9 +199,9 @@ public class PathsTest {
         // TODO: Mor sophisticated test that tests all pixels outside path...
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReadClippedNull() throws IOException {
-        Paths.readClipped(null);
+        assertThrows(IllegalArgumentException.class, () -> Paths.readClipped(null));
     }
 
     @Test
@@ -243,7 +243,7 @@ public class PathsTest {
     }
 
     static void assertPathEquals(final Path2D expectedPath, final Path2D actualPath) {
-        assertNotNull("Expected path is null, check your tests...", expectedPath);
+        assertNotNull(expectedPath, "Expected path is null, check your tests...");
         assertNotNull(actualPath);
 
         PathIterator expectedIterator = expectedPath.getPathIterator(null);
@@ -253,19 +253,19 @@ public class PathsTest {
         float[] actualCoords = new float[6];
 
         while(!expectedIterator.isDone()) {
-            assertFalse("Less points than expected", actualIterator.isDone());
+            assertFalse(actualIterator.isDone(), "Less points than expected");
 
             int expectedType = expectedIterator.currentSegment(expectedCoords);
             int actualType = actualIterator.currentSegment(actualCoords);
 
-            assertEquals("Unexpected segment type", expectedType, actualType);
-            assertArrayEquals("Unexpected coordinates", expectedCoords, actualCoords, 0);
+            assertEquals( expectedType, actualType, "Unexpected segment type");
+            assertArrayEquals(expectedCoords, actualCoords, 0, "Unexpected coordinates");
 
             actualIterator.next();
             expectedIterator.next();
         }
 
-        assertTrue("More points than expected", actualIterator.isDone());
+        assertTrue( actualIterator.isDone(), "More points than expected");
     }
 
     @Test

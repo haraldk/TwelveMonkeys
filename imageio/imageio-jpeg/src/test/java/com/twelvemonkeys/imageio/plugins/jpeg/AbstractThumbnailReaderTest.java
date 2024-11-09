@@ -38,8 +38,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.net.URL;
 
-import static org.junit.Assert.assertNotNull;
-
+import static org.junit.jupiter.api.Assertions.*;
 /**
  * AbstractThumbnailReaderTest
  *
@@ -57,7 +56,7 @@ public abstract class AbstractThumbnailReaderTest {
     protected final ImageInputStream createStream(final String name) throws IOException {
         URL resource = getClass().getResource(name);
         ImageInputStream stream = ImageIO.createImageInputStream(resource);
-        assertNotNull("Could not create stream for resource " + resource, stream);
+        assertNotNull(stream, "Could not create stream for resource " + resource);
         return stream;
     }
 }

@@ -5,15 +5,13 @@ import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.DecoderAbstractTest;
 import com.twelvemonkeys.io.enc.Encoder;
 
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * RGB8RLEDecoderTest.
@@ -42,36 +40,39 @@ public class RGB8RLEDecoderTest extends DecoderAbstractTest {
         ByteArrayInputStream bytes = new ByteArrayInputStream(new byte[0]);
 
         int count = decoder.decode(bytes, ByteBuffer.allocate(BUFFER_SIZE));
-        assertEquals("Should not be able to read any bytes", 0, count);
+        assertEquals(0, count, "Should not be able to read any bytes");
     }
 
-    @Test(expected = EOFException.class)
+    @Test
     public final void testDecodePartial() throws IOException {
         Decoder decoder = createDecoder();
         ByteArrayInputStream bytes = new ByteArrayInputStream(new byte[] {0});
 
-        decoder.decode(bytes, ByteBuffer.allocate(BUFFER_SIZE));
-        fail("Should not be able to read any bytes");
+        assertThrows(EOFException.class, () -> {
+            decoder.decode(bytes, ByteBuffer.allocate(BUFFER_SIZE));
+        }, "Should not be able to read any bytes");
     }
 
-    @Test(expected = EOFException.class)
+    @Test
     public final void testDecodePartialToo() throws IOException {
         Decoder decoder = createDecoder();
         ByteArrayInputStream bytes = new ByteArrayInputStream(new byte[] {0, 0, 0, 1, 0, 0});
 
-        decoder.decode(bytes, ByteBuffer.allocate(BUFFER_SIZE));
-        fail("Should not be able to read any bytes");
+        assertThrows(EOFException.class, () -> {
+            decoder.decode(bytes, ByteBuffer.allocate(BUFFER_SIZE));
+        }, "Should not be able to read any bytes");
     }
 
-    @Test(expected = DecodeException.class)
+    @Test
     public final void testDecodeZeroRun() throws IOException {
         // The spec says that 0-runs should be used to signal that the run is > 127,
         // and contained in the next byte, however, this is not used in practise and not supported.
         Decoder decoder = createDecoder();
         ByteArrayInputStream bytes = new ByteArrayInputStream(new byte[] {0, 0, 0, 0});
 
-        decoder.decode(bytes, ByteBuffer.allocate(BUFFER_SIZE));
-        fail("Should not be able to read any bytes");
+        assertThrows(DecodeException.class, () -> {
+            decoder.decode(bytes, ByteBuffer.allocate(BUFFER_SIZE));
+        }, "Should not be able to read any bytes");
     }
 
     @Test

@@ -32,11 +32,10 @@ package com.twelvemonkeys.imageio.metadata.xmp;
 
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.EntryAbstractTest;
-import org.junit.Test;
 
 import java.util.*;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * XMPEntryTest

@@ -30,15 +30,16 @@
 
 package com.twelvemonkeys.imageio.color;
 
-import org.junit.Test;
+
 
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
 import java.io.IOException;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeTrue;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 /**
  * ColorSpacesTest
@@ -154,9 +155,9 @@ public class ColorSpacesTest {
     }
 
     @SuppressWarnings("deprecation")
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIsCS_sRGBNull() {
-        ColorSpaces.isCS_sRGB(null);
+        assertThrows(IllegalArgumentException.class, () -> ColorSpaces.isCS_sRGB(null));
     }
 
     @SuppressWarnings("deprecation")
@@ -175,9 +176,9 @@ public class ColorSpacesTest {
     }
 
     @SuppressWarnings("deprecation")
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIsCS_GRAYNull() {
-        ColorSpaces.isCS_GRAY(null);
+        assertThrows(IllegalArgumentException.class, () -> ColorSpaces.isCS_GRAY(null));
     }
 
     @Test

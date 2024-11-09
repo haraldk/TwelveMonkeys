@@ -32,8 +32,6 @@ package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 
-import org.junit.Test;
-
 import javax.imageio.ImageTypeSpecifier;
 import java.awt.color.ColorSpace;
 import java.awt.image.ComponentColorModel;
@@ -42,7 +40,9 @@ import java.awt.image.PixelInterleavedSampleModel;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UInt32ImageTypeSpecifierTest {
     private static final ColorSpace sRGB = ColorSpace.getInstance(ColorSpace.CS_sRGB);

@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.DecoderStream;
-import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -42,8 +41,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RLE8DecoderTest {
 
@@ -108,7 +107,7 @@ public class RLE8DecoderTest {
         while (true) {
             int expected = plainSream.read();
 
-            assertEquals("Differs at " + pos, expected, decoded.read());
+            assertEquals(expected, decoded.read(), "Differs at " + pos);
 
             if (expected < 0) {
                 break;

@@ -32,9 +32,6 @@ package com.twelvemonkeys.imageio.plugins.wmf;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.io.IOException;
@@ -42,6 +39,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 /**
  * WMFImageReaderTest
  *
@@ -77,14 +76,14 @@ public class WMFImageReaderTest extends ImageReaderAbstractTest<WMFImageReader> 
     }
 
     @Test
-    @Ignore("Known issue: Source region reading not supported")
+    @Disabled("Known issue: Source region reading not supported")
     @Override
     public void testReadWithSourceRegionParamEqualImage() throws IOException {
         super.testReadWithSourceRegionParamEqualImage();
     }
 
     @Test
-    @Ignore("Known issue: Subsampled reading not supported")
+    @Disabled("Known issue: Subsampled reading not supported")
     @Override
     public void testReadWithSubsampleParamPixels() throws IOException {
         super.testReadWithSubsampleParamPixels();

@@ -30,11 +30,9 @@
 
 package com.twelvemonkeys.imageio;
 
-import static java.util.Collections.singleton;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
+import static java.util.Collections.singleton;
+import static org.junit.jupiter.api.Assertions.*;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.BufferedImage;
@@ -48,7 +46,7 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * ImageReaderBaseTest
@@ -64,36 +62,36 @@ public class ImageReaderBaseTest {
             ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB)
     );
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetDestinationZeroWidth() throws IIOException {
-        ImageReaderBase.getDestination(null, TYPES.iterator(), 0, 42);
+        assertThrows(IllegalArgumentException.class, () -> ImageReaderBase.getDestination(null, TYPES.iterator(), 0, 42));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetDestinationNegativeWidth() throws IIOException {
-        ImageReaderBase.getDestination(null, TYPES.iterator(), -1, 42);
+        assertThrows(IllegalArgumentException.class, () -> ImageReaderBase.getDestination(null, TYPES.iterator(), -1, 42));
 
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetDestinationZeroHeight() throws IIOException {
-        ImageReaderBase.getDestination(null, TYPES.iterator(), 42, 0);
+        assertThrows(IllegalArgumentException.class, () -> ImageReaderBase.getDestination(null, TYPES.iterator(), 42, 0));
 
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetDestinationNegativeHeight() throws IIOException {
-        ImageReaderBase.getDestination(null, TYPES.iterator(), 42, -1);
+        assertThrows(IllegalArgumentException.class, () -> ImageReaderBase.getDestination(null, TYPES.iterator(), 42, -1));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetDestinationNullTypes() throws IIOException {
-        ImageReaderBase.getDestination(null, null, 42, 42);
+        assertThrows(IllegalArgumentException.class, () -> ImageReaderBase.getDestination(null, null, 42, 42));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetDestinationNoTypes() throws IIOException {
-        ImageReaderBase.getDestination(null, Collections.<ImageTypeSpecifier>emptyList().iterator(), 42, 42);
+        assertThrows(IllegalArgumentException.class, () -> ImageReaderBase.getDestination(null, Collections.<ImageTypeSpecifier>emptyList().iterator(), 42, 42));
     }
 
     @Test
@@ -162,11 +160,11 @@ public class ImageReaderBaseTest {
         assertEquals(1, destination.getHeight());
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testGetDestinationParamIllegalDestination() throws IIOException {
         ImageReadParam param = new ImageReadParam();
         param.setDestination(new BufferedImage(21, 1, BufferedImage.TYPE_USHORT_565_RGB));
-        ImageReaderBase.getDestination(param, TYPES.iterator(), 42, 1);
+        assertThrows(IIOException.class, () -> ImageReaderBase.getDestination(param, TYPES.iterator(), 42, 1));
     }
 
     @Test
@@ -191,18 +189,18 @@ public class ImageReaderBaseTest {
         assertEquals(7, destination.getHeight());
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testGetDestinationParamIllegalDestinationType() throws IIOException {
         ImageReadParam param = new ImageReadParam();
         param.setDestinationType(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY));
-        ImageReaderBase.getDestination(param, TYPES.iterator(), 6, 7);
+        assertThrows(IIOException.class, () -> ImageReaderBase.getDestination(param, TYPES.iterator(), 6, 7));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testGetDestinationParamIllegalDestinationTypeAlt() throws IIOException {
         ImageReadParam param = new ImageReadParam();
         param.setDestinationType(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_INT_BGR));
-        ImageReaderBase.getDestination(param, TYPES.iterator(), 6, 7);
+        assertThrows(IIOException.class, () -> ImageReaderBase.getDestination(param, TYPES.iterator(), 6, 7));
     }
 
     @Test
@@ -215,22 +213,22 @@ public class ImageReaderBaseTest {
         assertEquals(TYPES.get(0).getBufferedImageType(), destination.getType());
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testGetDestinationParamDestinationExceedsIntegerMax() throws IIOException {
         ImageReadParam param = new ImageReadParam();
         param.setSourceRegion(new Rectangle(3 * Short.MAX_VALUE, 2 * Short.MAX_VALUE)); // 6 442 057 734 pixels
-        ImageReaderBase.getDestination(param, TYPES.iterator(), 6 * Short.MAX_VALUE, 4 * Short.MAX_VALUE); // 25 768 230 936 pixels
+        assertThrows(IIOException.class, () -> ImageReaderBase.getDestination(param, TYPES.iterator(), 6 * Short.MAX_VALUE, 4 * Short.MAX_VALUE)); // 25 768 230 936 pixels
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testGetDestinationDimensionExceedsIntegerMax() throws IIOException {
-        ImageReaderBase.getDestination(null, TYPES.iterator(), 3 * Short.MAX_VALUE, 2 * Short.MAX_VALUE); // 6 442 057 734 pixels
+        assertThrows(IIOException.class, () -> ImageReaderBase.getDestination(null, TYPES.iterator(), 3 * Short.MAX_VALUE, 2 * Short.MAX_VALUE)); // 6 442 057 734 pixels
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testGetDestinationStorageExceedsIntegerMax() throws IIOException {
         Set<ImageTypeSpecifier> byteTypes = singleton(ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_3BYTE_BGR));
-        ImageReaderBase.getDestination(null, byteTypes.iterator(), Short.MAX_VALUE,  Short.MAX_VALUE); // 1 073 676 289 pixels
+        assertThrows(IIOException.class, () -> ImageReaderBase.getDestination(null, byteTypes.iterator(), Short.MAX_VALUE,  Short.MAX_VALUE)); // 1 073 676 289 pixels
         // => 3 221 028 867 bytes needed in continuous array, not possible
     }
 

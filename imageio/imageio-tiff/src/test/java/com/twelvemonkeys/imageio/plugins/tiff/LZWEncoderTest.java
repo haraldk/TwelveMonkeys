@@ -32,16 +32,18 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.enc.Decoder;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 /**
  * LZWEncoderTest
@@ -84,7 +86,7 @@ public class LZWEncoderTest {
             buffer.flip();
 
             while (buffer.hasRemaining()) {
-                assertEquals(String.format("Diff at index %s", index), bytes[index], buffer.get());
+                assertEquals(bytes[index], buffer.get(), String.format("Diff at index %s", index));
                 index++;
             }
 
@@ -123,7 +125,7 @@ public class LZWEncoderTest {
                 while (buffer.hasRemaining()) {
                     byte expected = bytes[index];
                     byte actual = buffer.get();
-                    assertEquals(String.format("Diff at index %s: 0x%02x != 0x%02x", index, expected, actual), expected, actual);
+                    assertEquals(expected, actual, String.format("Diff at index %s: 0x%02x != 0x%02x", index, expected, actual));
                     index++;
                 }
 
@@ -161,7 +163,7 @@ public class LZWEncoderTest {
                 while (buffer.hasRemaining()) {
                     byte expected = bytes[index];
                     byte actual = buffer.get();
-                    assertEquals(String.format("Diff at index %s: 0x%02x != 0x%02x", index, expected, actual), expected, actual);
+                    assertEquals(expected, actual, String.format("Diff at index %s: 0x%02x != 0x%02x", index, expected, actual));
 //                    System.err.println(String.format("Equal at index %s: 0x%02x (%d)", index, expected & 0xff, expected));
                     index++;
                 }
@@ -174,24 +176,26 @@ public class LZWEncoderTest {
         assertEquals(-1, inputStream.read());
     }
 
-    @Ignore
-    @Test(timeout = 10000)
+    @Disabled
+    @Test
     public void testSpeed() throws IOException {
-        for (int run = 0; run < SPEED_TEST_RUNS; run++) {
-            byte[] bytes = new byte[LENGTH];
-            LZWEncoder encoder = new LZWEncoder(bytes.length);
+        assertTimeout(Duration.ofMillis(10000), () -> {
+            for (int run = 0; run < SPEED_TEST_RUNS; run++) {
+                byte[] bytes = new byte[LENGTH];
+                LZWEncoder encoder = new LZWEncoder(bytes.length);
 
-            for (int i = 0; i < bytes.length; i++) {
-                bytes[i] = (byte) i;
+                for (int i = 0; i < bytes.length; i++) {
+                    bytes[i] = (byte) i;
+                }
+
+                FastByteArrayOutputStream stream = new FastByteArrayOutputStream((LENGTH * 3) / 4);
+
+                for (int i = 0; i < ITERATIONS; i++) {
+                    encoder.encode(stream, ByteBuffer.wrap(bytes, i * LENGTH / ITERATIONS, LENGTH / ITERATIONS));
+                }
+
+                assertEquals(719, stream.size());
             }
-
-            FastByteArrayOutputStream stream = new FastByteArrayOutputStream((LENGTH * 3) / 4);
-
-            for (int i = 0; i < ITERATIONS; i++) {
-                encoder.encode(stream, ByteBuffer.wrap(bytes, i * LENGTH / ITERATIONS, LENGTH / ITERATIONS));
-            }
-
-            assertEquals(719, stream.size());
-        }
+        });
     }
 }

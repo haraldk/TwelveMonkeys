@@ -34,7 +34,6 @@ import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.MetadataWriter;
 import com.twelvemonkeys.imageio.metadata.MetadataWriterAbstractTest;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
-import org.junit.Test;
 
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -43,8 +42,9 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeNotNull;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * IPTCWriterTest.
@@ -72,8 +72,7 @@ public class IPTCWriterTest extends MetadataWriterAbstractTest {
     public void testRewriteExisting() throws IOException {
         IPTCReader reader = createReader();
         Directory iptc = reader.read(getDataAsIIS());
-        assumeNotNull(iptc);
-
+        assumeTrue(iptc != null, "IPTC object should not be null");
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         MemoryCacheImageOutputStream stream = new MemoryCacheImageOutputStream(bytes);
         createWriter().write(iptc, stream);

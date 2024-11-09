@@ -30,10 +30,8 @@
 
 package com.twelvemonkeys.io;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * SeekableAbstractTestCase

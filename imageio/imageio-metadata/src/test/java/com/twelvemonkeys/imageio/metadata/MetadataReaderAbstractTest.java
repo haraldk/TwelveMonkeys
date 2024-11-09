@@ -35,7 +35,6 @@ import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
@@ -44,7 +43,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 
-import static org.junit.Assert.assertNotNull;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * ReaderAbstractTest
@@ -71,9 +71,9 @@ public abstract class MetadataReaderAbstractTest {
 
     protected abstract MetadataReader createReader();
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReadNull() throws IOException {
-        createReader().read(null);
+        assertThrows(IllegalArgumentException.class, () -> createReader().read(null));
     }
 
     @Test

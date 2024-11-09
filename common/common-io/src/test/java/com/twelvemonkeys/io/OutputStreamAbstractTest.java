@@ -31,13 +31,12 @@
 package com.twelvemonkeys.io;
 
 import com.twelvemonkeys.lang.ObjectAbstractTest;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.io.OutputStream;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * InputStreamAbstractTestCase

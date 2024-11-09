@@ -33,7 +33,6 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 
-import org.junit.Test;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.ImageIO;
@@ -49,13 +48,15 @@ import java.awt.color.*;
 import java.awt.image.*;
 import java.io.EOFException;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * PSDImageReaderTest
@@ -244,7 +245,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 fail("Expected IndexOutOfBoundsException");
             }
             catch (IndexOutOfBoundsException expected) {
-                assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("index"));
+                assertTrue(expected.getMessage().toLowerCase().contains("index"), expected.getMessage());
             }
 
             try {
@@ -252,7 +253,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 fail("Expected IndexOutOfBoundsException");
             }
             catch (IndexOutOfBoundsException expected) {
-                assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("index"));
+                assertTrue(expected.getMessage().toLowerCase().contains("index"), expected.getMessage());
             }
 
             try {
@@ -261,7 +262,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
             }
             catch (IndexOutOfBoundsException expected) {
                 // Sloppy...
-                assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("-2"));
+                assertTrue(expected.getMessage().toLowerCase().contains("-2"), expected.getMessage());
             }
 
             try {
@@ -269,7 +270,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 fail("Expected IndexOutOfBoundsException");
             }
             catch (IndexOutOfBoundsException expected) {
-                assertTrue(expected.getMessage(), expected.getMessage().toLowerCase().contains("index"));
+                assertTrue(expected.getMessage().toLowerCase().contains("index"), expected.getMessage());
             }
         }
     }
@@ -312,7 +313,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                 @Override
                 public void thumbnailProgress(final ImageReader pSource, final float pPercentageDone) {
                     // Optional
-                    assertEquals("Listener invoked out of sequence", 1, seqeunce.size());
+                    assertEquals(1, seqeunce.size(), "Listener invoked out of sequence");
                     assertTrue(pPercentageDone >= lastPercentageDone);
                     lastPercentageDone = pPercentageDone;
                 }
@@ -321,7 +322,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
             BufferedImage thumbnail = imageReader.readThumbnail(0, 0);
             assertNotNull(thumbnail);
 
-            assertEquals("Listeners not invoked", 2, seqeunce.size());
+            assertEquals(2, seqeunce.size(), "Listeners not invoked");
             assertEquals("started", seqeunce.get(0));
             assertEquals("complete", seqeunce.get(1));
         }
@@ -376,7 +377,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
                     }
                 }
 
-                assertTrue("RAW image type not in type iterator", found);
+                assertTrue(found, "RAW image type not in type iterator");
             }
         }
     }
@@ -698,27 +699,28 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
         }
     }
 
-    @Test(timeout = 1000)
+    @Test
     public void testBrokenPackBitsThrowsEOFException() throws IOException {
-        PSDImageReader imageReader = createReader();
+        assertTimeout(Duration.ofMillis(1000), () -> {
+            PSDImageReader imageReader = createReader();
 
-        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/broken-psd/short-packbits.psd"))) {
-            imageReader.setInput(stream);
+            try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/broken-psd/short-packbits.psd"))) {
+                imageReader.setInput(stream);
 
-            assertEquals(1, imageReader.getNumImages(true));
+                assertEquals(1, imageReader.getNumImages(true));
 
-            assertEquals(427, imageReader.getWidth(0));
-            assertEquals(107, imageReader.getHeight(0));
+                assertEquals(427, imageReader.getWidth(0));
+                assertEquals(107, imageReader.getHeight(0));
 
-            try {
-                imageReader.read(0);
+                try {
+                    imageReader.read(0);
 
-                fail("Expected EOFException, is the test broken?");
+                    fail("Expected EOFException, is the test broken?");
+                } catch (EOFException expected) {
+                    assertTrue(expected.getMessage().contains("PackBits"));
+                }
             }
-            catch (EOFException expected) {
-                assertTrue(expected.getMessage().contains("PackBits"));
-            }
-        }
+        });
     }
 
 

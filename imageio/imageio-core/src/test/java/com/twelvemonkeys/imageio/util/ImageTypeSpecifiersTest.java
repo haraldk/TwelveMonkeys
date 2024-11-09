@@ -32,14 +32,13 @@ package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.lang.Validate;
 
-import org.junit.Test;
 
 import javax.imageio.ImageTypeSpecifier;
 import java.awt.color.*;
 import java.awt.image.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ImageTypeSpecifiersTest {
 

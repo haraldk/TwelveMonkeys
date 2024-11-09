@@ -2,7 +2,7 @@ package com.twelvemonkeys.imageio.plugins.pntg;
 
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.awt.image.*;
 

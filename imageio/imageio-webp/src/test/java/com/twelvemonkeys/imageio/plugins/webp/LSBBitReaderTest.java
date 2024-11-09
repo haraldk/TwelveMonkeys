@@ -2,13 +2,12 @@ package com.twelvemonkeys.imageio.plugins.webp;
 
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 
-import org.junit.Test;
-
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * LSBBitReaderTest.

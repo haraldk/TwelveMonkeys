@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 
-import org.junit.Test;
 import org.mockito.InOrder;
 
 import javax.imageio.ImageIO;
@@ -50,10 +49,8 @@ import java.lang.reflect.ParameterizedType;
 import java.net.URL;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -145,7 +142,7 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
                 throw new AssertionError(e.getMessage(), e);
             }
 
-            assertTrue("No image data written", buffer.size() > 0);
+            assertTrue(buffer.size() > 0, "No image data written");
         }
     }
 
@@ -164,26 +161,27 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
             throw new AssertionError(e.getMessage(), e);
         }
 
-        assertEquals("Image data written", 0, buffer.size());
+        assertEquals( 0, buffer.size(), "Image data written");
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testWriteNoOutput() throws IOException {
         ImageWriter writer = createWriter();
 
-        try {
-            writer.write(getTestData(0));
-        }
-        catch (IOException e) {
-            fail(e.getMessage());
-        }
+        assertThrows(IllegalStateException.class, () -> {
+            try {
+                writer.write(getTestData(0));
+            } catch (IOException e) {
+                fail(e.getMessage()); // Fail if IOException is thrown
+            }
+        }, "Expected IllegalStateException when no output is set on writer");
     }
 
     @Test
     public void testGetDefaultWriteParam() throws IOException {
         ImageWriter writer = createWriter();
         ImageWriteParam param = writer.getDefaultWriteParam();
-        assertNotNull("Default ImageWriteParam is null", param);
+        assertNotNull(param, "Default ImageWriteParam is null");
     }
 
     // TODO: Test writing with params

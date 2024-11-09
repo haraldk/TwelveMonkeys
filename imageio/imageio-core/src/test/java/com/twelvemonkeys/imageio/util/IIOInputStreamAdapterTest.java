@@ -31,15 +31,15 @@
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.io.InputStreamAbstractTest;
-import org.junit.Test;
 
+import javax.imageio.ImageIO;
 import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * IIOInputStreamAdapter
@@ -54,9 +54,9 @@ public class IIOInputStreamAdapterTest extends InputStreamAbstractTest {
         return new IIOInputStreamAdapter(new MemoryCacheImageInputStream(new ByteArrayInputStream(pBytes)), pBytes.length);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNull() {
-        new IIOInputStreamAdapter(null);
+        assertThrows(IllegalArgumentException.class, () -> new IIOInputStreamAdapter(null));
     }
 
     @Test
@@ -70,11 +70,11 @@ public class IIOInputStreamAdapterTest extends InputStreamAbstractTest {
 
         IIOInputStreamAdapter stream = new IIOInputStreamAdapter(input);
         for (int i = 0; i < 10; i++) {
-            assertTrue("Unexpected end of stream", -1 != stream.read());
+            assertTrue(-1 != stream.read(), "Unexpected end of stream");
         }
 
-        assertEquals("Read value after end of stream", -1, stream.read());
-        assertEquals("Read value after end of stream", -1, stream.read());
+        assertEquals( -1, stream.read(), "Read value after end of stream");
+        assertEquals( -1, stream.read(), "Read value after end of stream");
 
         // Make sure underlying stream is positioned at end of substream after close
         stream.close();
@@ -90,11 +90,11 @@ public class IIOInputStreamAdapterTest extends InputStreamAbstractTest {
         MemoryCacheImageInputStream input = new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes));
         IIOInputStreamAdapter stream = new IIOInputStreamAdapter(input, 9);
         for (int i = 0; i < 9; i++) {
-            assertTrue("Unexpected end of stream", -1 != stream.read());
+            assertTrue(-1 != stream.read(), "Unexpected end of stream");
         }
 
-        assertEquals("Read value after end of stream", -1, stream.read());
-        assertEquals("Read value after end of stream", -1, stream.read());
+        assertEquals(-1, stream.read(), "Read value after end of stream");
+        assertEquals(-1, stream.read(), "Read value after end of stream");
 
         // Make sure we don't read outside stream boundaries
         assertTrue(input.getStreamPosition() <= 9);
@@ -109,7 +109,7 @@ public class IIOInputStreamAdapterTest extends InputStreamAbstractTest {
         MemoryCacheImageInputStream input = new MemoryCacheImageInputStream(new ByteArrayInputStream(bytes));
         IIOInputStreamAdapter stream = new IIOInputStreamAdapter(input, 10);
         for (int i = 0; i < 7; i++) {
-            assertTrue("Unexpected end of stream", -1 != stream.read());
+            assertTrue(-1 != stream.read(), "Unexpected end of stream");
         }
 
         // Make sure we don't read outside stream boundaries
@@ -132,7 +132,7 @@ public class IIOInputStreamAdapterTest extends InputStreamAbstractTest {
         assertEquals(10, input.getStreamPosition());
 
         IIOInputStreamAdapter stream = new IIOInputStreamAdapter(input);
-        assertEquals("Should not skip backwards", 0, stream.skip(-5));
+        assertEquals(0, stream.skip(-5), "Should not skip backwards");
         assertEquals(10, input.getStreamPosition());
     }
 
@@ -146,7 +146,7 @@ public class IIOInputStreamAdapterTest extends InputStreamAbstractTest {
         assertEquals(10, input.getStreamPosition());
 
         IIOInputStreamAdapter stream = new IIOInputStreamAdapter(input, 9);
-        assertEquals("Should not skip backwards", 0, stream.skip(-5));
+        assertEquals(0, stream.skip(-5), "Should not skip backwards");
         assertEquals(10, input.getStreamPosition());
 
     }

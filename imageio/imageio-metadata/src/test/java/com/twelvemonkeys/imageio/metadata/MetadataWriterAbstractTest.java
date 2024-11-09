@@ -31,8 +31,8 @@
 package com.twelvemonkeys.imageio.metadata;
 
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
-import org.junit.Test;
 
+import org.junit.jupiter.api.Test;
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.stream.ImageInputStream;
@@ -42,6 +42,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * ReaderAbstractTest
@@ -68,14 +70,17 @@ public abstract class MetadataWriterAbstractTest {
 
     protected abstract MetadataWriter createWriter();
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testWriteNullDirectory() throws IOException {
-        createWriter().write(null, new MemoryCacheImageOutputStream(new ByteArrayOutputStream()));
+
+        assertThrows(IllegalArgumentException.class, () ->  createWriter().write(null, new MemoryCacheImageOutputStream(new ByteArrayOutputStream())));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testWriteNullStream() throws IOException {
-        createWriter().write(new AbstractDirectory(new ArrayList<Entry>()) {
-        }, null);
+        assertThrows(IllegalArgumentException.class, () ->
+                createWriter().write(new AbstractDirectory(new ArrayList<Entry>()) {
+                }, null)
+        );
     }
 }

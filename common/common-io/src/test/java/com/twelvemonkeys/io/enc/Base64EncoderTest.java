@@ -30,13 +30,12 @@
 
 package com.twelvemonkeys.io.enc;
 
-import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Base64EncoderTest
@@ -63,7 +62,7 @@ public class Base64EncoderTest extends EncoderAbstractTest {
         OutputStream out = new EncoderStream(bytes, createEncoder(), true);
         out.write(data.getBytes());
 
-        assertEquals("Strings does not match", "", new String(bytes.toByteArray()));
+        assertEquals("", new String(bytes.toByteArray()), "Strings does not match");
     }
 
     @Test
@@ -74,7 +73,7 @@ public class Base64EncoderTest extends EncoderAbstractTest {
         OutputStream out = new EncoderStream(bytes, createEncoder(), true);
         out.write(data.getBytes());
 
-        assertEquals("Strings does not match", "dGVzdA==", new String(bytes.toByteArray()));
+        assertEquals("dGVzdA==", new String(bytes.toByteArray()), "Strings does not match");
     }
 
     @Test
@@ -88,11 +87,12 @@ public class Base64EncoderTest extends EncoderAbstractTest {
         OutputStream out = new EncoderStream(bytes, createEncoder(), true);
         out.write(data.getBytes());
 
-        assertEquals("Strings does not match",
+        assertEquals(
                      "TG9yZW0gaXBzdW0gZG9sb3Igc2l0IGFtZXQsIGNvbnNlY3RldHVlciBhZGlwaXNjaW5nIGVsaXQuIEZ1" +
                     "c2NlIGVzdC4gTW9yYmkgbHVjdHVzIGNvbnNlY3RldHVlciBqdXN0by4gVml2YW11cyBkYXBpYnVzIGxh" +
                     "b3JlZXQgcHVydXMuIE51bmMgdml2ZXJyYSBkaWN0dW0gbmlzbC4gSW50ZWdlciB1bGxhbWNvcnBlciwg" +
                     "bmlzaSBpbiBkaWN0dW0gYW1ldC4=",
-                     new String(bytes.toByteArray()));
+                     new String(bytes.toByteArray()),
+                "Strings does not match");
     }
 }

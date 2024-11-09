@@ -35,7 +35,6 @@ import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 
-import org.junit.Test;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.*;
@@ -56,8 +55,11 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.twelvemonkeys.imageio.util.ImageReaderAbstractTest.assertImageDataEquals;
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeNotNull;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
+
 
 /**
  * TGAImageWriterTest
@@ -99,7 +101,8 @@ public class TGAImageWriterTest extends ImageWriterAbstractTest<TGAImageWriter> 
         ImageWriter writer = createWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
 
-        assumeNotNull(reader);
+
+        assumeTrue(reader != null, "Reader should not be null");
 
         for (RenderedImage testData : getTestData()) {
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
@@ -128,7 +131,7 @@ public class TGAImageWriterTest extends ImageWriterAbstractTest<TGAImageWriter> 
         ImageWriter writer = createWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
 
-        assumeNotNull(reader);
+        assumeTrue(reader != null, "Reader should not be null");
 
         ImageWriteParam param = writer.getDefaultWriteParam();
         param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
@@ -161,7 +164,7 @@ public class TGAImageWriterTest extends ImageWriterAbstractTest<TGAImageWriter> 
         ImageWriter writer = createWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
 
-        assumeNotNull(reader);
+        assumeTrue(reader != null, "Reader should not be null");
 
         try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tga/UTC24.TGA"))) {
             reader.setInput(input);
@@ -197,7 +200,7 @@ public class TGAImageWriterTest extends ImageWriterAbstractTest<TGAImageWriter> 
         ImageWriter writer = createWriter();
         ImageReader reader = ImageIO.getImageReader(writer);
 
-        assumeNotNull(reader);
+        assumeTrue(reader != null, "Reader should not be null");
 
         try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/tga/CTC24.TGA"))) {
             reader.setInput(input);

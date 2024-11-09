@@ -35,7 +35,7 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -44,12 +44,12 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.time.Duration;
 import java.util.List;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * JPEGSegmentImageInputStreamTest
@@ -68,33 +68,33 @@ public class JPEGSegmentImageInputStreamTest {
         return getClass().getResource(pName);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNull() {
-        new JPEGSegmentImageInputStream(null);
+        assertThrows(IllegalArgumentException.class, () -> new JPEGSegmentImageInputStream(null));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testStreamNonJPEG() throws IOException {
         ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[] {42, 42, 0, 0, 77, 99})));
-        stream.read();
+        assertThrows(IIOException.class, () -> stream.read());
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testStreamNonJPEGArray() throws IOException {
         ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[] {42, 42, 0, 0, 77, 99})));
-        stream.readFully(new byte[1]);
+        assertThrows(IIOException.class, () -> stream.readFully(new byte[1]));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testStreamEmpty() throws IOException {
         ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[0])));
-        stream.read();
+        assertThrows(IIOException.class, () -> stream.read());
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testStreamEmptyArray() throws IOException {
         ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(new byte[0])));
-        stream.readFully(new byte[1]);
+        assertThrows(IIOException.class, () -> stream.readFully(new byte[1]));
     }
 
     @Test
@@ -230,27 +230,29 @@ public class JPEGSegmentImageInputStreamTest {
     }
 
 
-    @Test(timeout = 1000L)
+    @Test
     public void testInfiniteLoopCorrupt() throws IOException {
-        try (ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg")))) {
-            long length = 0;
-            while (stream.read() != -1) {
-                length++;
+        assertTimeout(Duration.ofSeconds(1), () -> {
+            try (ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg")))) {
+                long length = 0;
+                while (stream.read() != -1) {
+                    length++;
+                }
+
+                assertEquals(25504L, length); // Sanity check: same as file size, except..?
             }
 
-            assertEquals(25504L, length); // Sanity check: same as file size, except..?
-        }
+            try (ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg")))) {
+                long length = 0;
+                byte[] buffer = new byte[1024];
+                int read;
+                while ((read = stream.read(buffer)) != -1) {
+                    length += read;
+                }
 
-        try (ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg")))) {
-            long length = 0;
-            byte[] buffer = new byte[1024];
-            int read;
-            while ((read = stream.read(buffer)) != -1) {
-                length += read;
+                assertEquals(25504L, length); // Sanity check: same as file size, except..?
             }
-
-            assertEquals(25504L, length); // Sanity check: same as file size, except..?
-        }
+        });
     }
 }
 

@@ -30,14 +30,12 @@
 
 package com.twelvemonkeys.imageio.metadata;
 
-import org.junit.Test;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * CompoundDirectoryTest
@@ -60,9 +58,9 @@ public abstract class CompoundDirectoryAbstractTest extends DirectoryAbstractTes
         return createCompoundDirectory(Collections.<Directory>singleton(createSingleDirectory(entries)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullDirectories() {
-        createCompoundDirectory(Collections.<Directory>singleton(null));
+        assertThrows(IllegalArgumentException.class, () -> createCompoundDirectory(Collections.<Directory>singleton(null)));
     }
 
     @Test
@@ -103,12 +101,12 @@ public abstract class CompoundDirectoryAbstractTest extends DirectoryAbstractTes
         assertSame(three, directory.getDirectory(2));
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testOutOfBounds() {
         Directory only = createSingleDirectory(null);
         CompoundDirectory directory = createCompoundDirectory(Collections.<Directory>singleton(only));
 
-        directory.getDirectory(directory.directoryCount());
+        assertThrows(IndexOutOfBoundsException.class, () -> directory.getDirectory(directory.directoryCount()));
     }
 
     protected static final class TestDirectory extends AbstractDirectory {

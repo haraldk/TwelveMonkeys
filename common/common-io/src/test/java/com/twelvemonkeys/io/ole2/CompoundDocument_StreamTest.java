@@ -33,7 +33,6 @@ package com.twelvemonkeys.io.ole2;
 import com.twelvemonkeys.io.InputStreamAbstractTest;
 import com.twelvemonkeys.io.LittleEndianDataOutputStream;
 import com.twelvemonkeys.io.MemoryCacheSeekableStream;
-import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -42,7 +41,8 @@ import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * CompoundDocument_StreamTestCase
@@ -165,8 +165,8 @@ public class CompoundDocument_StreamTest extends InputStreamAbstractTest {
             count++;
         }
 
-        assertFalse("Short stream", count < 32);
-        assertFalse("Stream overrun", count > 32);
+        assertFalse(count < 32, "Short stream");
+        assertFalse(count > 32, "Stream overrun");
     }
 
     @Test

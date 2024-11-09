@@ -36,9 +36,6 @@ import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.io.ole2.Entry;
 import com.twelvemonkeys.lang.SystemUtil;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
@@ -49,7 +46,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * ICOImageReaderTest
@@ -144,7 +143,7 @@ public class ThumbsDBImageReaderTest extends ImageReaderAbstractTest<ThumbsDBIma
     }
 
     @Test
-    @Ignore("Known issue")
+    @Disabled("Known issue")
     @Override
     public void testNotBadCaching() throws IOException {
         super.testNotBadCaching();

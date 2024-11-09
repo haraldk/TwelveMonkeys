@@ -33,8 +33,6 @@ package com.twelvemonkeys.imageio.plugins.pict;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 
-import org.junit.Test;
-
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
 import javax.imageio.spi.ImageWriterSpi;
@@ -48,7 +46,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * PICTImageWriterTest
@@ -100,7 +99,7 @@ public class PICTImageWriterTest extends ImageWriterAbstractTest<PICTImageWriter
                 stream.close(); // Force data to be written
             }
 
-            assertTrue("No image data written", buffer.size() > 0);
+            assertTrue(buffer.size() > 0, "No image data written");
 
             ImageInputStream input = new ByteArrayImageInputStream(buffer.toByteArray());
             BufferedImage written = ImageIO.read(input);
@@ -124,13 +123,13 @@ public class PICTImageWriterTest extends ImageWriterAbstractTest<PICTImageWriter
                     if (original.getColorModel().getColorSpace().getType() == ColorSpace.TYPE_GRAY) {
                         // NOTE: For some reason, gray data seems to be one step off...
                         // ...and vary with different backing CMSs... :-(
-                        assertTrue(String.format("original 0x%08x != gray! (%d,%d)", originalRGB, x, y), expectedR == expectedG && expectedG == expectedB);
-                        assertTrue(String.format("written  0x%08x != gray! (%d,%d)", writtenRGB, x, y), actualR == actualG && actualG == actualB);
+                        assertTrue(expectedR == expectedG && expectedG == expectedB, String.format("original 0x%08x != gray! (%d,%d)", originalRGB, x, y));
+                        assertTrue(actualR == actualG && actualG == actualB, String.format("written  0x%08x != gray! (%d,%d)", writtenRGB, x, y));
                     }
                     else {
-                        assertEquals(String.format("Test data %d R(%d,%d)", i, x, y), expectedR, actualR);
-                        assertEquals(String.format("Test data %d G(%d,%d)", i, x, y), expectedG, actualG);
-                        assertEquals(String.format("Test data %d B(%d,%d)", i, x, y), expectedB, actualB);
+                        assertEquals(expectedR, actualR, String.format("Test data %d R(%d,%d)", i, x, y));
+                        assertEquals(expectedG, actualG, String.format("Test data %d G(%d,%d)", i, x, y));
+                        assertEquals(expectedB, actualB, String.format("Test data %d B(%d,%d)", i, x, y));
                     }
                 }
             }

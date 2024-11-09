@@ -31,11 +31,11 @@
 package com.twelvemonkeys.imageio.metadata;
 
 import com.twelvemonkeys.lang.ObjectAbstractTest;
-import org.junit.Test;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * EntryTest

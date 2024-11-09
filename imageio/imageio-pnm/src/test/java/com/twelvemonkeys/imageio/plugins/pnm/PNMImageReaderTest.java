@@ -31,8 +31,6 @@ package com.twelvemonkeys.imageio.plugins.pnm;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Test;
-
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.ImageTypeSpecifier;
@@ -42,6 +40,8 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
+
+import org.junit.jupiter.api.Test;
 
 public class PNMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> {
     @Override

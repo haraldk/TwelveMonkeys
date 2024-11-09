@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.jpeg;
 
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 
-import org.junit.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
@@ -48,8 +47,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 /**
  * JPEGImage10MetadataTest.

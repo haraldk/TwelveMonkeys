@@ -30,9 +30,8 @@
 
 package com.twelvemonkeys.imageio.metadata.exif;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * RationalTest
@@ -43,19 +42,19 @@ import static org.junit.Assert.assertEquals;
  */
 @SuppressWarnings("deprecation")
 public class RationalTest {
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testZeroDenominator() {
-        new Rational(1, 0);
+        assertThrows(IllegalArgumentException.class, () -> new Rational(1, 0));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testLongMinValueNumerator() {
-        new Rational(Long.MIN_VALUE, 1);
+        assertThrows(IllegalArgumentException.class, () -> new Rational(Long.MIN_VALUE, 1));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testLongMinValueDenominator() {
-        new Rational(1, Long.MIN_VALUE);
+        assertThrows(IllegalArgumentException.class, () -> new Rational(1, Long.MIN_VALUE));
     }
 
     @Test

@@ -32,8 +32,9 @@ package com.twelvemonkeys.imageio.plugins.icns;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
@@ -126,14 +127,14 @@ public class ICNSImageReaderTest extends ImageReaderAbstractTest<ICNSImageReader
     }
 
     @Test
-    @Ignore("Known issue: Subsampled reading not supported")
+    @Disabled("Known issue: Subsampled reading not supported")
     @Override
     public void testReadWithSubsampleParamPixels() throws IOException {
         super.testReadWithSubsampleParamPixels();
     }
 
     @Test
-    @Ignore("Known issue: Source region reading not supported")
+    @Disabled("Known issue: Source region reading not supported")
     @Override
     public void testReadWithSourceRegionParamEqualImage() throws IOException {
         super.testReadWithSourceRegionParamEqualImage();

@@ -1,6 +1,6 @@
 package com.twelvemonkeys.imageio.color;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.imageio.spi.ImageInputStreamSpi;
 import javax.imageio.spi.ServiceRegistry;

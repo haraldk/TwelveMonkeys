@@ -32,8 +32,6 @@ package com.twelvemonkeys.imageio.plugins.tga;
 
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
-import org.junit.Test;
-import org.junit.function.ThrowingRunnable;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -44,7 +42,8 @@ import javax.imageio.metadata.IIOMetadataNode;
 import java.awt.image.*;
 import java.util.Calendar;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * TGAMetadataTest.
@@ -73,21 +72,11 @@ public class TGAMetadataTest {
         // Other formats
         assertNull(metadata.getNativeMetadataFormatName());
         assertNull(metadata.getExtraMetadataFormatNames());
-        assertThrows(IllegalArgumentException.class, new ThrowingRunnable() {
-            @Override
-            public void run() {
-                metadata.getAsTree("com_foo_bar_1.0");
-            }
-        });
+        assertThrows(IllegalArgumentException.class, () -> metadata.getAsTree("com_foo_bar_1.0"));
 
         // Read-only
         assertTrue(metadata.isReadOnly());
-        assertThrows(IllegalStateException.class, new ThrowingRunnable() {
-            @Override
-            public void run() throws Throwable {
-                metadata.mergeTree(IIOMetadataFormatImpl.standardMetadataFormatName, new IIOMetadataNode(IIOMetadataFormatImpl.standardMetadataFormatName));
-            }
-        });
+        assertThrows(IllegalStateException.class, () -> metadata.mergeTree(IIOMetadataFormatImpl.standardMetadataFormatName, new IIOMetadataNode(IIOMetadataFormatImpl.standardMetadataFormatName)));
     }
 
     @Test

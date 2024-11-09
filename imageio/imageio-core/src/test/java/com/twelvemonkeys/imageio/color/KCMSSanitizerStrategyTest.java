@@ -30,8 +30,6 @@
 
 package com.twelvemonkeys.imageio.color;
 
-import org.junit.Test;
-
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
@@ -39,16 +37,18 @@ import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assume.assumeFalse;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
+
 import static org.mockito.Mockito.*;
 
 public class KCMSSanitizerStrategyTest {
     private static final byte[] XYZ = new byte[] {'X', 'Y', 'Z', ' '};
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testFixProfileNullProfile() throws Exception {
-        new KCMSSanitizerStrategy().fixProfile(null);
+        assertThrows(IllegalArgumentException.class, () -> new KCMSSanitizerStrategy().fixProfile(null));
     }
 
     @Test
@@ -77,7 +77,7 @@ public class KCMSSanitizerStrategyTest {
         try {
             Method isSealed = Class.class.getMethod("isSealed");
             Boolean result = (Boolean) isSealed.invoke(ICC_Profile.class);
-            assumeFalse("Can't mock ICC_Profile, class is sealed (as of JDK 19).", result);
+            assumeFalse(result, "Can't mock ICC_Profile, class is sealed (as of JDK 19).");
         }
         catch (ReflectiveOperationException ignore) {
             // We can't have sealed classes if we don't have the isSealed method...

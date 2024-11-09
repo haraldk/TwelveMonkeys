@@ -33,9 +33,6 @@ package com.twelvemonkeys.imageio.plugins.jpeg.jaiinterop;
 import com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.spi.IIORegistry;
@@ -47,7 +44,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests the JAI TIFFImageReader delegating to our JPEGImageReader.
@@ -99,7 +98,7 @@ public class JAITIFFImageReaderInteroperabilityTest extends ImageReaderAbstractT
         return Collections.emptyList();
     }
 
-    @Ignore("Fails in TIFFImageReader")
+    @Disabled("Fails in TIFFImageReader")
     @Override
     public void testSetDestinationIllegal() {
     }

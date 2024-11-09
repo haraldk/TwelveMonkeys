@@ -35,7 +35,6 @@ import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.lang.StringUtil;
 
 import org.hamcrest.core.IsInstanceOf;
-import org.junit.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.NamedNodeMap;
 import org.w3c.dom.Node;
@@ -58,17 +57,19 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.io.*;
+import java.time.Duration;
 import java.util.List;
 import java.util.*;
+import org.junit.jupiter.api.Test;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
+import static java.time.Duration.ofMillis;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeNoException;
-import static org.junit.Assume.assumeNotNull;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Mockito.*;
 
@@ -189,7 +190,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
 
     private static void assertJPEGPixelsEqual(byte[] expected, byte[] actual, @SuppressWarnings("SameParameterValue") int actualOffset) {
         for (int i = 0; i < expected.length; i++) {
-            assertEquals(String.format("Difference in pixel %d", i), expected[i], actual[i + actualOffset], 5);
+            assertEquals(expected[i], actual[i + actualOffset], 5, String.format("Difference in pixel %d", i));
         }
     }
 
@@ -568,7 +569,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         // TODO: There's a bug in com.sun.imageio.plugins.png.PNGImageReaderSpi.canDecode
         // causing files < 8 bytes to not be recognized as anything...
         for (TestData data : getBrokenTestData()) {
-            assertTrue(data.toString(), provider.canDecodeInput(data.getInputStream()));
+            assertTrue(provider.canDecodeInput(data.getInputStream()), data.toString());
         }
     }
 
@@ -600,30 +601,28 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         }
     }
 
-    @Test(timeout = 200)
+    @Test
     public void testBrokenGetRawImageTypeIgnoreMetadata() throws IOException {
         JPEGImageReader reader = createReader();
+        assertTimeout(ofMillis(200), () -> {
+            try {
+                for (TestData broken : getBrokenTestData()) {
+                    reader.setInput(broken.getInputStream(), true, true);
 
-        try {
-            for (TestData broken : getBrokenTestData()) {
-                reader.setInput(broken.getInputStream(), true, true);
-
-                try {
-                    reader.getRawImageType(0);
-                }
-                catch (IIOException expected) {
-                    assertNotNull(expected.getMessage());
-                }
-                catch (IOException expected) {
-                    if (!(expected instanceof EOFException)) {
+                    try {
+                        reader.getRawImageType(0);
+                    } catch (IIOException expected) {
                         assertNotNull(expected.getMessage());
+                    } catch (IOException expected) {
+                        if (!(expected instanceof EOFException)) {
+                            assertNotNull(expected.getMessage());
+                        }
                     }
                 }
+            } finally {
+                reader.dispose();
             }
-        }
-        finally {
-            reader.dispose();
-        }
+        });
     }
 
     @Test
@@ -652,30 +651,28 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         }
     }
 
-    @Test(timeout = 200)
+    @Test
     public void testBrokenGetImageTypesIgnoreMetadata() throws IOException {
         JPEGImageReader reader = createReader();
+        assertTimeout(ofMillis(200), () -> {
+            try {
+                for (TestData broken : getBrokenTestData()) {
+                    reader.setInput(broken.getInputStream(), true, true);
 
-        try {
-            for (TestData broken : getBrokenTestData()) {
-                reader.setInput(broken.getInputStream(), true, true);
-
-                try {
-                    reader.getImageTypes(0);
-                }
-                catch (IIOException expected) {
-                    assertNotNull(expected.getMessage());
-                }
-                catch (IOException expected) {
-                    if (!(expected instanceof EOFException)) {
+                    try {
+                        reader.getImageTypes(0);
+                    } catch (IIOException expected) {
                         assertNotNull(expected.getMessage());
+                    } catch (IOException expected) {
+                        if (!(expected instanceof EOFException)) {
+                            assertNotNull(expected.getMessage());
+                        }
                     }
                 }
+            } finally {
+                reader.dispose();
             }
-        }
-        finally {
-            reader.dispose();
-        }
+        });
     }
 
     @Test
@@ -786,21 +783,21 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         return (IIOMetadataNode) elements.item(0);
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testGetImageMetadataOutOfBounds() throws IOException {
         JPEGImageReader reader = createReader();
 
         try {
             // Any sample should do here
             reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/gray-sample.jpg")));
-            reader.getImageMetadata(-1);
+            assertThrows(IndexOutOfBoundsException.class, () -> reader.getImageMetadata(-1));
         }
         finally {
             reader.dispose();
         }
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testBrokenBogusSegmentLengthReadWithDestination() throws IOException {
         JPEGImageReader reader = createReader();
 
@@ -815,18 +812,17 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
 
             ImageReadParam param = reader.getDefaultReadParam();
             param.setDestination(image);
-
-            try {
-                reader.read(0, param);
-            }
-            catch (IOException e) {
-                // Even if we get an exception here, the image should contain 10-15% of the image
-                assertRGBEquals(0xffffffff, image.getRGB(0, 0));   // white area
-                assertRGBEquals(0xff0000ff, image.getRGB(67, 22)); // blue area
-                assertRGBEquals(0xffff00ff, image.getRGB(83, 22)); // purple area
-
-                throw e;
-            }
+            assertThrows(IIOException.class, () -> {
+                try {
+                    reader.read(0, param);
+                } catch (IOException e) {
+                    // Even if we get an exception here, the image should contain 10-15% of the image
+                    assertRGBEquals(0xffffffff, image.getRGB(0, 0));   // white area
+                    assertRGBEquals(0xff0000ff, image.getRGB(67, 22)); // blue area
+                    assertRGBEquals(0xffff00ff, image.getRGB(83, 22)); // purple area
+                    throw e;
+                }
+            });
         }
         finally {
             reader.dispose();
@@ -1023,7 +1019,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             reader.setInput(data.getInputStream());
             Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
 
-            assertTrue(data + " has no image types", types.hasNext());
+            assertTrue(types.hasNext(), data + " has no image types");
 
             boolean hasRGBType = false;
             boolean hasCMYKType = false;
@@ -1036,15 +1032,15 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                     hasRGBType = true;
                 }
                 else if (csType == ColorSpace.TYPE_CMYK) {
-                    assertTrue("CMYK types should be delivered after RGB types (violates \"contract\" of more \"natural\" type first) for " + data, hasRGBType);
+                    assertTrue(hasRGBType, "CMYK types should be delivered after RGB types (violates \"contract\" of more \"natural\" type first) for " + data);
 
                     hasCMYKType = true;
                     break;
                 }
             }
 
-            assertTrue("No RGB types for " + data, hasRGBType);
-            assertTrue("No CMYK types for " + data, hasCMYKType);
+            assertTrue(hasRGBType, "No RGB types for " + data);
+            assertTrue(hasCMYKType, "No CMYK types for " + data);
         }
 
         reader.dispose();
@@ -1064,7 +1060,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             reader.setInput(data.getInputStream());
 
             ImageTypeSpecifier rawType = reader.getRawImageType(0);
-            assertNotNull("No raw type for " + data, rawType);
+            assertNotNull(rawType, "No raw type for " + data);
         }
     }
 
@@ -1079,7 +1075,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             reader.setInput(data.getInputStream());
             Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
 
-            assertTrue(data + " has no image types", types.hasNext());
+            assertTrue(types.hasNext(), data + " has no image types");
 
             ImageTypeSpecifier cmykType = null;
 
@@ -1093,7 +1089,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 }
             }
 
-            assertNotNull("No CMYK types for " + data, cmykType);
+            assertNotNull(cmykType, "No CMYK types for " + data);
 
             ImageReadParam param = reader.getDefaultReadParam();
             param.setDestinationType(cmykType);
@@ -1124,7 +1120,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             reader.setInput(data.getInputStream());
             Iterator<ImageTypeSpecifier> types = reader.getImageTypes(0);
 
-            assertTrue(data + " has no image types", types.hasNext());
+            assertTrue(types.hasNext(), data + " has no image types");
 
             ImageTypeSpecifier cmykType = null;
             ImageTypeSpecifier rgbType = null;
@@ -1145,8 +1141,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 }
             }
 
-            assertNotNull("No RGB types for " + data, rgbType);
-            assertNotNull("No CMYK types for " + data, cmykType);
+            assertNotNull(rgbType, "No RGB types for " + data);
+            assertNotNull(cmykType, "No CMYK types for " + data);
 
             ImageReadParam param = reader.getDefaultReadParam();
             param.setSourceRegion(new Rectangle(reader.getWidth(0), 8)); // We don't really need to read it all
@@ -1239,13 +1235,13 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
 
         while (imageTypes.hasNext()) {
             ImageTypeSpecifier specifier = imageTypes.next();
-            assertNotEquals("RGB JPEGs can't be decoded as Gray as it has no luminance (Y) component", ColorSpace.TYPE_GRAY, specifier.getColorModel().getColorSpace().getType());
+            assertNotEquals(ColorSpace.TYPE_GRAY, specifier.getColorModel().getColorSpace().getType(), "RGB JPEGs can't be decoded as Gray as it has no luminance (Y) component");
         }
 
         reader.dispose();
     }
 
-    @Test(expected = Exception.class)
+    @Test
     public void testRGBAsGray() throws IOException {
         final JPEGImageReader reader = createReader();
         try {
@@ -1259,7 +1255,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             param.setDestinationType(ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE));
 
             // Should ideally throw IIOException due to destination type mismatch, but throws IllegalArgumentException...
-            reader.read(0, param);
+            assertThrows(Exception.class, () -> reader.read(0, param));
         }
         finally {
             reader.dispose();
@@ -1434,7 +1430,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             for (int i = 0; i < reader.getNumImages(true); i++) {
                 try {
                     IIOMetadata metadata = reader.getImageMetadata(i);
-                    assertNotNull(String.format("Image metadata null for %s image %s", testData, i), metadata);
+                    assertNotNull(metadata, String.format("Image metadata null for %s image %s", testData, i));
 
                     Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
                     assertNotNull(tree);
@@ -1489,7 +1485,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource(resource))) {
                 reader.setInput(stream);
                 IIOMetadata metadata = reader.getImageMetadata(0);
-                assertNotNull(String.format("%s: null metadata", resource), metadata);
+                assertNotNull( metadata, String.format("%s: null metadata", resource));
 
                 Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
                 assertNotNull(tree);
@@ -1550,11 +1546,11 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             ImageReaderSpi provider = spiClass.newInstance();
 
             ImageReader reader = provider.createReaderInstance();
-            assumeNotNull(reader);
+            assumeTrue(reader != null, "Reader should not be null");
             return reader;
         }
         catch (Throwable t) {
-            assumeNoException(t);
+            assumeTrue(false, "An exception occurred: " + t.getMessage());
         }
 
         return null;
@@ -1573,7 +1569,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
 
         NamedNodeMap expectedAttributes = expectedTree.getAttributes();
         NamedNodeMap actualAttributes = actualTree.getAttributes();
-        assertEquals(String.format("%s: Number of attributes for <%s> differ", message, expectedTree.getNodeName()), expectedAttributes.getLength(), actualAttributes.getLength());
+        assertEquals(expectedAttributes.getLength(), actualAttributes.getLength(), String.format("%s: Number of attributes for <%s> differ", message, expectedTree.getNodeName()));
         for (int i = 0; i < expectedAttributes.getLength(); i++) {
             Node item = expectedAttributes.item(i);
             String nodeValue = item.getNodeValue();
@@ -1589,13 +1585,13 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         // Test for equal user objects.
         // - array equals or reflective equality... Most user objects does not have a decent equals method.. :-P
         if (expectedTree instanceof IIOMetadataNode) {
-            assertTrue(String.format("%s: %s not an IIOMetadataNode", message, expectedTree.getNodeName()), actualTree instanceof IIOMetadataNode);
+            assertTrue(actualTree instanceof IIOMetadataNode, String.format("%s: %s not an IIOMetadataNode", message, expectedTree.getNodeName()));
 
             Object expectedUserObject = ((IIOMetadataNode) expectedTree).getUserObject();
 
             if (expectedUserObject != null) {
                 Object actualUserObject = ((IIOMetadataNode) actualTree).getUserObject();
-                assertNotNull(String.format("%s: User object missing for <%s>", message, expectedTree.getNodeName()), actualUserObject);
+                assertNotNull(actualUserObject, String.format("%s: User object missing for <%s>", message, expectedTree.getNodeName()));
                 assertEqualUserObjects(String.format("%s: User objects for <%s MarkerTag\"%s\"> differ", message, expectedTree.getNodeName(), ((IIOMetadataNode) expectedTree).getAttribute("MarkerTag")), expectedUserObject, actualUserObject);
             }
         }
@@ -1609,7 +1605,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         List<IIOMetadataNode> expectedChildren = sortNodes(expectedTree.getChildNodes());
         List<IIOMetadataNode> actualChildren = sortNodes(actualTree.getChildNodes());
 
-        assertEquals(String.format("%s: Number of child nodes for %s differ", message, expectedTree.getNodeName()), expectedChildren.size(), actualChildren.size());
+        assertEquals(expectedChildren.size(), actualChildren.size(), String.format("%s: Number of child nodes for %s differ", message, expectedTree.getNodeName()));
 
         for (int i = 0; i < expectedChildren.size(); i++) {
             assertTreesEquals(message + "<" + expectedTree.getNodeName() + ">", expectedChildren.get(i), actualChildren.get(i));
@@ -1623,26 +1619,26 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
 
         if (expectedUserObject instanceof ICC_Profile) {
             if (actualUserObject instanceof ICC_Profile) {
-                assertArrayEquals(message, ((ICC_Profile) expectedUserObject).getData(), ((ICC_Profile) actualUserObject).getData());
+                assertArrayEquals(((ICC_Profile) expectedUserObject).getData(), ((ICC_Profile) actualUserObject).getData(), message);
                 return;
             }
         }
         else if (expectedUserObject instanceof byte[]) {
             if (actualUserObject instanceof byte[]) {
-                assertArrayEquals(message, (byte[]) expectedUserObject, (byte[]) actualUserObject);
+                assertArrayEquals((byte[]) expectedUserObject, (byte[]) actualUserObject, message);
                 return;
             }
         }
         else if (expectedUserObject instanceof JPEGHuffmanTable) {
             if (actualUserObject instanceof JPEGHuffmanTable) {
-                assertArrayEquals(message, ((JPEGHuffmanTable) expectedUserObject).getLengths(), ((JPEGHuffmanTable) actualUserObject).getLengths());
-                assertArrayEquals(message, ((JPEGHuffmanTable) expectedUserObject).getValues(), ((JPEGHuffmanTable) actualUserObject).getValues());
+                assertArrayEquals(((JPEGHuffmanTable) expectedUserObject).getLengths(), ((JPEGHuffmanTable) actualUserObject).getLengths(), message);
+                assertArrayEquals(((JPEGHuffmanTable) expectedUserObject).getValues(), ((JPEGHuffmanTable) actualUserObject).getValues(), message);
                 return;
             }
         }
         else if (expectedUserObject instanceof JPEGQTable) {
             if (actualUserObject instanceof JPEGQTable) {
-                assertArrayEquals(message, ((JPEGQTable) expectedUserObject).getTable(), ((JPEGQTable) actualUserObject).getTable());
+                assertArrayEquals(((JPEGQTable) expectedUserObject).getTable(), ((JPEGQTable) actualUserObject).getTable(), message);
                 return;
             }
         }
@@ -2007,35 +2003,36 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         }
     }
 
-    @Test(timeout = 1000L)
+    @Test
     public void testInfiniteLoopCorrupt() throws IOException {
         ImageReader reader = createReader();
+        assertTimeout(Duration.ofSeconds(1), () -> {
+            try (ImageInputStream iis = ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg"))) {
+                reader.setInput(iis);
 
-        try (ImageInputStream iis = ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg"))) {
-            reader.setInput(iis);
-
-            try {
-                reader.read(0, null);
+                try {
+                    reader.read(0, null);
+                } catch (IIOException expected) {
+                    assertThat(expected.getMessage(), allOf(containsString("SOF"), containsString("stream")));
+                }
             }
-            catch (IIOException expected) {
-                assertThat(expected.getMessage(), allOf(containsString("SOF"), containsString("stream")));
-            }
-        }
+        });
     }
 
-    @Test(timeout = 1000L)
+    @Test
     public void testInfiniteLoopCorruptRaster() throws IOException {
         ImageReader reader = createReader();
+        assertTimeout(Duration.ofSeconds(1), () -> {
+            try (ImageInputStream iis = ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg"))) {
+                reader.setInput(iis);
 
-        try (ImageInputStream iis = ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg"))) {
-            reader.setInput(iis);
-
-            try {
-                reader.readRaster(0, null);
+                try {
+                    reader.readRaster(0, null);
+                }
+                catch (IIOException expected) {
+                    assertThat(expected.getMessage(), allOf(containsString("SOF"), containsString("stream")));
+                }
             }
-            catch (IIOException expected) {
-                assertThat(expected.getMessage(), allOf(containsString("SOF"), containsString("stream")));
-            }
-        }
+        });
     }
 }

@@ -31,12 +31,12 @@
 package com.twelvemonkeys.io;
 
 import com.twelvemonkeys.lang.ObjectAbstractTest;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.io.Reader;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * ReaderAbstractTestCase
@@ -112,7 +112,7 @@ public abstract class ReaderAbstractTest extends ObjectAbstractTest {
         int toSkip = mInput.length();
         while (toSkip > 0) {
             long skipped = reader.skip(toSkip);
-            assertFalse("Skipped < 0", skipped < 0);
+            assertFalse(skipped < 0, "Skipped < 0");
             toSkip -= skipped;
         }
 

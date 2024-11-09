@@ -31,7 +31,6 @@
 package com.twelvemonkeys.imageio.metadata.jpeg;
 
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
-import org.junit.Test;
 
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
@@ -46,8 +45,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * JPEGSegmentUtilTest
@@ -148,7 +147,7 @@ public class JPEGSegmentUtilTest {
         }
 
         ICC_Profile profile = ICC_Profile.getInstance(new SequenceInputStream(Collections.enumeration(Arrays.asList(streams))));
-        assertNotNull("Profile could not be read, probably bad data", profile);
+        assertNotNull(profile, "Profile could not be read, probably bad data");
     }
 
     @Test
@@ -156,9 +155,9 @@ public class JPEGSegmentUtilTest {
         List<JPEGSegment> segments = JPEGSegmentUtil.readSegments(getData("/jpeg/9788245605525.jpg"), JPEGSegmentUtil.ALL_SEGMENTS);
         assertEquals(7, segments.size());
 
-        assertEquals(segments.toString(), JPEG.SOF0, segments.get(3).marker());
-        assertEquals(segments.toString(), null, segments.get(3).identifier());
-        assertEquals(segments.toString(), JPEG.SOS, segments.get(segments.size() - 1).marker());
+        assertEquals(JPEG.SOF0, segments.get(3).marker(), segments.toString());
+        assertEquals(null, segments.get(3).identifier(), segments.toString());
+        assertEquals(JPEG.SOS, segments.get(segments.size() - 1).marker(), segments.toString());
     }
 
     @Test
@@ -166,9 +165,9 @@ public class JPEGSegmentUtilTest {
         List<JPEGSegment> segments = JPEGSegmentUtil.readSegments(getData("/jpeg/ts_open_300dpi.jpg"), JPEGSegmentUtil.ALL_SEGMENTS);
         assertEquals(27, segments.size());
 
-        assertEquals(segments.toString(), JPEG.SOF0, segments.get(23).marker());
-        assertEquals(segments.toString(), null, segments.get(23).identifier());
-        assertEquals(segments.toString(), JPEG.SOS, segments.get(segments.size() - 1).marker());
+        assertEquals(JPEG.SOF0, segments.get(23).marker(), segments.toString());
+        assertEquals(null, segments.get(23).identifier(), segments.toString());
+        assertEquals(JPEG.SOS, segments.get(segments.size() - 1).marker(), segments.toString());
     }
 
     @Test

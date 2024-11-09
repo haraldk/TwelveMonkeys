@@ -30,9 +30,8 @@
 
 package com.twelvemonkeys.imageio.metadata;
 
-import org.junit.Test;
-
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * AbstractEntryTest
@@ -51,9 +50,9 @@ public class AbstractEntryTest extends EntryAbstractTest {
         return new AbstractEntry(identifier, value) {};
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateEntryNullId() {
-        createEntry(null, new Object());
+        assertThrows(IllegalArgumentException.class, () -> createEntry(null, new Object()));
     }
 
     @Test

@@ -32,8 +32,6 @@ package com.twelvemonkeys.imageio.plugins.iff;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Test;
-
 import javax.imageio.ImageIO;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
@@ -45,8 +43,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
-
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 /**
  * IFFImageReaderTestCase
  *
@@ -144,9 +142,9 @@ public class IFFImageReaderTest extends ImageReaderAbstractTest<IFFImageReader> 
         for (int i = 0; i < 32; i++) {
             // Make sure the color model is really EHB
             try {
-                assertEquals("red", (reds[i] & 0xff) / 2, reds[i + 32] & 0xff);
-                assertEquals("blue", (blues[i] & 0xff) / 2, blues[i + 32] & 0xff);
-                assertEquals("green", (greens[i] & 0xff) / 2, greens[i + 32] & 0xff);
+                assertEquals((reds[i] & 0xff) / 2, reds[i + 32] & 0xff, "red");
+                assertEquals((blues[i] & 0xff) / 2, blues[i + 32] & 0xff, "blue");
+                assertEquals((greens[i] & 0xff) / 2, greens[i + 32] & 0xff, "green");
             }
             catch (AssertionError err) {
                 throw new AssertionError("Color " + i + " " + err.getMessage(), err);

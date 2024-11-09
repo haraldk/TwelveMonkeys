@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.tga;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Test;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.ImageIO;
@@ -49,7 +48,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * TGAImageReaderTest
@@ -204,7 +204,7 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
                 }
             }
 
-            assertTrue("No Software TextEntry", softwareFound);
+            assertTrue(softwareFound, "No Software TextEntry");
         }
         finally {
             reader.dispose();

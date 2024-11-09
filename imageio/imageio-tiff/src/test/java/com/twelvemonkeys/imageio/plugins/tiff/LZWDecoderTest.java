@@ -35,15 +35,16 @@ import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.DecoderAbstractTest;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.Encoder;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.time.Duration;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * LZWDecoderTest
@@ -90,7 +91,7 @@ public class LZWDecoderTest extends DecoderAbstractTest {
             while ((data = actual.read()) !=  -1) {
                 count++;
 
-                assertEquals(String.format("Incorrect data at offset 0x%04x", count), expected.read(), data);
+                assertEquals(expected.read(), data, String.format("Incorrect data at offset 0x%04x", count));
             }
 
             assertEquals(-1, data);
@@ -112,24 +113,26 @@ public class LZWDecoderTest extends DecoderAbstractTest {
         return null;
     }
 
-    @Ignore
-    @Test(timeout = 3000)
+    @Disabled
+    @Test
     public void testSpeed() throws IOException {
-        byte[] bytes = FileUtil.read(getClass().getResourceAsStream("/lzw/lzw-long.bin"));
+        assertTimeout(Duration.ofMillis(3000), () -> {
+            byte[] bytes = FileUtil.read(getClass().getResourceAsStream("/lzw/lzw-long.bin"));
 
 
-        for (int i = 0; i < SPEED_TEST_ITERATIONS; i++) {
-            ByteBuffer buffer = ByteBuffer.allocate(1024);
-            ByteArrayInputStream input = new ByteArrayInputStream(bytes);
-            LZWDecoder decoder = new LZWDecoder.LZWSpecDecoder();
+            for (int i = 0; i < SPEED_TEST_ITERATIONS; i++) {
+                ByteBuffer buffer = ByteBuffer.allocate(1024);
+                ByteArrayInputStream input = new ByteArrayInputStream(bytes);
+                LZWDecoder decoder = new LZWDecoder.LZWSpecDecoder();
 
-            int read, total = 0;
-            while((read = decoder.decode(input, buffer)) > 0) {
-                buffer.clear();
-                total += read;
+                int read, total = 0;
+                while ((read = decoder.decode(input, buffer)) > 0) {
+                    buffer.clear();
+                    total += read;
+                }
+
+                assertEquals(49152, total);
             }
-
-            assertEquals(49152, total);
-        }
+        });
     }
 }

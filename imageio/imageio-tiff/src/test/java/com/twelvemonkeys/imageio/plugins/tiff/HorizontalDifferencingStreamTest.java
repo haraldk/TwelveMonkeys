@@ -33,13 +33,13 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.LittleEndianDataOutputStream;
-import org.junit.Test;
 
 import java.io.*;
 import java.nio.ByteOrder;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 /**
  * HorizontalDifferencingStreamTest

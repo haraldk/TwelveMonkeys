@@ -30,14 +30,14 @@
 
 package com.twelvemonkeys.imageio.plugins.jpeg;
 
-import org.junit.Test;
 
 import java.awt.image.DataBuffer;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class LuminanceToGrayTest {
     @Test
@@ -56,7 +56,7 @@ public class LuminanceToGrayTest {
             assertNotNull(pixel);
             assertEquals(1, pixel.length);
             byte[] expected = {(byte) i};
-            assertArrayEquals(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), expected, pixel);
+            assertArrayEquals(expected, pixel, String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)));
         }
     }
 
@@ -76,7 +76,7 @@ public class LuminanceToGrayTest {
             assertNotNull(pixel);
             assertEquals(1, pixel.length);
             byte[] expected = {(byte) i};
-            assertArrayEquals(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), expected, pixel);
+            assertArrayEquals(expected, pixel, String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)));
         }
     }
 
@@ -96,7 +96,7 @@ public class LuminanceToGrayTest {
             assertNotNull(pixel);
             assertEquals(2, pixel.length);
             byte[] expected = {(byte) i, (byte) (255 - i)};
-            assertArrayEquals(String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)), expected, pixel);
+            assertArrayEquals(expected, pixel, String.format("Was: %s, expected: %s", Arrays.toString(pixel), Arrays.toString(expected)));
         }
     }
 }

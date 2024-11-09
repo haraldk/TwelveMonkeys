@@ -31,11 +31,11 @@
 package com.twelvemonkeys.imageio.metadata.jpeg;
 
 import com.twelvemonkeys.lang.ObjectAbstractTest;
-import org.junit.Test;
 
 import java.nio.charset.Charset;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
-import static org.junit.Assert.assertEquals;
 
 /**
  * JPEGSegmentTest

@@ -32,7 +32,6 @@ package com.twelvemonkeys.io;
 
 import com.twelvemonkeys.lang.StringUtil;
 import com.twelvemonkeys.util.CollectionUtil;
-import org.junit.Test;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -40,7 +39,8 @@ import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * CompoundReaderTestCase

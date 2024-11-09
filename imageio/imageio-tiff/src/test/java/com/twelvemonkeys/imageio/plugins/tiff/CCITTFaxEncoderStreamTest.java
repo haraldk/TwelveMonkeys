@@ -31,8 +31,6 @@
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.plugins.tiff.CCITTFaxEncoderStream.Code;
-import org.junit.Before;
-import org.junit.Test;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -46,7 +44,10 @@ import java.io.*;
 import java.net.URL;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 /**
  * CCITTFaxEncoderStreamTest
@@ -64,7 +65,7 @@ public class CCITTFaxEncoderStreamTest {
     // 1 1 0 0 1 1 x x
     BufferedImage image;
 
-    @Before
+    @BeforeEach
     public void init() {
         image = new BufferedImage(6, 4, BufferedImage.TYPE_BYTE_BINARY);
         for (int y = 0; y < 4; y++) {

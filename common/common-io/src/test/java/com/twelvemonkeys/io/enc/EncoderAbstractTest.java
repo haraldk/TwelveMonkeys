@@ -33,13 +33,12 @@ package com.twelvemonkeys.io.enc;
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.lang.ObjectAbstractTest;
 
-import org.junit.Test;
 
 import java.io.*;
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * AbstractEncoderTest

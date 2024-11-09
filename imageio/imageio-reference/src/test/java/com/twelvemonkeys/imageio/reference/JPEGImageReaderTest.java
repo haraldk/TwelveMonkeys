@@ -34,8 +34,7 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.lang.SystemUtil;
 
 import com.sun.imageio.plugins.jpeg.JPEGImageReader;
-import org.junit.Ignore;
-import org.junit.Test;
+
 
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
@@ -46,7 +45,10 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.lookupProviderByName;
-import static org.junit.Assume.assumeTrue;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assumptions.*;
 
 /**
  * JPEGImageReaderTest
@@ -90,7 +92,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     @Override
     public void testSetDestination() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6
-        assumeTrue("Test skipped due to known bug in Java 1.5, please test again with Java 6 or later", IS_JAVA_6_OR_LATER);
+        assumeTrue(IS_JAVA_6_OR_LATER, "Test skipped due to known bug in Java 1.5, please test again with Java 6 or later");
         super.testSetDestination();
     }
 
@@ -98,19 +100,19 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     @Override
     public void testSetDestinationType() throws IOException {
         // Known bug in Sun JPEGImageReader before Java 6
-        assumeTrue("Test skipped due to known bug in Java 1.5, please test again with Java 6 or later", IS_JAVA_6_OR_LATER);
+        assumeTrue(IS_JAVA_6_OR_LATER, "Test skipped due to known bug in Java 1.5, please test again with Java 6 or later");
         super.testSetDestinationType();
     }
 
     @Test
-    @Ignore("Known issue")
+    @Disabled("Known issue")
     @Override
     public void testReadAsRenderedImageIndexOutOfBounds() throws IOException {
         super.testReadAsRenderedImageIndexOutOfBounds();
     }
 
     @Test
-    @Ignore("No test data with JFIF thumbnail")
+    @Disabled("No test data with JFIF thumbnail")
     @Override
     public void testNotBadCachingThumbnails() throws IOException {
         super.testNotBadCachingThumbnails();

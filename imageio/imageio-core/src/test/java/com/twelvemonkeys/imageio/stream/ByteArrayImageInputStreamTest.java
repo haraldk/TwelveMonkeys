@@ -30,13 +30,14 @@
 
 package com.twelvemonkeys.imageio.stream;
 
-import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Random;
 
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
 import static com.twelvemonkeys.imageio.stream.BufferedImageInputStreamTest.rangeEquals;
-import static org.junit.Assert.*;
 
 /**
  * ByteArrayImageInputStreamTest
@@ -51,7 +52,7 @@ public class ByteArrayImageInputStreamTest {
     @Test
     public void testCreate() {
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(new byte[0]);
-        assertEquals("Data length should be same as stream length", 0, stream.length());
+        assertEquals( 0, stream.length(), "Data length should be same as stream length");
     }
 
     @Test
@@ -63,8 +64,8 @@ public class ByteArrayImageInputStreamTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue("Exception message does not contain parameter name", message.contains("data"));
-            assertTrue("Exception message does not contain null", message.contains("null"));
+            assertTrue(message.contains("data"), "Exception message does not contain parameter name");
+            assertTrue(message.contains("null"), "Exception message does not contain null");
         }
     }
 
@@ -77,8 +78,8 @@ public class ByteArrayImageInputStreamTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue("Exception message does not contain parameter name", message.contains("data"));
-            assertTrue("Exception message does not contain null", message.contains("null"));
+            assertTrue( message.contains("data"), "Exception message does not contain parameter name");
+            assertTrue( message.contains("null"), "Exception message does not contain null");
         }
     }
 
@@ -91,8 +92,8 @@ public class ByteArrayImageInputStreamTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue("Exception message does not contain parameter name", message.contains("offset"));
-            assertTrue("Exception message does not contain -1", message.contains("-1"));
+            assertTrue(message.contains("offset"), "Exception message does not contain parameter name");
+            assertTrue( message.contains("-1"), "Exception message does not contain -1");
         }
     }
 
@@ -105,8 +106,8 @@ public class ByteArrayImageInputStreamTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue("Exception message does not contain parameter name", message.contains("offset"));
-            assertTrue("Exception message does not contain 2", message.contains("2"));
+            assertTrue( message.contains("offset"), "Exception message does not contain parameter name");
+            assertTrue( message.contains("2"), "Exception message does not contain 2");
         }
     }
 
@@ -119,8 +120,8 @@ public class ByteArrayImageInputStreamTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue("Exception message does not contain parameter name", message.contains("length"));
-            assertTrue("Exception message does not contain -1", message.contains("-1"));
+            assertTrue(message.contains("length"), "Exception message does not contain parameter name");
+            assertTrue(message.contains("-1"), "Exception message does not contain -1");
         }
     }
 
@@ -133,8 +134,8 @@ public class ByteArrayImageInputStreamTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue("Exception message does not contain parameter name", message.contains("length"));
-            assertTrue("Exception message does not contain ™", message.contains("2"));
+            assertTrue(message.contains("length"), "Exception message does not contain parameter name");
+            assertTrue(message.contains("2"), "Exception message does not contain ™");
         }
     }
 
@@ -145,10 +146,10 @@ public class ByteArrayImageInputStreamTest {
 
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data);
 
-        assertEquals("Data length should be same as stream length", data.length, stream.length());
+        assertEquals(data.length, stream.length(), "Data length should be same as stream length");
 
         for (byte b : data) {
-            assertEquals("Wrong data read", b & 0xff, stream.read());
+            assertEquals(b & 0xff, stream.read(), "Wrong data read");
         }
     }
 
@@ -161,10 +162,10 @@ public class ByteArrayImageInputStreamTest {
         int length = random.nextInt(data.length - offset);
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data, offset, length);
 
-        assertEquals("Data length should be same as stream length", length, stream.length());
+        assertEquals(length, stream.length(), "Data length should be same as stream length");
 
         for (int i = offset; i < offset + length; i++) {
-            assertEquals("Wrong data read", data[i] & 0xff, stream.read());
+            assertEquals(data[i] & 0xff, stream.read(), "Wrong data read");
         }
     }
 
@@ -175,13 +176,13 @@ public class ByteArrayImageInputStreamTest {
 
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data);
 
-        assertEquals("Data length should be same as stream length", data.length, stream.length());
+        assertEquals(data.length, stream.length(), "Data length should be same as stream length");
 
         byte[] result = new byte[1024];
 
         for (int i = 0; i < data.length / result.length; i++) {
             stream.readFully(result);
-            assertTrue("Wrong data read: " + i, rangeEquals(data, i * result.length, result, 0, result.length));
+            assertTrue(rangeEquals(data, i * result.length, result, 0, result.length), "Wrong data read: " + i);
         }
     }
 
@@ -194,13 +195,13 @@ public class ByteArrayImageInputStreamTest {
         int length = 10240;
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data, offset, length);
 
-        assertEquals("Data length should be same as stream length", length, stream.length());
+        assertEquals(length, stream.length(), "Data length should be same as stream length");
 
         byte[] result = new byte[1024];
 
         for (int i = 0; i < length / result.length; i++) {
             stream.readFully(result);
-            assertTrue("Wrong data read: " + i, rangeEquals(data, offset + i * result.length, result, 0, result.length));
+            assertTrue(rangeEquals(data, offset + i * result.length, result, 0, result.length), "Wrong data read: " + i);
         }
     }
 
@@ -211,14 +212,14 @@ public class ByteArrayImageInputStreamTest {
 
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data);
 
-        assertEquals("Data length should be same as stream length", data.length, stream.length());
+        assertEquals(data.length, stream.length(), "Data length should be same as stream length");
 
         byte[] result = new byte[7];
 
         for (int i = 0; i < data.length / result.length; i += 2) {
             stream.readFully(result);
             stream.skipBytes(result.length);
-            assertTrue("Wrong data read: " + i, rangeEquals(data, i * result.length, result, 0, result.length));
+            assertTrue(rangeEquals(data, i * result.length, result, 0, result.length), "Wrong data read: " + i);
         }
     }
 
@@ -229,7 +230,7 @@ public class ByteArrayImageInputStreamTest {
 
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(data);
 
-        assertEquals("Data length should be same as stream length", data.length, stream.length());
+        assertEquals(data.length, stream.length(), "Data length should be same as stream length");
 
         byte[] result = new byte[9];
 
@@ -237,9 +238,9 @@ public class ByteArrayImageInputStreamTest {
             // Read backwards
             long newPos = stream.length() - result.length - i * result.length;
             stream.seek(newPos);
-            assertEquals("Wrong stream position", newPos, stream.getStreamPosition());
+            assertEquals(newPos, stream.getStreamPosition(), "Wrong stream position");
             stream.readFully(result);
-            assertTrue("Wrong data read: " + i, rangeEquals(data, (int) newPos, result, 0, result.length));
+            assertTrue(rangeEquals(data, (int) newPos, result, 0, result.length), "Wrong data read: " + i);
         }
     }
 }

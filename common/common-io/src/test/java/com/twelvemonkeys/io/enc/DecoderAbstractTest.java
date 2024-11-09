@@ -32,12 +32,13 @@ package com.twelvemonkeys.io.enc;
 
 import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.lang.ObjectAbstractTest;
-import org.junit.Test;
 
+import java.awt.image.ImageProducer;
 import java.io.*;
 import java.nio.ByteBuffer;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * AbstractDecoderTest
@@ -55,13 +56,13 @@ public abstract class DecoderAbstractTest extends ObjectAbstractTest {
         return createDecoder();
     }
 
-    @Test(expected = NullPointerException.class)
+    @Test
     public final void testNullDecode() throws IOException {
         Decoder decoder = createDecoder();
         ByteArrayInputStream bytes = new ByteArrayInputStream(new byte[20]);
-
-        decoder.decode(bytes, null);
-        fail("null should throw NullPointerException");
+        assertThrows(NullPointerException.class, () -> {
+            decoder.decode(bytes, null);
+        });
     }
 
     @Test
@@ -71,7 +72,7 @@ public abstract class DecoderAbstractTest extends ObjectAbstractTest {
 
         try {
             int count = decoder.decode(bytes, ByteBuffer.allocate(128));
-            assertEquals("Should not be able to read any bytes", 0, count);
+            assertEquals( 0, count, "Should not be able to read any bytes");
         }
         catch (EOFException allowed) {
             // Okay
@@ -94,7 +95,7 @@ public abstract class DecoderAbstractTest extends ObjectAbstractTest {
         byte[] encoded = outBytes.toByteArray();
 
         byte[] decoded = FileUtil.read(new DecoderStream(new ByteArrayInputStream(encoded), createDecoder()));
-        assertArrayEquals(String.format("Data %d", pLength), data, decoded);
+        assertArrayEquals(data, decoded, String.format("Data %d", pLength));
 
         InputStream in = new DecoderStream(new ByteArrayInputStream(encoded), createDecoder());
         outBytes = new ByteArrayOutputStream();
@@ -103,7 +104,7 @@ public abstract class DecoderAbstractTest extends ObjectAbstractTest {
         in.close();
 
         decoded = outBytes.toByteArray();
-        assertArrayEquals(String.format("Data %d", pLength), data, decoded);
+        assertArrayEquals(data, decoded, String.format("Data %d", pLength));
     }
 
     @Test

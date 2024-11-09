@@ -34,7 +34,6 @@ import com.twelvemonkeys.imageio.metadata.*;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 
-import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageOutputStream;
@@ -47,7 +46,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * TIFFWriterTest
@@ -272,7 +272,7 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
         Directory read = new TIFFReader().read(new ByteArrayImageInputStream(data));
 
         assertNotNull(read.getEntryById(TIFF.TAG_SOFTWARE));
-        assertTrue("value not an string array", read.getEntryById(TIFF.TAG_SOFTWARE).getValue() instanceof String[]);
+        assertTrue(read.getEntryById(TIFF.TAG_SOFTWARE).getValue() instanceof String[], "value not an string array");
         assertArrayEquals(strings, (String[]) read.getEntryById(TIFF.TAG_SOFTWARE).getValue());
     }
 

@@ -10,8 +10,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 /**
  * PNTGImageReaderTest.
@@ -59,7 +59,7 @@ public class PNTGImageReaderTest extends ImageReaderAbstractTest<PNTGImageReader
         for (TestData data : testData) {
             ImageInputStream stream = data.getInputStream();
             assertNotNull(stream);
-            assertTrue("Provider is expected to be able to decode data: " + data, provider.canDecodeInput(stream));
+            assertTrue(provider.canDecodeInput(stream), "Provider is expected to be able to decode data: " + data);
         }
     }
 }

@@ -30,9 +30,9 @@
 
 package com.twelvemonkeys.imageio.path;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * AdobePathSegmentTest.
@@ -42,19 +42,20 @@ import static org.junit.Assert.*;
  * @version $Id: AdobePathSegmentTest.java,v 1.0 13/12/14 harald.kuhr Exp$
  */
 public class AdobePathSegmentTest {
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateBadSelectorNegative() {
-        new AdobePathSegment(-1, 1);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(-1, 1));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateBadSelector() {
-        new AdobePathSegment(9, 2);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(9, 2));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateOpenLengthRecordNegative() {
-        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD, -1);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD, -1));
+
 
     }
 
@@ -72,9 +73,9 @@ public class AdobePathSegmentTest {
         assertEquals(-1, segment.cply, 0);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateClosedLengthRecordNegative() {
-        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_LENGTH_RECORD, -42);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_LENGTH_RECORD, -42));
     }
 
     @Test
@@ -107,19 +108,19 @@ public class AdobePathSegmentTest {
         assertEquals(1, segment.cply, 0);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateOpenLinkedRecordBad() {
-        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, 44);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, 44));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateOpenLinkedRecordOutOfRangeNegative() {
-        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, -16.1, -16.1, 0, 0, 1, 1);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, -16.1, -16.1, 0, 0, 1, 1));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateOpenLinkedRecordOutOfRangePositive() {
-        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, 16.1, 16.1, 0, 0, 1, 1);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, 16.1, 16.1, 0, 0, 1, 1));
     }
 
     @Test
@@ -136,20 +137,20 @@ public class AdobePathSegmentTest {
         assertEquals(1, segment.cply, 0);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateOpenUnlinkedRecordBad() {
-        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, 44);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, 44));
     }
 
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateOpenUnlinkedRecordOutOfRangeNegative() {
-        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, -16.5, 0, 0, 0, 1, 1);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, -16.5, 0, 0, 0, 1, 1));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateOpenUnlinkedRecorOutOfRangePositive() {
-        new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, 0, -17, 0, 0, 16.5, 1);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_UNLINKED, 0, -17, 0, 0, 16.5, 1));
     }
 
     /// Closed subpath
@@ -168,19 +169,19 @@ public class AdobePathSegmentTest {
         assertEquals(1, segment.cply, 0);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateClosedLinkedRecordBad() {
-        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, 44);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, 44));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateClosedLinkedRecordOutOfRangeNegative() {
-        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, -16.5, -.5, 0, 0, 1, 1);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, -16.5, -.5, 0, 0, 1, 1));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateClosedLinkedRecordOutOfRangePositive() {
-        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, .5, 16.5, 0, 0, 1, 1);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, .5, 16.5, 0, 0, 1, 1));
     }
 
     @Test
@@ -197,59 +198,59 @@ public class AdobePathSegmentTest {
         assertEquals(1, segment.cply, 0);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateClosedUnlinkedRecordBad() {
-        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, 44);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, 44));
     }
 
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateClosedUnlinkedRecordOutOfRangeNegative() {
-        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, -.5, -16.5, 0, 0, 1, 1);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, -.5, -16.5, 0, 0, 1, 1));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateClosedUnlinkedRecordOutOfRangePositive() {
-        new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, 16.5, .5, 0, 0, 1, 1);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_UNLINKED, 16.5, .5, 0, 0, 1, 1));
     }
 
     @Test
     public void testToStringRule() {
         String string = new AdobePathSegment(AdobePathSegment.INITIAL_FILL_RULE_RECORD, 0).toString();
-        assertTrue(string, string.startsWith("Rule"));
-        assertTrue(string, string.contains("Initial"));
-        assertTrue(string, string.contains("fill"));
-        assertTrue(string, string.contains("rule=0"));
+        assertTrue(string.startsWith("Rule"), string);
+        assertTrue(string.contains("Initial"), string);
+        assertTrue(string.contains("fill"), string);
+        assertTrue(string.contains("rule=0"), string);
     }
 
     @Test
     public void testToStringLength() {
         String string = new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_LENGTH_RECORD, 2).toString();
-        assertTrue(string, string.startsWith("Len"));
-        assertTrue(string, string.contains("Closed"));
-        assertTrue(string, string.contains("subpath"));
-        assertTrue(string, string.contains("length=2"));
+        assertTrue(string.startsWith("Len"), string);
+        assertTrue(string.contains("Closed"), string);
+        assertTrue(string.contains("subpath"), string);
+        assertTrue(string.contains("length=2"), string);
 
         string = new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD, 42).toString();
-        assertTrue(string, string.startsWith("Len"));
-        assertTrue(string, string.contains("Open"));
-        assertTrue(string, string.contains("subpath"));
-        assertTrue(string, string.contains("length=42"));
+        assertTrue(string.startsWith("Len"), string);
+        assertTrue(string.contains("Open"), string);
+        assertTrue(string.contains("subpath"), string);
+        assertTrue(string.contains("length=42"), string);
     }
 
     @Test
     public void testToStringOther() {
         String string = new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_BEZIER_LINKED, 0, 0, 1, 1, 0, 0).toString();
-        assertTrue(string, string.startsWith("Pt"));
-        assertTrue(string, string.contains("Open"));
-        assertTrue(string, string.contains("Bezier"));
-        assertTrue(string, string.contains("linked"));
+        assertTrue(string.startsWith("Pt"), string);
+        assertTrue(string.contains("Open"), string);
+        assertTrue(string.contains("Bezier"), string);
+        assertTrue(string.contains("linked"), string);
 
         string = new AdobePathSegment(AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED, 0, 0, 1, 1, 0, 0).toString();
-        assertTrue(string, string.startsWith("Pt"));
-        assertTrue(string, string.contains("Closed"));
-        assertTrue(string, string.contains("Bezier"));
-        assertTrue(string, string.contains("linked"));
+        assertTrue(string.startsWith("Pt"), string);
+        assertTrue(string.contains("Closed"), string);
+        assertTrue(string.contains("Bezier"), string);
+        assertTrue(string.contains("linked"), string);
     }
 
     @Test

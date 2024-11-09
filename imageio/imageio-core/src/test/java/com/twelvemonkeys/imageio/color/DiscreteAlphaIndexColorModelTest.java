@@ -31,21 +31,20 @@
 package com.twelvemonkeys.imageio.color;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.Test;
 
 import java.awt.image.*;
+import org.junit.jupiter.api.Test;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 public class DiscreteAlphaIndexColorModelTest {
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNull() {
-        new DiscreteAlphaIndexColorModel(null);
+        assertThrows(IllegalArgumentException.class, () -> new DiscreteAlphaIndexColorModel(null));
     }
 
     @Test
@@ -202,7 +201,7 @@ public class DiscreteAlphaIndexColorModelTest {
         assertEquals(2, raster.getHeight());
 
         assertTrue(colorModel.isCompatibleRaster(raster));
-        assertThat(raster, CoreMatchers.is(WritableRaster.class)); // Specific subclasses are in sun.awt package
+        assertThat(raster, instanceOf(WritableRaster.class));  // Checks if raster is an instance of WritableRaster or its subclass
         assertThat(raster.getTransferType(), CoreMatchers.equalTo(DataBuffer.TYPE_BYTE));
     }
 

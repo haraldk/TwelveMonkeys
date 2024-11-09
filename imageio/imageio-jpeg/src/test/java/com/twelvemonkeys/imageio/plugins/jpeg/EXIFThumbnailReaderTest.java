@@ -41,9 +41,6 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 
-import org.junit.After;
-import org.junit.Test;
-
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -56,8 +53,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
 
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 /**
  * EXIFThumbnailReaderTest
  *
@@ -69,7 +67,7 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
 
     private final ImageReader thumbnailReader = ImageIO.getImageReadersByFormatName("jpeg").next();
 
-    @After
+    @AfterEach
     public void tearDown() {
         thumbnailReader.dispose();
     }
@@ -94,48 +92,48 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertNull(EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList())), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromMissingThumbnail() throws IOException {
-        EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(Collections.<Entry>emptyList())), thumbnailReader);
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(Collections.<Entry>emptyList())), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromUnsupportedThumbnailCompression() throws IOException {
         List<TIFFEntry> entries = Collections.singletonList(new TIFFEntry(TIFF.TAG_COMPRESSION, 42));
-        EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader);
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromMissingOffsetUncompressed() throws IOException {
         List<TIFFEntry> entries = Arrays.asList(
                 new TIFFEntry(TIFF.TAG_COMPRESSION, 1),
                 new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, 16),
                 new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, 9)
         );
-        EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9 * 3]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader);
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9 * 3]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromMissingWidthUncompressed() throws IOException {
         List<TIFFEntry> entries = Arrays.asList(
                 new TIFFEntry(TIFF.TAG_COMPRESSION, 1),
                 new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, 0),
                 new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, 9)
         );
-        EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9 * 3]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader);
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9 * 3]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromMissingHeightUncompressed() throws IOException {
         List<TIFFEntry> entries = Arrays.asList(
                 new TIFFEntry(TIFF.TAG_COMPRESSION, 1),
                 new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, 0),
                 new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, 16)
         );
-        EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9 * 3]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader);
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9 * 3]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromUnsupportedPhotometricUncompressed() throws IOException {
         List<TIFFEntry> entries = Arrays.asList(
                 new TIFFEntry(TIFF.TAG_COMPRESSION, 1),
@@ -144,10 +142,10 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
                 new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, 9),
                 new TIFFEntry(TIFF.TAG_PHOTOMETRIC_INTERPRETATION, 42)
         );
-        EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9 * 3]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader);
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9 * 3]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromUnsupportedBitsPerSampleUncompressed() throws IOException {
         List<TIFFEntry> entries = Arrays.asList(
                 new TIFFEntry(TIFF.TAG_COMPRESSION, 1),
@@ -156,10 +154,10 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
                 new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, 9),
                 new TIFFEntry(TIFF.TAG_BITS_PER_SAMPLE, new int[]{5, 6, 5})
         );
-        EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9 * 3]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader);
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9 * 3]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromUnsupportedSamplesPerPixelUncompressed() throws IOException {
         List<TIFFEntry> entries = Arrays.asList(
                 new TIFFEntry(TIFF.TAG_COMPRESSION, 1),
@@ -168,10 +166,10 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
                 new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, 90),
                 new TIFFEntry(TIFF.TAG_SAMPLES_PER_PIXEL, 1)
         );
-        EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader);
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[6 + 16 * 9]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromTruncatedUncompressed() throws IOException {
         List<TIFFEntry> entries = Arrays.asList(
                 new TIFFEntry(TIFF.TAG_COMPRESSION, 1),
@@ -179,7 +177,7 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
                 new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, 160),
                 new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, 90)
         );
-        EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader);
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
     }
 
     @Test
@@ -200,19 +198,19 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertNotNull(reader.read());
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromMissingOffsetJPEG() throws IOException {
         List<TIFFEntry> entries = Collections.singletonList(new TIFFEntry(TIFF.TAG_COMPRESSION, 6));
-        EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader);
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromTruncatedJPEG() throws IOException {
         List<TIFFEntry> entries = Arrays.asList(
                 new TIFFEntry(TIFF.TAG_COMPRESSION, 6),
                 new TIFFEntry(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, 0)
         );
-        EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader);
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
     }
 
 

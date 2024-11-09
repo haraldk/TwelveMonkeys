@@ -30,19 +30,19 @@
 
 package com.twelvemonkeys.imageio.color;
 
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
 import java.awt.color.ICC_Profile;
 
 import static com.twelvemonkeys.imageio.color.KCMSSanitizerStrategyTest.assumeICC_ProfileNotSealed;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 public class LCMSSanitizerStrategyTest {
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testFixProfileNullProfile() throws Exception {
-        new LCMSSanitizerStrategy().fixProfile(null);
+        assertThrows(IllegalArgumentException.class, () -> new LCMSSanitizerStrategy().fixProfile(null));
     }
 
     @Test

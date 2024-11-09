@@ -33,14 +33,14 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.DirectImageInputStream;
 
-import org.junit.Test;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 
 import static com.twelvemonkeys.imageio.plugins.psd.PSDUtil.createDecompressorStream;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class PSDUtilDecompressorStreamTest {
 
