@@ -540,7 +540,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                     System.err.println("tempActual.getAbsolutePath(): " + tempActual.getAbsolutePath());
                     ImageIO.write(actual, "PNG", tempActual);
 
-                    assertEquals(String.format("%s ARGB at (%d, %d)", message, x, y), String.format("#%08x", expectedRGB), String.format("#%08x", actualRGB));
+                    assertEquals(String.format("#%08x", expectedRGB), String.format("#%08x", actualRGB), String.format("%s ARGB at (%d, %d)", message, x, y));
                 }
             }
         }

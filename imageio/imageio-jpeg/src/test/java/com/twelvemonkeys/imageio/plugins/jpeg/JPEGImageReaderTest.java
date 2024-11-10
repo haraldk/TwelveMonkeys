@@ -1565,7 +1565,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             fail("Expected tree is null, actual tree is non-null");
         }
 
-        assertEquals(String.format("%s: Node names differ", message), expectedTree.getNodeName(), actualTree.getNodeName());
+        assertEquals(expectedTree.getNodeName(), actualTree.getNodeName(), String.format("%s: Node names differ", message));
 
         NamedNodeMap expectedAttributes = expectedTree.getAttributes();
         NamedNodeMap actualAttributes = actualTree.getAttributes();
@@ -1579,7 +1579,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 nodeValue = StringUtil.capitalize(nodeValue);
             }
 
-            assertEquals(String.format("%s: \"%s\" attribute for <%s> differ", message, item.getNodeName(), expectedTree.getNodeName()), nodeValue, actualAttributes.getNamedItem(item.getNodeName()).getNodeValue());
+            assertEquals(nodeValue, actualAttributes.getNamedItem(item.getNodeName()).getNodeValue());
         }
 
         // Test for equal user objects.
