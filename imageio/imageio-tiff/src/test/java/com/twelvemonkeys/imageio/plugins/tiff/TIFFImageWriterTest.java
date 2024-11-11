@@ -420,7 +420,7 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
             ImageReader reader = ImageIO.getImageReaders(input).next();
             reader.setInput(input);
 
-            assertEquals( compression.length, reader.getNumImages(true), "wrong image count");
+            assertEquals(compression.length, reader.getNumImages(true), "wrong image count");
 
             for (int i = 0; i < reader.getNumImages(true); i++) {
                 assertImageEquals("image " + i + " differs", image, reader.read(i), 5); // Allow room for JPEG compression
