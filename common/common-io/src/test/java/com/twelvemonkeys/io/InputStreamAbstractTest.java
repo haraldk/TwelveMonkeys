@@ -145,7 +145,7 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
 
         // Read into array
         int count2 = input.read(bytes);
-        assertEquals( 5, count2, "Read 2");
+        assertEquals(5, count2, "Read 2");
         for (int i = 0; i < count2; i++) {
             assertEquals(count1 + i, bytes[i], "Check Bytes 2");
         }
