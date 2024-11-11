@@ -675,7 +675,7 @@ public class TIFFImageMetadataTest {
         NodeList expectedChildNodes = expected.getChildNodes();
         NodeList actualChildNodes = actual.getChildNodes();
 
-        assertEquals( expectedChildNodes.getLength(), actualChildNodes.getLength(),
+        assertEquals(expectedChildNodes.getLength(), actualChildNodes.getLength(),
                 message + " child length differs: " + toString(expectedChildNodes) + " != " + toString(actualChildNodes));
 
         for (int i = 0; i < expectedChildNodes.getLength(); i++) {
