@@ -312,6 +312,7 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
         }
     }
 
+    @Test
     public void testDisallowedExternalResources() throws URISyntaxException, IOException {
         // system-property set to true in surefire-plugin-settings in the pom
         URL resource = getClassLoaderResource("/svg/barChart.svg");

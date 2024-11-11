@@ -55,8 +55,6 @@ public class AdobePathSegmentTest {
     @Test
     public void testCreateOpenLengthRecordNegative() {
         assertThrows(IllegalArgumentException.class, () -> new AdobePathSegment(AdobePathSegment.OPEN_SUBPATH_LENGTH_RECORD, -1));
-
-
     }
 
     @Test

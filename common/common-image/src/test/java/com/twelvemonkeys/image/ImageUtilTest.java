@@ -304,6 +304,7 @@ public class ImageUtilTest {
                 int r = rgb >> 16 & 0xFF;
                 int g = rgb >> 8 & 0xFF;
                 int b = rgb & 0xFF;
+                assertTrue(r == 0 || r == 255, "Max contrast should only produce primary colors");
                 assertTrue(g == 0 || g == 255, "Max contrast should only produce primary colors");
                 assertTrue(b == 0 || b == 255, "Max contrast should only produce primary colors");
             }

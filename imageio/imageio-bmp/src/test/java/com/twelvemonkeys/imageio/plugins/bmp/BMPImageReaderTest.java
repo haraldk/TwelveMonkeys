@@ -34,7 +34,6 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.xml.XMLSerializer;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Disabled;
 import org.mockito.InOrder;
 import org.w3c.dom.Node;
@@ -61,6 +60,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -333,7 +333,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         catch (Exception e) {
             e.printStackTrace();
             // Ignore this test if not on an Oracle JRE (com.sun...BMPImageReader not available)
-            Assumptions.assumeTrue(false, "Skipping test: BMPImageReaderSpi not available on non-Oracle JREs");
+            assumeTrue(false, "Skipping test: BMPImageReaderSpi not available on non-Oracle JREs");
             return;
         }
 

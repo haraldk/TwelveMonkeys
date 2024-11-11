@@ -68,10 +68,6 @@ public class JEP262TIFFImageReaderInteroperabilityTest extends ImageReaderAbstra
             }
         }, true);
 
-        if (providers.hasNext()) {
-            return providers.next();
-        }
-
         // Skip tests if we have no Spi (ie. pre JDK 9)
         assumeTrue(providers.hasNext(), "Provider " + JEP_262_PROVIDER_CLASS_NAME + " not found");
         return providers.next();

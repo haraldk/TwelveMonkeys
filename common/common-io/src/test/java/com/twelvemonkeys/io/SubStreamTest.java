@@ -106,14 +106,14 @@ public class SubStreamTest {
     @Test
     public void testCloseConsumesAllShortStream() throws IOException {
         assertTimeout(Duration.ofMillis(500), () -> {
-        ByteArrayInputStream stream = new ByteArrayInputStream(new byte[13]);
+            ByteArrayInputStream stream = new ByteArrayInputStream(new byte[13]);
 
-        try (InputStream ignore = new SubStream(stream, 42)) {
-            // Nothing here...
-        }
+            try (InputStream ignore = new SubStream(stream, 42)) {
+                // Nothing here...
+            }
 
-        assertEquals(0, stream.available());
-        assertEquals(-1, stream.read());
+            assertEquals(0, stream.available());
+            assertEquals(-1, stream.read());
         });
     }
 }
