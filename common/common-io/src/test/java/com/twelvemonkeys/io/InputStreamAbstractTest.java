@@ -172,7 +172,7 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
         int count5 = input.read(bytes, offset, lth);
         assertEquals(lth, count5, "Read 5");
         for (int i = offset; i < lth; i++) {
-            assertEquals( i - offset, bytes[i], "Check Bytes 2");
+            assertEquals(i - offset, bytes[i], "Check Bytes 2");
         }
     }
 
