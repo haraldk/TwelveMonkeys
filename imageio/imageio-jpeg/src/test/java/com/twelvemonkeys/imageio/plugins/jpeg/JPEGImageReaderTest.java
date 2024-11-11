@@ -813,16 +813,13 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             ImageReadParam param = reader.getDefaultReadParam();
             param.setDestination(image);
             assertThrows(IIOException.class, () -> {
-                try {
                     reader.read(0, param);
-                } catch (IOException e) {
-                    // Even if we get an exception here, the image should contain 10-15% of the image
-                    assertRGBEquals(0xffffffff, image.getRGB(0, 0));   // white area
-                    assertRGBEquals(0xff0000ff, image.getRGB(67, 22)); // blue area
-                    assertRGBEquals(0xffff00ff, image.getRGB(83, 22)); // purple area
-                    throw e;
-                }
             });
+
+            // Even if we get an exception here, the image should contain 10-15% of the image
+            assertRGBEquals(0xffffffff, image.getRGB(0, 0));   // white area
+            assertRGBEquals(0xff0000ff, image.getRGB(67, 22)); // blue area
+            assertRGBEquals(0xffff00ff, image.getRGB(83, 22)); // purple area
         }
         finally {
             reader.dispose();
