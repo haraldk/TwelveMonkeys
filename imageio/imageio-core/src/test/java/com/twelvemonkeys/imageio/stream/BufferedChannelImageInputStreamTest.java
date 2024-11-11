@@ -197,7 +197,7 @@ public class BufferedChannelImageInputStreamTest {
         // Create stream
         try (ImageInputStream stream = new BufferedChannelImageInputStream(new FileInputStream(file))) {
             for (int i = 1; i <= 64; i++) {
-                assertEquals( (value << (i - 1L)) >>> 63L, stream.readBit(), String.format("bit %d differ", i));
+                assertEquals((value << (i - 1L)) >>> 63L, stream.readBit(), String.format("bit %d differ", i));
             }
         }
     }
