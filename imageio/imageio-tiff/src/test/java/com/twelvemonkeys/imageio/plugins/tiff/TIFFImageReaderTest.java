@@ -432,10 +432,10 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             for (int y = 0; y < 8; y++) {
                 for (int x = 0; x < 8; x++) {
                     int argb = image.getRGB(x, y);
-                    assertEquals(0xff, (argb >>> 24) & 0xff , "Alpha");
-                    assertEquals(0xff, (argb >> 16) & 0xff , "Red");
+                    assertEquals(0xff, (argb >>> 24) & 0xff, "Alpha");
+                    assertEquals(0xff, (argb >> 16) & 0xff, "Red");
                     assertEquals(0xff, (argb >> 8) & 0xff, 13, "Green"); // Depending on coeffs
-                    assertEquals(0xff, argb & 0xff , "Blue");
+                    assertEquals(0xff, argb & 0xff, "Blue");
                 }
             }
         }
