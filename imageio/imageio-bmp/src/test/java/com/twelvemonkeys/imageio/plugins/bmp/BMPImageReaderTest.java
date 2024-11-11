@@ -267,8 +267,8 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         BMPImageReader reader = createReader();
 
         try {
+            reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/broken-bmp/corrupted-bmp.bmp")));
             assertThrows(IIOException.class, () -> {
-                reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/broken-bmp/corrupted-bmp.bmp")));
                 reader.read(0);
             });
         }
