@@ -323,10 +323,9 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         reader.setInput(data.getInputStream());
 
         try {
-            IndexOutOfBoundsException exception = assertThrows(IndexOutOfBoundsException.class, () -> {
+            assertThrows(IndexOutOfBoundsException.class, () -> {
                 reader.read(-1, reader.getDefaultReadParam());
             });
-            assertNotNull(exception);
         }
         finally {
             reader.dispose();
