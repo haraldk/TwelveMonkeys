@@ -311,7 +311,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         ImageReader reader = createReader();
         // Do not set input
 
-        IllegalStateException exception = assertThrows(IllegalStateException.class, () -> {
+        assertThrows(IllegalStateException.class, () -> {
             reader.read(0);
         });
     }
