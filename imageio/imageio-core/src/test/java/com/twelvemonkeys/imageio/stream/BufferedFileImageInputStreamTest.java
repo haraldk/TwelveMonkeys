@@ -249,7 +249,7 @@ public class BufferedFileImageInputStreamTest {
                 assertEquals(buffer.getShort(), stream.readShort());
             }
 
-            assertThrows(EOFException.class, () -> stream.readShort());
+            assertThrows(EOFException.class, stream::readShort);
 
             stream.seek(0);
             stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
@@ -260,7 +260,7 @@ public class BufferedFileImageInputStreamTest {
                 assertEquals(buffer.getShort(), stream.readShort());
             }
 
-            assertThrows(EOFException.class, () -> stream.readShort());
+            assertThrows(EOFException.class, stream::readShort);
         }
     }
 
@@ -277,7 +277,7 @@ public class BufferedFileImageInputStreamTest {
                 assertEquals(buffer.getInt(), stream.readInt());
             }
 
-            assertThrows(EOFException.class, () -> stream.readInt());
+            assertThrows(EOFException.class, stream::readInt);
 
             stream.seek(0);
             stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
@@ -288,7 +288,7 @@ public class BufferedFileImageInputStreamTest {
                 assertEquals(buffer.getInt(), stream.readInt());
             }
 
-            assertThrows(EOFException.class, () -> stream.readInt());
+            assertThrows(EOFException.class, stream::readInt);
         }
     }
 
@@ -305,7 +305,7 @@ public class BufferedFileImageInputStreamTest {
                 assertEquals(buffer.getLong(), stream.readLong());
             }
 
-            assertThrows(EOFException.class, () -> stream.readLong());
+            assertThrows(EOFException.class, stream::readLong);
 
             stream.seek(0);
             stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
@@ -315,7 +315,7 @@ public class BufferedFileImageInputStreamTest {
             for (int i = 0; i < bytes.length / 8; i++) {
                 assertEquals(buffer.getLong(), stream.readLong());
             }
-            assertThrows(EOFException.class, () -> stream.readLong());
+            assertThrows(EOFException.class, stream::readLong);
         }
     }
 
@@ -331,10 +331,10 @@ public class BufferedFileImageInputStreamTest {
             assertEquals(-1, stream.read(new byte[1], 0, 1));
 
             assertThrows(EOFException.class, () -> stream.readFully(new byte[1]));
-            assertThrows(EOFException.class, () -> stream.readByte());
-            assertThrows(EOFException.class, () -> stream.readShort());
-            assertThrows(EOFException.class, () -> stream.readInt());
-            assertThrows(EOFException.class, () -> stream.readLong());
+            assertThrows(EOFException.class, stream::readByte);
+            assertThrows(EOFException.class, stream::readShort);
+            assertThrows(EOFException.class, stream::readInt);
+            assertThrows(EOFException.class, stream::readLong);
 
             stream.seek(0);
             for (byte value : bytes) {

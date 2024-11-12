@@ -336,10 +336,10 @@ public class BufferedChannelImageInputStreamFileCacheTest {
 
 
             assertThrows(EOFException.class, () -> stream.readFully(new byte[1]));
-            assertThrows(EOFException.class, () -> stream.readByte());
-            assertThrows(EOFException.class, () -> stream.readShort());
-            assertThrows(EOFException.class, () -> stream.readInt());
-            assertThrows(EOFException.class, () -> stream.readLong());
+            assertThrows(EOFException.class, stream::readByte);
+            assertThrows(EOFException.class, stream::readShort);
+            assertThrows(EOFException.class, stream::readInt);
+            assertThrows(EOFException.class, stream::readLong);
 
             stream.seek(0);
             for (byte value : bytes) {

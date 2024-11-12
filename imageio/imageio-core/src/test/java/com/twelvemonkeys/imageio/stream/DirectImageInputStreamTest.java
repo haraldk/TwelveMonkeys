@@ -211,7 +211,7 @@ public class DirectImageInputStreamTest {
                 assertEquals(buffer.getShort(), stream.readShort());
             }
 
-            assertThrows(EOFException.class, () -> stream.readShort());
+            assertThrows(EOFException.class, stream::readShort);
         }
 
         try (DirectImageInputStream stream = new DirectImageInputStream(new ByteArrayInputStream(bytes))) {
@@ -223,7 +223,7 @@ public class DirectImageInputStreamTest {
                 assertEquals(buffer.getShort(), stream.readShort());
             }
 
-            assertThrows(EOFException.class, () -> stream.readShort());
+            assertThrows(EOFException.class, stream::readShort);
         }
     }
 
@@ -240,7 +240,7 @@ public class DirectImageInputStreamTest {
             for (int i = 0; i < bytes.length / 4; i++) {
                 assertEquals(buffer.getInt(), stream.readInt());
             }
-            assertThrows(EOFException.class, () -> stream.readInt());
+            assertThrows(EOFException.class, stream::readInt);
         }
 
         try (DirectImageInputStream stream = new DirectImageInputStream(new ByteArrayInputStream(bytes))) {
@@ -252,7 +252,7 @@ public class DirectImageInputStreamTest {
                 assertEquals(buffer.getInt(), stream.readInt());
             }
 
-            assertThrows(EOFException.class, () -> stream.readInt());
+            assertThrows(EOFException.class, stream::readInt);
         }
     }
 
@@ -268,7 +268,7 @@ public class DirectImageInputStreamTest {
             for (int i = 0; i < bytes.length / 8; i++) {
                 assertEquals(buffer.getLong(), stream.readLong());
             }
-            assertThrows(EOFException.class, () -> stream.readLong());
+            assertThrows(EOFException.class, stream::readLong);
         }
 
         try (DirectImageInputStream stream = new DirectImageInputStream(new ByteArrayInputStream(bytes))) {
@@ -279,7 +279,7 @@ public class DirectImageInputStreamTest {
             for (int i = 0; i < bytes.length / 8; i++) {
                 assertEquals(buffer.getLong(), stream.readLong());
             }
-            assertThrows(EOFException.class, () -> stream.readLong());
+            assertThrows(EOFException.class, stream::readLong);
         }
     }
 
@@ -295,10 +295,10 @@ public class DirectImageInputStreamTest {
             assertEquals(-1, stream.read(new byte[1], 0, 1));
 
             assertThrows(EOFException.class, () -> stream.readFully(new byte[1]));
-            assertThrows(EOFException.class, () -> stream.readByte());
-            assertThrows(EOFException.class, () -> stream.readShort());
-            assertThrows(EOFException.class, () -> stream.readInt());
-            assertThrows(EOFException.class, () -> stream.readLong());
+            assertThrows(EOFException.class, stream::readByte);
+            assertThrows(EOFException.class, stream::readShort);
+            assertThrows(EOFException.class, stream::readInt);
+            assertThrows(EOFException.class, stream::readLong);
         }
 
         try (DirectImageInputStream stream = new DirectImageInputStream(new ByteArrayInputStream(bytes))) {
