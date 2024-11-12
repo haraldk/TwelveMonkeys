@@ -105,7 +105,7 @@ public class SubStreamTest {
     @SuppressWarnings("EmptyTryBlock")
     @Test
     public void testCloseConsumesAllShortStream() throws IOException {
-        assertTimeout(Duration.ofMillis(500), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(500), () -> {
             ByteArrayInputStream stream = new ByteArrayInputStream(new byte[13]);
 
             try (InputStream ignore = new SubStream(stream, 42)) {

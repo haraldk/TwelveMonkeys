@@ -179,7 +179,7 @@ public class LZWEncoderTest {
     @Disabled
     @Test
     public void testSpeed() throws IOException {
-        assertTimeout(Duration.ofMillis(10000), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(10000), () -> {
             for (int run = 0; run < SPEED_TEST_RUNS; run++) {
                 byte[] bytes = new byte[LENGTH];
                 LZWEncoder encoder = new LZWEncoder(bytes.length);

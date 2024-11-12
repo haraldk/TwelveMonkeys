@@ -85,7 +85,7 @@ public class BufferedImageFactoryTest {
     @Disabled("Bug in Toolkit")
     @Test
     public void testGetBufferedImageErrorSourceString() {
-        assertTimeout(Duration.ofMillis(1000), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(1000), () -> {
             Image source = Toolkit.getDefaultToolkit().createImage((String) null);
             BufferedImageFactory factory = new BufferedImageFactory(source);
             assertThrows(ImageConversionException.class, factory::getBufferedImage);
@@ -96,7 +96,7 @@ public class BufferedImageFactoryTest {
     // Unfortunately, the API doesn't allow this...
     @Test
     public void testGetBufferedImageErrorSourceURL() {
-        assertTimeout(Duration.ofMillis(1000), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(1000), () -> {
             Image source = Toolkit.getDefaultToolkit().createImage((String) null);
             BufferedImageFactory factory = new BufferedImageFactory(source);
             assertThrows(ImageConversionException.class, factory::getBufferedImage);

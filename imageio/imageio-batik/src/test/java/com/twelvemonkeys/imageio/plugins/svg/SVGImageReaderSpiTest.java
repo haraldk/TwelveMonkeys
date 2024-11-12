@@ -91,7 +91,7 @@ public class SVGImageReaderSpiTest {
     // Test will time out, if EOFs are not properly detected, see #275
     @Test
     public void canDecodeInputInvalid() throws Exception {
-        assertTimeout(Duration.ofMillis(5000), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(5000), () -> {
             for (String invalidInput : INVALID_INPUTS) {
                 try (ImageInputStream input = new ByteArrayImageInputStream(invalidInput.getBytes(StandardCharsets.UTF_8))) {
                     assertFalse(provider.canDecodeInput(input), "Claims to read invalid input:" + invalidInput);

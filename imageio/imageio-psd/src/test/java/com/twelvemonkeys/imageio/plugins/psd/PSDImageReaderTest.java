@@ -701,7 +701,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
 
     @Test
     public void testBrokenPackBitsThrowsEOFException() throws IOException {
-        assertTimeout(Duration.ofMillis(1000), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(1000), () -> {
             PSDImageReader imageReader = createReader();
 
             try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/broken-psd/short-packbits.psd"))) {

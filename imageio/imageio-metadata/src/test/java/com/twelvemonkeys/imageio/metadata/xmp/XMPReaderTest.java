@@ -496,7 +496,7 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
 
     @Test
     public void testNoExternalRequest() throws Exception {
-        assertTimeout(Duration.ofMillis(2500L), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(2500L), () -> {
             String maliciousXML = resourceAsString("/xmp/xmp-jpeg-xxe.xml");
 
             try (HTTPServer server = new HTTPServer()) {

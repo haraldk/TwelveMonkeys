@@ -232,7 +232,7 @@ public class JPEGSegmentImageInputStreamTest {
 
     @Test
     public void testInfiniteLoopCorrupt() throws IOException {
-        assertTimeout(Duration.ofSeconds(1), () -> {
+        assertTimeoutPreemptively(Duration.ofSeconds(1), () -> {
             try (ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg")))) {
                 long length = 0;
                 while (stream.read() != -1) {

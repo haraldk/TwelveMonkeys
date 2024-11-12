@@ -372,7 +372,7 @@ public class TIFFReaderTest extends MetadataReaderAbstractTest {
         // This EXIF segment has an interesting bug...
         // The bits per sample value (0x 0008 0008 0008) overwrites half the IFD1 link offset (should be 0x00000000),
         // effectively making it a loop back to the IFD0 at offset 0x0000008...
-        assertTimeout(Duration.ofMillis(200), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(200), () -> {
             try (ImageInputStream stream = ImageIO.createImageInputStream(getResource("/exif/exif-loop.bin"))) {
                 CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
                 assertEquals(1, directory.directoryCount());
@@ -395,7 +395,7 @@ public class TIFFReaderTest extends MetadataReaderAbstractTest {
                 0, 0, 0, 0,     //
                 0, 0, 0, 8,     // IFD1 pointer
         };
-        assertTimeout(Duration.ofMillis(100), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(100), () -> {
             try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
                 CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
 
@@ -417,7 +417,7 @@ public class TIFFReaderTest extends MetadataReaderAbstractTest {
                 0, 0, 0, 8,     // sub IFD pointer -> IFD0
                 0, 0, 0, 0,     // End of IFD chain
         };
-        assertTimeout(Duration.ofMillis(100), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(100), () -> {
             try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
                 CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
 
@@ -445,7 +445,7 @@ public class TIFFReaderTest extends MetadataReaderAbstractTest {
                 0, 0, 0, 1,     // count
                 0, 0, 0, 26,    // sub IFD pointer -> sub IFD
         };
-        assertTimeout(Duration.ofMillis(100), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(100), () -> {
             try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
                 CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
 
@@ -473,7 +473,7 @@ public class TIFFReaderTest extends MetadataReaderAbstractTest {
                 0, 0, 0, 1,     // count
                 0, 0, 0, 8,     // sub IFD pointer -> IFD0
         };
-        assertTimeout(Duration.ofMillis(100), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(100), () -> {
             try (ImageInputStream stream = new ByteArrayImageInputStream(looping)) {
                 CompoundDirectory directory = (CompoundDirectory) createReader().read(stream);
 

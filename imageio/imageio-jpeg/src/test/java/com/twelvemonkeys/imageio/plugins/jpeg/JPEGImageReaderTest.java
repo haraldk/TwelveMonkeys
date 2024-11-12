@@ -604,7 +604,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     @Test
     public void testBrokenGetRawImageTypeIgnoreMetadata() throws IOException {
         JPEGImageReader reader = createReader();
-        assertTimeout(ofMillis(200), () -> {
+        assertTimeoutPreemptively(ofMillis(200), () -> {
             try {
                 for (TestData broken : getBrokenTestData()) {
                     reader.setInput(broken.getInputStream(), true, true);
@@ -654,7 +654,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     @Test
     public void testBrokenGetImageTypesIgnoreMetadata() throws IOException {
         JPEGImageReader reader = createReader();
-        assertTimeout(ofMillis(200), () -> {
+        assertTimeoutPreemptively(ofMillis(200), () -> {
             try {
                 for (TestData broken : getBrokenTestData()) {
                     reader.setInput(broken.getInputStream(), true, true);
@@ -2003,7 +2003,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     @Test
     public void testInfiniteLoopCorrupt() throws IOException {
         ImageReader reader = createReader();
-        assertTimeout(Duration.ofSeconds(1), () -> {
+        assertTimeoutPreemptively(Duration.ofSeconds(1), () -> {
             try (ImageInputStream iis = ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg"))) {
                 reader.setInput(iis);
 
@@ -2019,7 +2019,7 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     @Test
     public void testInfiniteLoopCorruptRaster() throws IOException {
         ImageReader reader = createReader();
-        assertTimeout(Duration.ofSeconds(1), () -> {
+        assertTimeoutPreemptively(Duration.ofSeconds(1), () -> {
             try (ImageInputStream iis = ImageIO.createImageInputStream(getClassLoaderResource("/broken-jpeg/110115680-6d6dce80-7d84-11eb-99df-4cb21df3b09f.jpeg"))) {
                 reader.setInput(iis);
 

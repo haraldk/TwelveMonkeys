@@ -116,7 +116,7 @@ public class LZWDecoderTest extends DecoderAbstractTest {
     @Disabled
     @Test
     public void testSpeed() throws IOException {
-        assertTimeout(Duration.ofMillis(3000), () -> {
+        assertTimeoutPreemptively(Duration.ofMillis(3000), () -> {
             byte[] bytes = FileUtil.read(getClass().getResourceAsStream("/lzw/lzw-long.bin"));
 
 
