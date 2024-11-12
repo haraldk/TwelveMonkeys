@@ -30,11 +30,10 @@
 
 package com.twelvemonkeys.io;
 
-import org.junit.Test;
-
 import java.io.*;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * MemoryCacheSeekableStreamTestCase
@@ -92,13 +91,13 @@ public class FileSeekableStreamTest extends SeekableInputStreamAbstractTest {
         try {
             FileUtil.read(stream); // Read until EOF
 
-            assertEquals("EOF not reached (test case broken)", -1, stream.read());
-            assertFalse("Underlying stream closed before close", closed[0]);
+            assertEquals(-1, stream.read(), "EOF not reached (test case broken)");
+            assertFalse(closed[0], "Underlying stream closed before close");
         }
         finally {
             stream.close();
         }
 
-        assertTrue("Underlying stream not closed", closed[0]);
+        assertTrue(closed[0], "Underlying stream not closed");
     }
 }

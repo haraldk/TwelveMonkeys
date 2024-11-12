@@ -33,10 +33,6 @@ package com.twelvemonkeys.imageio.plugins.jpeg.jep262interop;
 import com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.AssumptionViolatedException;
-import org.junit.Ignore;
-import org.junit.Test;
-
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.spi.IIORegistry;
@@ -48,7 +44,10 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 /**
  * Tests the JEP 262 TIFFImageReader delegating to our JPEGImageReader.
@@ -69,12 +68,9 @@ public class JEP262TIFFImageReaderInteroperabilityTest extends ImageReaderAbstra
             }
         }, true);
 
-        if (providers.hasNext()) {
-            return providers.next();
-        }
-
         // Skip tests if we have no Spi (ie. pre JDK 9)
-        throw new AssumptionViolatedException("Provider " + JEP_262_PROVIDER_CLASS_NAME + " not found");
+        assumeTrue(providers.hasNext(), "Provider " + JEP_262_PROVIDER_CLASS_NAME + " not found");
+        return providers.next();
     }
 
     @Override
@@ -101,7 +97,7 @@ public class JEP262TIFFImageReaderInteroperabilityTest extends ImageReaderAbstra
         return Collections.emptyList();
     }
 
-    @Ignore("Fails in TIFFImageReader")
+    @Disabled("Fails in TIFFImageReader")
     @Override
     public void testSetDestinationIllegal() {
     }

@@ -32,7 +32,10 @@ package com.twelvemonkeys.imageio.metadata.tiff;
 
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.EntryAbstractTest;
-import org.junit.Test;
+
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * TIFFEntryTest
@@ -51,9 +54,9 @@ public class TIFFEntryTest extends EntryAbstractTest {
         return new TIFFEntry(identifier, (short) type, value);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateEXIFEntryIllegalType() {
-        createEXIFEntry(0, null, -1);
+        assertThrows(IllegalArgumentException.class, () -> createEXIFEntry(0, null, -1));
     }
     
     // TODO: TIFF/EXIF specific tests

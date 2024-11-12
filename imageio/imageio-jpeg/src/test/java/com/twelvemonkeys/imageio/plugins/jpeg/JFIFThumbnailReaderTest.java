@@ -34,8 +34,6 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 
-import org.junit.Test;
-
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
@@ -43,7 +41,8 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * JFIFThumbnailReaderTest
@@ -82,9 +81,9 @@ public class JFIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertNull(JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 0, 0, new byte[0])));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromTruncated() throws IOException {
-        JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 255, 170, new byte[99]));
+        assertThrows(IIOException.class, () -> JFIFThumbnail.from(new JFIF(1, 1, 0, 1, 1, 255, 170, new byte[99])));
     }
 
     @Test

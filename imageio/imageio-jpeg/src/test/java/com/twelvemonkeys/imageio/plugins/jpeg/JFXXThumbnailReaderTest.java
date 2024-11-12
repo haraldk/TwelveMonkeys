@@ -34,9 +34,6 @@ import com.twelvemonkeys.imageio.metadata.jpeg.JPEG;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegment;
 import com.twelvemonkeys.imageio.metadata.jpeg.JPEGSegmentUtil;
 
-import org.junit.After;
-import org.junit.Test;
-
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
@@ -46,7 +43,9 @@ import java.io.DataInputStream;
 import java.io.IOException;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * JFXXThumbnailReaderTest
@@ -70,7 +69,7 @@ public class JFXXThumbnailReaderTest extends AbstractThumbnailReaderTest {
         return JFXXThumbnail.from(JFXX.read(new DataInputStream(jfxx.segmentData()), jfxx.length()), thumbnailReader);
     }
 
-    @After
+    @AfterEach
     public void tearDown() {
         thumbnailReader.dispose();
     }
@@ -80,37 +79,37 @@ public class JFXXThumbnailReaderTest extends AbstractThumbnailReaderTest {
         assertNull(JFXXThumbnail.from(null, thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromNullThumbnail() throws IOException {
-        JFXXThumbnail.from(new JFXX(JFXX.JPEG, null), thumbnailReader);
+        assertThrows(IIOException.class, () -> JFXXThumbnail.from(new JFXX(JFXX.JPEG, null), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromEmpty() throws IOException {
-        JFXXThumbnail.from(new JFXX(JFXX.JPEG, new byte[0]), thumbnailReader);
+        assertThrows(IIOException.class, () -> JFXXThumbnail.from(new JFXX(JFXX.JPEG, new byte[0]), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromTruncatedJPEG() throws IOException {
-        JFXXThumbnail.from(new JFXX(JFXX.JPEG, new byte[99]), thumbnailReader);
+        assertThrows(IIOException.class, () -> JFXXThumbnail.from(new JFXX(JFXX.JPEG, new byte[99]), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromTruncatedRGB() throws IOException {
         byte[] thumbnail = new byte[765];
         thumbnail[0] = (byte) 160;
         thumbnail[1] = 90;
 
-        JFXXThumbnail.from(new JFXX(JFXX.RGB, thumbnail), thumbnailReader);
+        assertThrows(IIOException.class, () -> JFXXThumbnail.from(new JFXX(JFXX.RGB, thumbnail), thumbnailReader));
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testFromTruncatedIndexed() throws IOException {
         byte[] thumbnail = new byte[365];
         thumbnail[0] = (byte) 160;
         thumbnail[1] = 90;
 
-        JFXXThumbnail.from(new JFXX(JFXX.INDEXED, thumbnail), thumbnailReader);
+        assertThrows(IIOException.class, () -> JFXXThumbnail.from(new JFXX(JFXX.INDEXED, thumbnail), thumbnailReader));
     }
 
     @Test

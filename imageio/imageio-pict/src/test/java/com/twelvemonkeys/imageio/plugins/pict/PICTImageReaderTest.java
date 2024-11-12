@@ -34,9 +34,6 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStreamSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
@@ -47,8 +44,11 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
 import static com.twelvemonkeys.imageio.plugins.pict.PICTImageReaderSpi.isOtherFormat;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * ICOImageReaderTestCase
@@ -142,7 +142,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         assertTrue(isOtherFormat(new ByteArrayImageInputStream(new byte[] {'M', 'M', 0, 43, 0, 0, 0, 0})));
     }
 
-    @Ignore("Known issue")
+    @Disabled("Known issue")
     @Test
     @Override
     public void testReadWithSubsampleParamPixels() throws IOException {

@@ -31,15 +31,13 @@
 package com.twelvemonkeys.io.enc;
 
 import com.twelvemonkeys.io.FileUtil;
-import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
-import static org.junit.Assert.assertEquals;
-
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 /**
  * Base64DecoderTest
  * <p/>
@@ -66,7 +64,7 @@ public class Base64DecoderTest extends DecoderAbstractTest {
 
         FileUtil.copy(in, bytes);
 
-        assertEquals("Strings does not match", "", new String(bytes.toByteArray()));
+        assertEquals("", new String(bytes.toByteArray()), "Strings does not match");
     }
 
     @Test
@@ -78,7 +76,7 @@ public class Base64DecoderTest extends DecoderAbstractTest {
 
         FileUtil.copy(in, bytes);
 
-        assertEquals("Strings does not match", "test", new String(bytes.toByteArray()));
+        assertEquals("test", new String(bytes.toByteArray()), "Strings does not match");
     }
 
     @Test
@@ -93,11 +91,12 @@ public class Base64DecoderTest extends DecoderAbstractTest {
 
         FileUtil.copy(in, bytes);
 
-        assertEquals("Strings does not match",
+        assertEquals(
                      "Lorem ipsum dolor sit amet, consectetuer adipiscing " +
                      "elit. Fusce est. Morbi luctus consectetuer justo. Vivamus " +
                      "dapibus laoreet purus. Nunc viverra dictum nisl. Integer " +
                      "ullamcorper, nisi in dictum amet.",
-                     new String(bytes.toByteArray()));
+                     new String(bytes.toByteArray()),
+                    "Strings does not match");
     }
 }

@@ -30,15 +30,13 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * BitPaddingStreamTest.
@@ -49,24 +47,24 @@ import static org.junit.Assert.assertEquals;
  */
 public class BitPaddingStreamTest {
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullStream() {
-        new BitPaddingStream(null, 1, 12, 4, ByteOrder.BIG_ENDIAN);
+        assertThrows(IllegalArgumentException.class, () -> new BitPaddingStream(null, 1, 12, 4, ByteOrder.BIG_ENDIAN));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateBadBits() {
-        new BitPaddingStream(new ByteArrayInputStream(new byte[6]), 1, 7, 4, ByteOrder.BIG_ENDIAN);
+        assertThrows(IllegalArgumentException.class, () -> new BitPaddingStream(new ByteArrayInputStream(new byte[6]), 1, 7, 4, ByteOrder.BIG_ENDIAN));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateBadBitsLarge() {
-        new BitPaddingStream(new ByteArrayInputStream(new byte[6]), 1, 37, 4, ByteOrder.BIG_ENDIAN);
+        assertThrows(IllegalArgumentException.class, () -> new BitPaddingStream(new ByteArrayInputStream(new byte[6]), 1, 37, 4, ByteOrder.BIG_ENDIAN));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullByteOrder() {
-        new BitPaddingStream(new ByteArrayInputStream(new byte[6]), 1, 12, 4, null);
+        assertThrows(IllegalArgumentException.class, () -> new BitPaddingStream(new ByteArrayInputStream(new byte[6]), 1, 12, 4, null));
     }
 
     @Test

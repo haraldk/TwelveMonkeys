@@ -30,7 +30,7 @@
 
 package com.twelvemonkeys.image;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -39,7 +39,7 @@ import java.awt.image.IndexColorModel;
 import java.awt.image.RenderedImage;
 import java.io.InputStream;
 
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ImageUtilTest {
 
@@ -116,8 +116,8 @@ public class ImageUtilTest {
     public void testImageIsNotBufferedImage() {
         // Should not be a buffered image
         assertFalse(
-                "FOR SOME IMPLEMENTATIONS THIS MIGHT FAIL!\nIn that case, testToBufferedImage() will fail too.",
-                scaled instanceof BufferedImage
+                scaled instanceof BufferedImage,
+                "FOR SOME IMPLEMENTATIONS THIS MIGHT FAIL!\nIn that case, testToBufferedImage() will fail too."
         );
     }
 
@@ -247,7 +247,7 @@ public class ImageUtilTest {
         if (original != notContrasted) { // Don't care to test if images are same
             for (int y = 0; y < original.getHeight(); y++) {
                 for (int x = 0; x < original.getWidth(); x++) {
-                    assertEquals("0 constrast should not change image", original.getRGB(x, y), notContrasted.getRGB(x, y));
+                    assertEquals(original.getRGB(x, y), notContrasted.getRGB(x, y), "0 constrast should not change image");
                 }
             }
         }
@@ -275,24 +275,24 @@ public class ImageUtilTest {
 
                 // RED
                 if (oR < 127) {
-                    assertTrue("Contrast should be decreased or same", oR >= cR && cR >= dR);
+                    assertTrue(oR >= cR && cR >= dR, "Contrast should be decreased or same");
                 }
                 else {
-                    assertTrue("Contrast should be increased or same", oR <= cR && cR <= dR);
+                    assertTrue(oR <= cR && cR <= dR, "Contrast should be increased or same");
                 }
                 // GREEN
                 if (oG < 127) {
-                    assertTrue("Contrast should be decreased or same", oG >= cG && cG >= dG);
+                    assertTrue(oG >= cG && cG >= dG, "Contrast should be decreased or same");
                 }
                 else {
-                    assertTrue("Contrast should be increased or same", oG <= cG && cG <= dG);
+                    assertTrue(oG <= cG && cG <= dG, "Contrast should be increased or same");
                 }
                 // BLUE
                 if (oB < 127) {
-                    assertTrue("Contrast should be decreased or same", oB >= cB && cB >= dB);
+                    assertTrue(oB >= cB && cB >= dB, "Contrast should be decreased or same");
                 }
                 else {
-                    assertTrue("Contrast should be increased or same", oB <= cB && cB <= dB);
+                    assertTrue(oB <= cB && cB <= dB, "Contrast should be increased or same");
                 }
             }
         }
@@ -304,9 +304,9 @@ public class ImageUtilTest {
                 int r = rgb >> 16 & 0xFF;
                 int g = rgb >> 8 & 0xFF;
                 int b = rgb & 0xFF;
-                assertTrue("Max contrast should only produce primary colors", r == 0 || r == 255);
-                assertTrue("Max contrast should only produce primary colors", g == 0 || g == 255);
-                assertTrue("Max contrast should only produce primary colors", b == 0 || b == 255);
+                assertTrue(r == 0 || r == 255, "Max contrast should only produce primary colors");
+                assertTrue(g == 0 || g == 255, "Max contrast should only produce primary colors");
+                assertTrue(b == 0 || b == 255, "Max contrast should only produce primary colors");
             }
         }
 
@@ -327,24 +327,24 @@ public class ImageUtilTest {
 
                 // RED
                 if (oR >= 127) {
-                    assertTrue("Contrast should be decreased or same", oR >= cR);
+                    assertTrue(oR >= cR, "Contrast should be decreased or same");
                 }
                 else {
-                    assertTrue("Contrast should be increased or same", oR <= cR);
+                    assertTrue(oR <= cR, "Contrast should be increased or same");
                 }
                 // GREEN
                 if (oG >= 127) {
-                    assertTrue("Contrast should be decreased or same", oG >= cG);
+                    assertTrue(oG >= cG, "Contrast should be decreased or same");
                 }
                 else {
-                    assertTrue("Contrast should be increased or same", oG <= cG);
+                    assertTrue(oG <= cG, "Contrast should be increased or same");
                 }
                 // BLUE
                 if (oB >= 127) {
-                    assertTrue("Contrast should be decreased or same", oB >= cB);
+                    assertTrue(oB >= cB, "Contrast should be decreased or same");
                 }
                 else {
-                    assertTrue("Contrast should be increased or same", oB <= cB);
+                    assertTrue(oB <= cB, "Contrast should be increased or same");
                 }
             }
         }
@@ -357,7 +357,7 @@ public class ImageUtilTest {
                 int r = rgb >> 16 & 0xFF;
                 int g = rgb >> 8 & 0xFF;
                 int b = rgb & 0xFF;
-                assertTrue("Minimum contrast should be all gray", r == 127 && g == 127 && b == 127);
+                assertTrue(r == 127 && g == 127 && b == 127, "Minimum contrast should be all gray");
             }
         }
 
@@ -400,7 +400,7 @@ public class ImageUtilTest {
         if (original != notSharpened) { // Don't care to test if images are same
             for (int y = 0; y < original.getHeight(); y++) {
                 for (int x = 0; x < original.getWidth(); x++) {
-                    assertEquals("0 sharpen should not change image", original.getRGB(x, y), notSharpened.getRGB(x, y));
+                    assertEquals(original.getRGB(x, y), notSharpened.getRGB(x, y), "0 sharpen should not change image");
                 }
             }
         }
@@ -446,13 +446,13 @@ public class ImageUtilTest {
         }
 
 //        assertEquals("Difference should not change", diffOriginal, diffSharpened);
-        assertTrue("Abs difference should increase", absDiffOriginal < absDiffSharpened);
+        assertTrue(absDiffOriginal < absDiffSharpened, "Abs difference should increase");
 //        assertEquals("Difference should not change", diffOriginal, diffDefault);
-        assertTrue("Abs difference should increase", absDiffOriginal < absDiffDefault);
+        assertTrue(absDiffOriginal < absDiffDefault, "Abs difference should increase");
 //        assertEquals("Difference should not change", diffOriginal, diffMore);
-        assertTrue("Abs difference should increase", absDiffOriginal < absDiffMore);
+        assertTrue(absDiffOriginal < absDiffMore, "Abs difference should increase");
 //        assertEquals("Difference should not change", diffSharpened, diffMore);
-        assertTrue("Abs difference should increase", absDiffSharpened < absDiffMore);
+        assertTrue(absDiffSharpened < absDiffMore, "Abs difference should increase");
     }
 
     @Test
@@ -466,7 +466,7 @@ public class ImageUtilTest {
         if (original != notBlurred) { // Don't care to test if images are same
             for (int y = 0; y < original.getHeight(); y++) {
                 for (int x = 0; x < original.getWidth(); x++) {
-                    assertEquals("0 blur should not change image", original.getRGB(x, y), notBlurred.getRGB(x, y));
+                    assertEquals(original.getRGB(x, y), notBlurred.getRGB(x, y), "0 blur should not change image");
                 }
             }
         }
@@ -512,13 +512,13 @@ public class ImageUtilTest {
         }
 
 //        assertEquals("Difference should not change", diffOriginal, diffBlurred);
-        assertTrue(String.format("Abs difference should decrease: %s <= %s", absDiffOriginal, absDiffBlurred), absDiffOriginal > absDiffBlurred);
+        assertTrue(absDiffOriginal > absDiffBlurred, String.format("Abs difference should decrease: %s <= %s", absDiffOriginal, absDiffBlurred));
 //        assertEquals("Difference should not change", diffOriginal, diffDefault);
-        assertTrue("Abs difference should decrease", absDiffOriginal > absDiffDefault);
+        assertTrue(absDiffOriginal > absDiffDefault, "Abs difference should decrease");
 //        assertEquals("Difference should not change", diffOriginal, diffMore);
-        assertTrue("Abs difference should decrease", absDiffOriginal > absDiffMore);
+        assertTrue(absDiffOriginal > absDiffMore, "Abs difference should decrease");
 //        assertEquals("Difference should not change", diffBlurred, diffMore);
-        assertTrue("Abs difference should decrease", absDiffBlurred > absDiffMore);
+        assertTrue(absDiffBlurred > absDiffMore, "Abs difference should decrease");
     }
 
     @Test
@@ -528,7 +528,7 @@ public class ImageUtilTest {
         assertNotNull(sunflower);
 
         BufferedImage image = ImageUtil.createIndexed(sunflower);
-        assertNotNull("Image was null", image);
-        assertTrue(image.getColorModel() instanceof IndexColorModel);
+        assertNotNull(image, "Image was null");
+        assertInstanceOf(IndexColorModel.class, image.getColorModel());
     }
 }

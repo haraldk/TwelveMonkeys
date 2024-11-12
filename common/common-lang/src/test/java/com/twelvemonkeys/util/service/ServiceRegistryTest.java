@@ -30,12 +30,13 @@
 
 package com.twelvemonkeys.util.service;
 
+import com.twelvemonkeys.lang.Validate;
 import com.twelvemonkeys.util.CollectionUtil;
-import org.junit.Test;
 
 import java.util.*;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * ServiceRegistryTest
@@ -48,9 +49,11 @@ public class ServiceRegistryTest {
 
     private final TestRegistry registry = new TestRegistry();
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNull() {
-        new ServiceRegistry(null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            new ServiceRegistry(null);
+        });
     }
 
     @Test
@@ -64,11 +67,12 @@ public class ServiceRegistryTest {
         }
     }
 
-    @Test(expected = ServiceConfigurationError.class)
+    @Test
     public void testCreateBadConfig() {
-        @SuppressWarnings("unchecked") 
-        ServiceRegistry registry = new ServiceRegistry(Arrays.asList(BadSPI.class).iterator());
-        registry.registerApplicationClasspathSPIs();
+        assertThrows(ServiceConfigurationError.class, () -> {
+            ServiceRegistry registry = new ServiceRegistry(Arrays.asList(BadSPI.class).iterator());
+            registry.registerApplicationClasspathSPIs();
+        });
 
         // DONE: Test non-class
 

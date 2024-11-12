@@ -30,13 +30,11 @@
 
 package com.twelvemonkeys.util;
 
-import org.junit.Test;
-
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * NOTE: This TestCase is written especially for NullMap, and is full of dirty
@@ -83,12 +81,12 @@ public class NullMapTest extends MapAbstractTest {
     @Override
     public void testMapIsEmpty() {
         resetEmpty();
-        assertEquals("Map.isEmpty() should return true with an empty map",
-                     true, map.isEmpty());
+        assertEquals(true, map.isEmpty(),
+                "Map.isEmpty() should return true with an empty map");
         verifyAll();
         resetFull();
-        assertEquals("Map.isEmpty() should return true with a full map",
-                     true, map.isEmpty());
+        assertEquals(true, map.isEmpty(),
+                "Map.isEmpty() should return true with a full map");
     }
 
     // Overriden, as this map is always empty
@@ -96,13 +94,13 @@ public class NullMapTest extends MapAbstractTest {
     @Override
     public void testMapSize() {
         resetEmpty();
-        assertEquals("Map.size() should be 0 with an empty map",
-                     0, map.size());
+        assertEquals(0, map.size(),
+                "Map.size() should be 0 with an empty map");
         verifyAll();
 
         resetFull();
-        assertEquals("Map.size() should equal the number of entries " +
-                     "in the map", 0, map.size());
+        assertEquals(0, map.size(),
+                "Map.size() should equal the number of entries in the map");
     }
 
     @Test
@@ -112,7 +110,7 @@ public class NullMapTest extends MapAbstractTest {
 
         resetEmpty();
         for (Object key : keys) {
-            assertTrue("Map must not contain key when map is empty", !map.containsKey(key));
+            assertTrue(!map.containsKey(key),"Map must not contain key when map is empty");
         }
         verifyAll();
     }
@@ -124,7 +122,7 @@ public class NullMapTest extends MapAbstractTest {
 
         resetEmpty();
         for (Object value : values) {
-            assertTrue("Empty map must not contain value", !map.containsValue(value));
+            assertTrue(!map.containsValue(value), "Empty map must not contain value");
         }
         verifyAll();
     }
@@ -133,7 +131,7 @@ public class NullMapTest extends MapAbstractTest {
     @Override
     public void testMapEquals() {
         resetEmpty();
-        assertTrue("Empty maps unequal.", map.equals(confirmed));
+        assertTrue(map.equals(confirmed), "Empty maps unequal.");
         verifyAll();
     }
 
@@ -141,8 +139,7 @@ public class NullMapTest extends MapAbstractTest {
     @Override
     public void testMapHashCode() {
         resetEmpty();
-        assertTrue("Empty maps have different hashCodes.",
-                   map.hashCode() == confirmed.hashCode());
+        assertTrue(map.hashCode() == confirmed.hashCode(), "Empty maps have different hashCodes.");
     }
 
     @Test
@@ -153,7 +150,7 @@ public class NullMapTest extends MapAbstractTest {
         Object[] keys = getSampleKeys();
 
         for (Object key : keys) {
-            assertTrue("Empty map.get() should return null.", map.get(key) == null);
+            assertTrue(map.get(key) == null, "Empty map.get() should return null.");
         }
         verifyAll();
     }
@@ -170,7 +167,7 @@ public class NullMapTest extends MapAbstractTest {
             Object o = map.put(keys[i], values[i]);
             //confirmed.put(keys[i], values[i]);
             verifyAll();
-            assertTrue("First map.put should return null", o == null);
+            assertTrue(o == null, "First map.put should return null");
         }
         for (int i = 0; i < keys.length; i++) {
             map.put(keys[i], newValues[i]);
@@ -183,8 +180,8 @@ public class NullMapTest extends MapAbstractTest {
     @Override
     public void testMapToString() {
         resetEmpty();
-        assertTrue("Empty map toString() should not return null",
-                   map.toString() != null);
+        assertTrue(map.toString() != null,
+                "Empty map toString() should not return null");
         verifyAll();
     }
 
@@ -202,7 +199,7 @@ public class NullMapTest extends MapAbstractTest {
         Object[] keys = getSampleKeys();
         for(int i = 0; i < keys.length; i++) {
             Object o = map.remove(keys[i]);
-            assertTrue("First map.remove should return null", o == null);
+            assertTrue(o == null, "First map.remove should return null");
         }
         verifyAll();
     }

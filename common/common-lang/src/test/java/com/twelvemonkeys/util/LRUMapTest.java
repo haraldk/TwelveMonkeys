@@ -45,11 +45,10 @@
 
 package com.twelvemonkeys.util;
 
-import org.junit.Test;
-
 import java.util.*;
 
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Tests LRUMap.
@@ -81,8 +80,8 @@ public class LRUMapTest extends LinkedMapTest {
         map2.put(4,"foo"); // removes 1 since max size exceeded
         map2.removeLRU();  // should be Integer(2)
 
-        assertTrue("Second to last value should exist",map2.get(new Integer(3)).equals("foo"));
-        assertTrue("First value inserted should not exist", map2.get(new Integer(1)) == null);
+        assertTrue(map2.get(new Integer(3)).equals("foo"), "Second to last value should exist");
+        assertTrue(map2.get(new Integer(1)) == null, "First value inserted should not exist");
     }
 
     @Test
@@ -93,8 +92,8 @@ public class LRUMapTest extends LinkedMapTest {
         map2.put(3,"foo");
         map2.put(4,"bar");
 
-        assertTrue("last value should exist",map2.get(new Integer(4)).equals("bar"));
-        assertTrue("LRU should not exist", map2.get(new Integer(1)) == null);
+        assertTrue(map2.get(new Integer(4)).equals("bar"), "last value should exist");
+        assertTrue(map2.get(new Integer(1)) == null, "LRU should not exist");
     }
 
     /**
@@ -113,10 +112,8 @@ public class LRUMapTest extends LinkedMapTest {
 
         map2.putAll(hashMap);
 
-        assertTrue("max size is 3, but actual size is " + map2.size(),
-                   map2.size() == 3);
-        assertTrue("map should contain the Integer(4) object",
-                   map2.containsKey(new Integer(4)));
+        assertTrue(map2.size() == 3, "max size is 3, but actual size is " + map2.size());
+        assertTrue(map2.containsKey(new Integer(4)), "map should contain the Integer(4) object");
     }
 
     /**
@@ -134,8 +131,7 @@ public class LRUMapTest extends LinkedMapTest {
         map.put("6","6");
         map.setMaxSize(3);
 
-        assertTrue("map should have size = 3, but actually = " + map.size(),
-                   map.size() == 3);
+        assertTrue(map.size() == 3, "map should have size = 3, but actually = " + map.size());
     }
 
     @Test
@@ -160,9 +156,9 @@ public class LRUMapTest extends LinkedMapTest {
             keys[i] = keyIterator.next();
         }
 
-        assertTrue("first evicted should be 3, was " + keys[0], keys[0].equals("3"));
-        assertTrue("second evicted should be 1, was " + keys[1], keys[1].equals("1"));
-        assertTrue("third evicted should be 4, was " + keys[2], keys[2].equals("4"));
+        assertTrue(keys[0].equals("3"), "first evicted should be 3, was " + keys[0]);
+        assertTrue(keys[1].equals("1"), "second evicted should be 1, was " + keys[1]);
+        assertTrue(keys[2].equals("4"), "third evicted should be 4, was " + keys[2]);
 
     }
 
@@ -192,13 +188,12 @@ public class LRUMapTest extends LinkedMapTest {
         // 4 2
         counter.remove("5");
 
-        assertTrue("size should be 2, but was " + counter.size(), counter.size() == 2);
-        assertTrue("removedCount should be 3 but was " + counter.removedCount,
-                   counter.removedCount == 3);
+        assertTrue(counter.size() == 2, "size should be 2, but was " + counter.size());
+        assertTrue(counter.removedCount == 3, "removedCount should be 3 but was " + counter.removedCount);
 
-        assertTrue("first removed was '2'",counter.list.get(0).equals("2"));
-        assertTrue("second removed was '3'",counter.list.get(1).equals("3"));
-        assertTrue("third removed was '1'",counter.list.get(2).equals("1"));
+        assertTrue(counter.list.get(0).equals("2"), "first removed was '2'");
+        assertTrue(counter.list.get(1).equals("3"), "second removed was '3'");
+        assertTrue(counter.list.get(2).equals("1"), "third removed was '1'");
 
         //assertTrue("oldest key is '4'",counter.get(0).equals("4"));
         //assertTrue("newest key is '2'",counter.get(1).equals("2"));

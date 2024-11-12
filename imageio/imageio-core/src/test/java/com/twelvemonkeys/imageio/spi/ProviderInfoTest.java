@@ -30,11 +30,11 @@
 
 package com.twelvemonkeys.imageio.spi;
 
-import org.junit.Test;
 
 import java.net.URL;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * ProviderInfoTest

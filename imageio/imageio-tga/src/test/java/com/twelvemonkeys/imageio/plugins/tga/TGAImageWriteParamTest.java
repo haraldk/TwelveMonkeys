@@ -32,16 +32,13 @@ package com.twelvemonkeys.imageio.plugins.tga;
 
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
-import org.junit.Test;
-
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
 import java.awt.image.*;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeFalse;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 /**
  * TGAImageWriteParamTest.

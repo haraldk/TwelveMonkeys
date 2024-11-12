@@ -30,15 +30,15 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import org.junit.Test;
-
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.spi.ImageWriterSpi;
 
+import org.junit.jupiter.api.Test;
 import static com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfoTest.assertClassExists;
 import static com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfoTest.assertClassesExist;
-import static org.junit.Assert.assertNotNull;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * PAMImageReaderSpiTest.

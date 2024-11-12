@@ -45,15 +45,11 @@
 
 package com.twelvemonkeys.util;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
 import java.util.Iterator;
 import java.util.Map;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * Unit tests
@@ -74,7 +70,7 @@ public class LinkedMapTest extends MapAbstractTest {
      */
     protected LinkedMap labRat;
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         // use makeMap and cast the result to a SeqHashMap
         // so that subclasses of SeqHashMap can share these tests
@@ -103,27 +99,21 @@ public class LinkedMapTest extends MapAbstractTest {
         }
 
         // Test size().
-        assertEquals("size() does not match expected size",
-                     expectedSize, labRat.size());
+        assertEquals(expectedSize, labRat.size(), "size() does not match expected size");
 
         // Test clone(), iterator(), and get(Object).
         LinkedMap clone = (LinkedMap) labRat.clone();
-        assertEquals("Size of clone does not match original",
-                     labRat.size(), clone.size());
+        assertEquals(labRat.size(), clone.size(), "Size of clone does not match original");
         Iterator origEntries = labRat.entrySet().iterator();
         Iterator copiedEntries = clone.entrySet().iterator();
         while (origEntries.hasNext()) {
             Map.Entry origEntry = (Map.Entry)origEntries.next();
             Map.Entry copiedEntry = (Map.Entry)copiedEntries.next();
-            assertEquals("Cloned key does not match original",
-                         origEntry.getKey(), copiedEntry.getKey());
-            assertEquals("Cloned value does not match original",
-                         origEntry.getValue(), copiedEntry.getValue());
-            assertEquals("Cloned entry does not match original",
-                         origEntry, copiedEntry);
+            assertEquals(origEntry.getKey(), copiedEntry.getKey(), "Cloned key does not match original");
+            assertEquals(origEntry.getValue(), copiedEntry.getValue(), "Cloned value does not match original");
+            assertEquals(origEntry, copiedEntry, "Cloned entry does not match original");
         }
-        assertTrue("iterator() returned different number of elements than keys()",
-               !copiedEntries.hasNext());
+        assertTrue(!copiedEntries.hasNext(), "iterator() returned different number of elements than keys()");
 
         // Test sequence()
         /*
@@ -207,7 +197,7 @@ public class LinkedMapTest extends MapAbstractTest {
     }
     */
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         labRat = null;
     }

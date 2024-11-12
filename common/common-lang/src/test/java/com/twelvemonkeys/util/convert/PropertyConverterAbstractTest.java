@@ -32,11 +32,11 @@ package com.twelvemonkeys.util.convert;
 
 import com.twelvemonkeys.lang.ObjectAbstractTest;
 import com.twelvemonkeys.lang.Validate;
-import org.junit.Test;
 
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * PropertyConverterAbstractTest
@@ -66,26 +66,26 @@ public abstract class PropertyConverterAbstractTest extends ObjectAbstractTest {
             try {
                 obj = converter.toObject(test.original(), test.type(), test.format());
 
-                assertEquals(String.format("'%s' converted to incorrect type", test.original()), test.type(), obj.getClass());
+                assertEquals(test.type(), obj.getClass(), String.format("'%s' converted to incorrect type", test.original()));
                 if (test.type().isArray()) {
                     assertArrayEquals0(String.format("'%s' not converted", test.original()), test.value(), obj);
                 }
                 else {
-                    assertEquals(String.format("'%s' not converted", test.original()), test.value(), obj);
+                    assertEquals(test.value(), obj, String.format("'%s' not converted", test.original()));
                 }
 
                 String result = converter.toString(test.value(), test.format());
 
-                assertEquals(String.format("'%s' does not match", test.converted()), test.converted(), result);
+                assertEquals(test.converted(), result, String.format("'%s' does not match", test.converted()));
 
                 obj = converter.toObject(result, test.type(), test.format());
-                assertEquals(String.format("'%s' converted to incorrect type", test.original()), test.type(), obj.getClass());
+                assertEquals(test.type(), obj.getClass(), String.format("'%s' converted to incorrect type", test.original()));
 
                 if (test.type().isArray()) {
                     assertArrayEquals0(String.format("'%s' did not survive round trip conversion", test.original()), test.value(), obj);
                 }
                 else {
-                    assertEquals(String.format("'%s' did not survive round trip conversion", test.original()), test.value(), obj);
+                    assertEquals(test.value(), obj, String.format("'%s' did not survive round trip conversion", test.original()));
                 }
             }
             catch (ConversionException e) {
@@ -98,35 +98,35 @@ public abstract class PropertyConverterAbstractTest extends ObjectAbstractTest {
         Class<?> componentType = left.getClass().getComponentType();
         if (componentType.isPrimitive()) {
             if (int.class == componentType) {
-                assertArrayEquals(message, (int[]) left, (int[]) right);
+                assertArrayEquals((int[]) left, (int[]) right, message);
             }
             else if (short.class == componentType) {
-                assertArrayEquals(message, (short[]) left, (short[]) right);
+                assertArrayEquals((short[]) left, (short[]) right, message);
             }
             else if (long.class == componentType) {
-                assertArrayEquals(message, (long[]) left, (long[]) right);
+                assertArrayEquals((long[]) left, (long[]) right, message);
             }
             else if (float.class == componentType) {
-                assertArrayEquals(message, (float[]) left, (float[]) right, 0f);
+                assertArrayEquals((float[]) left, (float[]) right, 0f, message);
             }
             else if (double.class == componentType) {
-                assertArrayEquals(message, (double[]) left, (double[]) right, 0d);
+                assertArrayEquals((double[]) left, (double[]) right, 0d, message);
             }
             else if (boolean.class == componentType) {
-                assertTrue(message, Arrays.equals((boolean[]) left, (boolean[]) right));
+                assertTrue(Arrays.equals((boolean[]) left, (boolean[]) right), message);
             }
             else if (byte.class == componentType) {
-                assertArrayEquals(message, (byte[]) left, (byte[]) right);
+                assertArrayEquals((byte[]) left, (byte[]) right, message);
             }
             else if (char.class == componentType) {
-                assertArrayEquals(message, (char[]) left, (char[]) right);
+                assertArrayEquals((char[]) left, (char[]) right, message);
             }
             else {
                 fail(String.format("Unknown primitive type: %s", componentType));
             }
         }
         else {
-            assertArrayEquals(message, (Object[]) left, (Object[]) right);
+            assertArrayEquals((Object[]) left, (Object[]) right, message);
         }
     }
 

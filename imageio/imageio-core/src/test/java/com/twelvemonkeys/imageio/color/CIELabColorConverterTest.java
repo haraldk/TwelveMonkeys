@@ -31,9 +31,9 @@
 package com.twelvemonkeys.imageio.color;
 
 import com.twelvemonkeys.imageio.color.CIELabColorConverter.Illuminant;
-import org.junit.Test;
 
-import static org.junit.Assert.assertArrayEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * CIELabColorConverterTest.
@@ -43,9 +43,9 @@ import static org.junit.Assert.assertArrayEquals;
  * @version $Id: CIELabColorConverterTest.java,v 1.0 22/10/15 harald.kuhr Exp$
  */
 public class CIELabColorConverterTest {
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoIllumninant() {
-        new CIELabColorConverter(null);
+        assertThrows(IllegalArgumentException.class, () -> new CIELabColorConverter(null));
     }
 
     @Test

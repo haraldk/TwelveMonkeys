@@ -32,8 +32,6 @@ package com.twelvemonkeys.imageio.plugins.icns;
 
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 
-import org.junit.Test;
-
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
@@ -45,8 +43,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.List;
 
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 import static java.util.Arrays.asList;
-import static org.junit.Assert.assertTrue;
 
 /**
  * ICNSImageWriterTest.
@@ -78,15 +77,14 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest<ICNSImageWriter
         );
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testWriteNonSquare() throws IOException {
         // ICNS only supports square icons (except some arcane 16x12 we don't currently support)
         ImageWriter writer = createWriter();
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(new ByteArrayOutputStream())) {
 
             writer.setOutput(stream);
-
-            writer.write(new BufferedImage(32, 64, BufferedImage.TYPE_INT_ARGB));
+            assertThrows(IllegalArgumentException.class, () -> writer.write(new BufferedImage(32, 64, BufferedImage.TYPE_INT_ARGB)));
 
         }
         finally {
@@ -94,7 +92,7 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest<ICNSImageWriter
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testWriteBadSize() throws IOException {
         // ICNS only supports sizes in multiples of 2 (16, 32, 64, ..., 1024 + 48 and 96)
         ImageWriter writer = createWriter();
@@ -102,7 +100,7 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest<ICNSImageWriter
 
             writer.setOutput(stream);
 
-            writer.write(new BufferedImage(17, 17, BufferedImage.TYPE_INT_ARGB));
+            assertThrows(IllegalArgumentException.class, () -> writer.write(new BufferedImage(17, 17, BufferedImage.TYPE_INT_ARGB)));
 
         }
         finally {
@@ -121,7 +119,7 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest<ICNSImageWriter
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testWriteSequenceNotStarted() throws IOException {
         // ICNS only supports sizes in multiples of 2 (16, 32, 64, ..., 1024 + 48 and 96)
         ImageWriter writer = createWriter();
@@ -130,7 +128,7 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest<ICNSImageWriter
             writer.setOutput(stream);
 
             BufferedImage image = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
-            writer.writeToSequence(new IIOImage(image, null, null), writer.getDefaultWriteParam());
+            assertThrows(IllegalStateException.class, () -> writer.writeToSequence(new IIOImage(image, null, null), writer.getDefaultWriteParam()));
 
         }
         finally {
@@ -138,21 +136,21 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest<ICNSImageWriter
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testEndSequenceNotStarted() throws IOException {
         // ICNS only supports sizes in multiples of 2 (16, 32, 64, ..., 1024 + 48 and 96)
         ImageWriter writer = createWriter();
         try (ImageOutputStream stream = ImageIO.createImageOutputStream(new ByteArrayOutputStream())) {
 
             writer.setOutput(stream);
-            writer.endWriteSequence();
+            assertThrows(IllegalStateException.class, () -> writer.endWriteSequence());
         }
         finally {
             writer.dispose();
         }
     }
 
-    @Test(expected = IllegalStateException.class)
+    @Test
     public void testPrepareSequenceAlreadyStarted() throws IOException {
         // ICNS only supports sizes in multiples of 2 (16, 32, 64, ..., 1024 + 48 and 96)
         ImageWriter writer = createWriter();
@@ -160,7 +158,7 @@ public class ICNSImageWriterTest extends ImageWriterAbstractTest<ICNSImageWriter
 
             writer.setOutput(stream);
             writer.prepareWriteSequence(null);
-            writer.prepareWriteSequence(null);
+            assertThrows(IllegalStateException.class, () -> writer.prepareWriteSequence(null));
         }
         finally {
             writer.dispose();

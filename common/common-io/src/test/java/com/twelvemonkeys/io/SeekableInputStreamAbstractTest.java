@@ -30,14 +30,13 @@
 
 package com.twelvemonkeys.io;
 
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * SeekableInputStreamAbstractTest
@@ -79,25 +78,25 @@ public abstract class SeekableInputStreamAbstractTest extends InputStreamAbstrac
             return; // Not supported, skip test
         }
 
-        assertTrue("Expected to read positive value", input.read() >= 0);
+        assertTrue(input.read() >= 0, "Expected to read positive value");
 
         int readlimit = 5;
 
         // Mark
         input.mark(readlimit);
         int read = input.read();
-        assertTrue("Expected to read positive value", read >= 0);
+        assertTrue(read >= 0, "Expected to read positive value");
 
         input.reset();
-        assertEquals("Expected value read differs from actual", read, input.read());
+        assertEquals(read, input.read(), "Expected value read differs from actual");
 
         // Reset after read limit passed, may either throw exception, or reset to last good mark
         try {
             input.reset();
-            assertEquals("Re-read of reset data should be first", 0, input.read());
+            assertEquals(0, input.read(), "Re-read of reset data should be first");
         }
         catch (Exception e) {
-            assertTrue("Wrong read-limit IOException message", e.getMessage().contains("mark"));
+            assertTrue(e.getMessage().contains("mark"), "Wrong read-limit IOException message");
         }
     }
 
@@ -127,7 +126,7 @@ public abstract class SeekableInputStreamAbstractTest extends InputStreamAbstrac
 
         seekable.seek(pos);
         long streamPos = seekable.getStreamPosition();
-        assertEquals("Stream positon should match seeked position", pos, streamPos);
+        assertEquals(pos, streamPos, "Stream positon should match seeked position");
     }
 
     @Test
@@ -137,7 +136,7 @@ public abstract class SeekableInputStreamAbstractTest extends InputStreamAbstrac
         seekable.seek(pos);
         seekable.flushBefore(pos);
         long flushedPos = seekable.getFlushedPosition();
-        assertEquals("Flushed positon should match position", pos, flushedPos);
+        assertEquals(pos, flushedPos, "Flushed positon should match position");
 
         try {
             seekable.seek(pos - 1);
@@ -382,13 +381,13 @@ public abstract class SeekableInputStreamAbstractTest extends InputStreamAbstrac
         int val;
 
         val = stream.read();
-        assertFalse("Unexepected EOF", val == -1);
+        assertFalse(val == -1, "Unexepected EOF");
         val = stream.read();
-        assertFalse("Unexepected EOF", val == -1);
+        assertFalse(val == -1, "Unexepected EOF");
         val = stream.read();
-        assertFalse("Unexepected EOF", val == -1);
+        assertFalse(val == -1, "Unexepected EOF");
         val = stream.read();
-        assertFalse("Unexepected EOF", val == -1);
+        assertFalse(val == -1, "Unexepected EOF");
 
         stream.seek(0);
 
@@ -422,19 +421,19 @@ public abstract class SeekableInputStreamAbstractTest extends InputStreamAbstrac
 
         stream.seek(0);
         for (int i = 0; i < bytes.length; i += 2) {
-            assertEquals("Wrong stream position", i, stream.getStreamPosition());
+            assertEquals(i, stream.getStreamPosition(), "Wrong stream position");
             int count = stream.read(buffer, 0, 2);
             assertEquals(2, count);
-            assertEquals(String.format("Wrong value read at pos %d", stream.getStreamPosition()), bytes[i], buffer[0]);
-            assertEquals(String.format("Wrong value read at pos %d", stream.getStreamPosition()), bytes[i + 1], buffer[1]);
+            assertEquals(bytes[i], buffer[0], String.format("Wrong value read at pos %d", stream.getStreamPosition()));
+            assertEquals(bytes[i + 1], buffer[1], String.format("Wrong value read at pos %d", stream.getStreamPosition()));
         }
 
         stream.seek(0);
         for (int i = 0; i < bytes.length; i++) {
-            assertEquals("Wrong stream position", i, stream.getStreamPosition());
+            assertEquals(i, stream.getStreamPosition(), "Wrong stream position");
             int actual = stream.read();
-            assertEquals(String.format("Wrong value read at pos %d", stream.getStreamPosition()), bytes[i] & 0xff, actual);
-            assertEquals(String.format("Wrong value read at pos %d", stream.getStreamPosition()), bytes[i], (byte) actual);
+            assertEquals(bytes[i] & 0xff, actual, String.format("Wrong value read at pos %d", stream.getStreamPosition()));
+            assertEquals(bytes[i], (byte) actual, String.format("Wrong value read at pos %d", stream.getStreamPosition()));
         }
 
     }
@@ -456,14 +455,14 @@ public abstract class SeekableInputStreamAbstractTest extends InputStreamAbstrac
         try {
             FileUtil.read(stream); // Read until EOF
 
-            assertEquals("EOF not reached (test case broken)", -1, stream.read());
-            assertFalse("Underlying stream closed before close", closed[0]);
+            assertEquals(-1, stream.read(), "EOF not reached (test case broken)");
+            assertFalse(closed[0], "Underlying stream closed before close");
         }
         finally {
             stream.close();
         }
 
-        assertTrue("Underlying stream not closed", closed[0]);
+        assertTrue(closed[0], "Underlying stream not closed");
 
     }
 

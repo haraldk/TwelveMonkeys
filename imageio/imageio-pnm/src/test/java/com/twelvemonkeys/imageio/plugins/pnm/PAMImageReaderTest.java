@@ -31,8 +31,6 @@ package com.twelvemonkeys.imageio.plugins.pnm;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Test;
-
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.ImageTypeSpecifier;
@@ -44,8 +42,8 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class PAMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> {
     @Override
@@ -133,7 +131,7 @@ public class PAMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> 
 
     @Test
     public void testXVThumbNotIncorrectlyRecognizedAsPAM() throws IOException {
-        assertTrue("Should recognize PAM format", provider.canDecodeInput(new TestData(getClassLoaderResource("/pam/rgba.pam"), new Dimension()).getInputStream())); // Sanity
-        assertFalse("Should distinguish xv-thumbs from PAM format", provider.canDecodeInput(new TestData(getClassLoaderResource("/xv-thumb/xv-thumb.xvt"), new Dimension()).getInputStream()));
+        assertTrue(provider.canDecodeInput(new TestData(getClassLoaderResource("/pam/rgba.pam"), new Dimension()).getInputStream()), "Should recognize PAM format"); // Sanity
+        assertFalse(provider.canDecodeInput(new TestData(getClassLoaderResource("/xv-thumb/xv-thumb.xvt"), new Dimension()).getInputStream()), "Should distinguish xv-thumbs from PAM format");
     }
 }

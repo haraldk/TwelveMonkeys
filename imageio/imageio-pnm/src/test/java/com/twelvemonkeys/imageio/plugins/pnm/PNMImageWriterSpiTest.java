@@ -30,7 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.pnm;
 
-import org.junit.Test;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
@@ -42,9 +41,8 @@ import java.awt.image.*;
 
 import static com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfoTest.assertClassExists;
 import static com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfoTest.assertClassesExist;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * PNMImageWriterSpiTest.

@@ -30,8 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff.jdkinterop;
 
-import static org.junit.Assert.fail;
-
 import java.awt.*;
 import java.util.Arrays;
 import java.util.Collections;
@@ -42,8 +40,9 @@ import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageReaderSpi;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReader;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReaderSpi;
@@ -88,7 +87,7 @@ public class TIFFImageReaderJDKJPEGInteroperabilityTest extends ImageReaderAbstr
         return Collections.emptyList();
     }
 
-    @Ignore("Fails in TIFFImageReader")
+    @Disabled("Fails in TIFFImageReader")
     @Override
     public void testSetDestinationIllegal() {
     }

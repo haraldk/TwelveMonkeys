@@ -30,12 +30,11 @@
 
 package com.twelvemonkeys.lang;
 
-import org.junit.Test;
-
 import java.io.*;
 import java.lang.reflect.Method;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * AbstractObjectTestCase
@@ -79,10 +78,10 @@ public abstract class ObjectAbstractTest {
 
         Class cl = obj.getClass();
         if (isEqualsOverriden(cl)) {
-            assertTrue("Class " + cl.getName() + " implements equals but not hashCode", isHashCodeOverriden(cl));
+            assertTrue(isHashCodeOverriden(cl), "Class " + cl.getName() + " implements equals but not hashCode");
         }
         else if (isHashCodeOverriden(cl)) {
-            assertTrue("Class " + cl.getName() + " implements hashCode but not equals", isEqualsOverriden(cl));
+            assertTrue(isEqualsOverriden(cl), "Class " + cl.getName() + " implements hashCode but not equals");
         }
 
     }
@@ -107,7 +106,7 @@ public abstract class ObjectAbstractTest {
     @Test
     public void testObjectEqualsSelf() {
         Object obj = makeObject();
-        assertEquals("An Object should equal itself", obj, obj);
+        assertEquals(obj, obj, "An Object should equal itself");
     }
 
     @Test
@@ -115,32 +114,26 @@ public abstract class ObjectAbstractTest {
         Object obj = makeObject();
         // NOTE: Makes sure this doesn't throw NPE either
         //noinspection ObjectEqualsNull
-        assertFalse("An object should never equal null", obj.equals(null));
+        assertFalse(obj.equals(null), "An object should never equal null");
     }
 
     @Test
     public void testObjectHashCodeEqualsSelfHashCode() {
         Object obj = makeObject();
-        assertEquals("hashCode should be repeatable", obj.hashCode(), obj.hashCode());
+        assertEquals(obj.hashCode(), obj.hashCode(), "hashCode should be repeatable");
     }
 
     @Test
     public void testObjectHashCodeEqualsContract() {
         Object obj1 = makeObject();
         if (obj1.equals(obj1)) {
-            assertEquals(
-                "[1] When two objects are equal, their hashCodes should be also.",
-                obj1.hashCode(), obj1.hashCode());
+            assertEquals(obj1.hashCode(), obj1.hashCode(), "[1] When two objects are equal, their hashCodes should be also.");
         }
         // TODO: Make sure we create at least one equal object, and one different object
         Object obj2 = makeObject();
         if (obj1.equals(obj2)) {
-            assertEquals(
-                "[2] When two objects are equal, their hashCodes should be also.",
-                obj1.hashCode(), obj2.hashCode());
-            assertTrue(
-                "When obj1.equals(obj2) is true, then obj2.equals(obj1) should also be true",
-                obj2.equals(obj1));
+            assertEquals(obj1.hashCode(), obj2.hashCode(), "[2] When two objects are equal, their hashCodes should be also.");
+            assertTrue(obj2.equals(obj1), "When obj1.equals(obj2) is true, then obj2.equals(obj1) should also be true");
         }
     }
 
@@ -169,14 +162,14 @@ public abstract class ObjectAbstractTest {
 
             Object cloned = clone.invoke(obj);
 
-            assertNotNull("Cloned object should never be null", cloned);
+            assertNotNull(cloned, "Cloned object should never be null");
 
             // TODO: This can only be asserted if equals() test is based on
             // value equality, not reference (identity) equality
             // Maybe it's possible to do a reflective introspection of
             // the objects fields?
             if (isHashCodeOverriden(cl)) {
-                assertEquals("Cloned object not equal", obj, cloned);
+                assertEquals(obj, cloned, "Cloned object not equal");
             }
         }
     }
@@ -235,7 +228,7 @@ public abstract class ObjectAbstractTest {
             // Maybe it's possible to do a reflective introspection of
             // the objects fields?
             if (isEqualsOverriden(obj.getClass())) {
-                assertEquals("obj != deserialize(serialize(obj))", obj, dest);
+                assertEquals(obj, dest, "obj != deserialize(serialize(obj))");
             }
         }
     }

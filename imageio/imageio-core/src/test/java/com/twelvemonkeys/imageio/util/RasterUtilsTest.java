@@ -1,15 +1,13 @@
 package com.twelvemonkeys.imageio.util;
 
-import org.junit.Test;
-
 import javax.imageio.ImageTypeSpecifier;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.util.Random;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertSame;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * RasterUtilsTest.
@@ -19,15 +17,15 @@ import static org.junit.Assert.assertSame;
  * @version $Id: RasterUtilsTest.java,v 1.0 05/05/2021 haraldk Exp$
  */
 public class RasterUtilsTest {
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testAsByteRasterFromNull() {
-        RasterUtils.asByteRaster((Raster) null);
+        assertThrows(NullPointerException.class, () -> RasterUtils.asByteRaster((Raster) null));
     }
 
     @SuppressWarnings("RedundantCast")
-    @Test(expected = NullPointerException.class)
+    @Test
     public void testAsByteRasterWritableFromNull() {
-        RasterUtils.asByteRaster((WritableRaster) null);
+        assertThrows(NullPointerException.class, () -> RasterUtils.asByteRaster((WritableRaster) null));
     }
 
     @Test

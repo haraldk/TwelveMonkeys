@@ -31,9 +31,7 @@
 package com.twelvemonkeys.image;
 
 import static java.lang.Math.min;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
+import static org.junit.jupiter.api.Assertions.*;
 
 import java.awt.color.ColorSpace;
 import java.awt.geom.AffineTransform;
@@ -49,7 +47,7 @@ import java.util.List;
 
 import javax.imageio.ImageTypeSpecifier;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 /**
  * AffineTransformOpTest.
@@ -146,12 +144,12 @@ public class AffineTransformOpTest {
             BufferedImage jreResult = jreOp.filter(image, null);
             BufferedImage tmResult = tmOp.filter(image, null);
 
-            assertNotNull("No result!", tmResult);
-            assertEquals("Bad type", jreResult.getType(), tmResult.getType());
-            assertEquals("Incorrect color model", jreResult.getColorModel(), tmResult.getColorModel());
+            assertNotNull(tmResult, "No result!");
+            assertEquals(jreResult.getType(), tmResult.getType(), "Bad type");
+            assertEquals(jreResult.getColorModel(), tmResult.getColorModel(), "Incorrect color model");
 
-            assertEquals("Incorrect width", jreResult.getWidth(), tmResult.getWidth());
-            assertEquals("Incorrect height", jreResult.getHeight(), tmResult.getHeight());
+            assertEquals(jreResult.getWidth(), tmResult.getWidth(), "Incorrect width");
+            assertEquals(jreResult.getHeight(), tmResult.getHeight(), "Incorrect height");
         }
     }
 
@@ -164,7 +162,7 @@ public class AffineTransformOpTest {
             BufferedImage image = spec.createBufferedImage(width, height);
 
             BufferedImage tmResult = tmOp.filter(image, null);
-            assertNotNull("No result!", tmResult);
+            assertNotNull(tmResult, "No result!");
 
             BufferedImage jreResult = null;
 
@@ -176,18 +174,18 @@ public class AffineTransformOpTest {
             }
 
             if (jreResult != null) {
-                assertEquals("Bad type", jreResult.getType(), tmResult.getType());
-                assertEquals("Incorrect color model", jreResult.getColorModel(), tmResult.getColorModel());
+                assertEquals(jreResult.getType(), tmResult.getType(), "Bad type");
+                assertEquals(jreResult.getColorModel(), tmResult.getColorModel(), "Incorrect color model");
 
-                assertEquals("Incorrect width", jreResult.getWidth(), tmResult.getWidth());
-                assertEquals("Incorrect height", jreResult.getHeight(), tmResult.getHeight());
+                assertEquals(jreResult.getWidth(), tmResult.getWidth(), "Incorrect width");
+                assertEquals(jreResult.getHeight(), tmResult.getHeight(), "Incorrect height");
             }
             else {
-                assertEquals("Bad type", spec.getBufferedImageType(), tmResult.getType());
-                assertEquals("Incorrect color model", spec.getColorModel(), tmResult.getColorModel());
+                assertEquals(spec.getBufferedImageType(), tmResult.getType(), "Bad type");
+                assertEquals(spec.getColorModel(), tmResult.getColorModel(), "Incorrect color model");
 
-                assertEquals("Incorrect width", height, tmResult.getWidth());
-                assertEquals("Incorrect height", width, tmResult.getHeight());
+                assertEquals(height, tmResult.getWidth(), "Incorrect width");
+                assertEquals(width, tmResult.getHeight(), "Incorrect height");
             }
         }
     }
@@ -236,12 +234,12 @@ public class AffineTransformOpTest {
             }
 
             if (jreResult != null) {
-                assertEquals("Incorrect width", jreResult.getWidth(), tmResult.getWidth());
-                assertEquals("Incorrect height", jreResult.getHeight(), tmResult.getHeight());
+                assertEquals(jreResult.getWidth(), tmResult.getWidth(), "Incorrect width");
+                assertEquals(jreResult.getHeight(), tmResult.getHeight(), "Incorrect height");
             }
             else {
-                assertEquals("Incorrect width", height, tmResult.getWidth());
-                assertEquals("Incorrect height", width, tmResult.getHeight());
+                assertEquals(height, tmResult.getWidth(), "Incorrect width");
+                assertEquals(width, tmResult.getHeight(), "Incorrect height");
             }
         }
     }
@@ -277,12 +275,12 @@ public class AffineTransformOpTest {
             }
 
             if (jreResult != null) {
-                assertEquals("Incorrect width", jreResult.getWidth(), tmResult.getWidth());
-                assertEquals("Incorrect height", jreResult.getHeight(), tmResult.getHeight());
+                assertEquals(jreResult.getWidth(), tmResult.getWidth(), "Incorrect width");
+                assertEquals(jreResult.getHeight(), tmResult.getHeight(), "Incorrect height");
             }
             else {
-                assertEquals("Incorrect width", height, tmResult.getWidth());
-                assertEquals("Incorrect height", width, tmResult.getHeight());
+                assertEquals(height, tmResult.getWidth(), "Incorrect width");
+                assertEquals(width, tmResult.getHeight(), "Incorrect height");
             }
         }
     }

@@ -33,8 +33,6 @@ package com.twelvemonkeys.imageio.plugins.tiff;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Test;
-
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
@@ -56,10 +54,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
 import static org.mockito.AdditionalMatchers.and;
 import static org.mockito.Mockito.*;
 
@@ -434,10 +432,10 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             for (int y = 0; y < 8; y++) {
                 for (int x = 0; x < 8; x++) {
                     int argb = image.getRGB(x, y);
-                    assertEquals("Alpha", 0xff, (argb >>> 24) & 0xff);
-                    assertEquals("Red", 0xff, (argb >> 16) & 0xff);
-                    assertEquals("Green", 0xff, (argb >> 8) & 0xff, 13); // Depending on coeffs
-                    assertEquals("Blue", 0xff, argb & 0xff);
+                    assertEquals(0xff, (argb >>> 24) & 0xff, "Alpha");
+                    assertEquals(0xff, (argb >> 16) & 0xff, "Red");
+                    assertEquals(0xff, (argb >> 8) & 0xff, 13, "Green"); // Depending on coeffs
+                    assertEquals(0xff, argb & 0xff, "Blue");
                 }
             }
         }
@@ -465,10 +463,10 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
             for (int y = 0; y < 8; y++) {
                 for (int x = 0; x < 8; x++) {
                     int argb = image.getRGB(x, y);
-                    assertEquals("Alpha", 0xff, (argb >>> 24) & 0xff);
-                    assertEquals("Red", 0xff, (argb >> 16) & 0xff);
-                    assertEquals("Green", 0xff, (argb >> 8) & 0xff);
-                    assertEquals("Blue", 0xff, argb & 0xff);
+                    assertEquals(0xff, (argb >>> 24) & 0xff, "Alpha");
+                    assertEquals(0xff, (argb >> 16) & 0xff, "Red");
+                    assertEquals(0xff, (argb >> 8) & 0xff, "Green");
+                    assertEquals(0xff, argb & 0xff, "Blue");
                 }
             }
         }
@@ -640,7 +638,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 });
                 reader.read(0);
             }
-            assertTrue("no correct guess for PhotometricInterpretation: " + results[i], foundWarning.get());
+            assertTrue(foundWarning.get(), "no correct guess for PhotometricInterpretation: " + results[i]);
         }
     }
 
@@ -1024,16 +1022,16 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                     failBecause(String.format("Image %s index %s could not be read: %s", data.getInput(), i, e), e);
                 }
 
-                assertNotNull(String.format("Raster %s index %s was null!", data.getInput(), i), raster);
+                assertNotNull(raster, String.format("Raster %s index %s was null!", data.getInput(), i));
 
                 assertEquals(
-                        String.format("Raster %s index %s has wrong width: %s", data.getInput(), i, raster.getWidth()),
                         data.getDimension(i).width,
-                        raster.getWidth()
+                        raster.getWidth(),
+                        String.format("Raster %s index %s has wrong width: %s", data.getInput(), i, raster.getWidth())
                 );
                 assertEquals(
-                        String.format("Raster %s index %s has wrong height: %s", data.getInput(), i, raster.getHeight()),
-                        data.getDimension(i).height, raster.getHeight()
+                        data.getDimension(i).height, raster.getHeight(),
+                        String.format("Raster %s index %s has wrong height: %s", data.getInput(), i, raster.getHeight())
                 );
             }
         }

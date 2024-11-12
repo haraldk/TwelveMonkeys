@@ -30,13 +30,11 @@
 
 package com.twelvemonkeys.lang;
 
-import org.junit.Test;
-
 import java.util.*;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-import static org.junit.Assert.*;
-
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 /**
  * ValidateTest
  *
@@ -52,9 +50,11 @@ public class ValidateTest {
         assertEquals("foo", Validate.notNull("foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotNullNull() {
-        Validate.notNull(null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notNull(null);
+        });
     }
 
     @Test
@@ -62,15 +62,12 @@ public class ValidateTest {
         assertEquals("foo", Validate.notNull("foo", "bar"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotNullWithParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notNull(null, "xyzzy");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("xyzzy"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("xyzzy"));
     }
 
     @Test
@@ -78,9 +75,11 @@ public class ValidateTest {
         Validate.notNull("foo", null);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotNullWithNullParameterNull() {
-        Validate.notNull(null, null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notNull(null, null);
+        });
     }
 
     // Not empty (CharSequence)
@@ -90,52 +89,49 @@ public class ValidateTest {
         assertEquals("foo", Validate.notEmpty("foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCharSequenceNull() {
-        Validate.notEmpty((CharSequence) null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notEmpty((CharSequence) null);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCharSequenceEmpty() {
-        Validate.notEmpty("");
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notEmpty("");
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCharSequenceOnlyWS() {
-        Validate.notEmpty(" \t\r");
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notEmpty(" \t\r");
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCharSequenceNullWithParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty((CharSequence) null, "xyzzy");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("xyzzy"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("xyzzy"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCharSequenceEmptyWithParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty("", "xyzzy");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("xyzzy"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("xyzzy"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCharSequenceOnlyWSWithParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty(" \t", "xyzzy");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("xyzzy"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("xyzzy"));
     }
 
     @Test
@@ -148,37 +144,28 @@ public class ValidateTest {
         assertEquals("foo", Validate.notEmpty("foo", null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCharSequenceNullWithParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty((CharSequence) null, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCharSequenceEmptyWithParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty("", null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCharSequenceOnlyWSWithParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty(" \t\t  \n", null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("parameter"));
     }
 
     // Not empty (array)
@@ -189,14 +176,18 @@ public class ValidateTest {
         assertSame(array, Validate.notEmpty(array));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyArrayNull() {
-        Validate.notEmpty((Object[]) null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notEmpty((Object[]) null);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyArrayEmpty() {
-        Validate.notEmpty(new String[0]);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notEmpty(new String[0]);
+        });
     }
 
     @Test
@@ -205,26 +196,20 @@ public class ValidateTest {
         assertSame(array, Validate.notEmpty(array, "bar"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyArrayNullParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty((Object[]) null, "xyzzy");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("xyzzy"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("xyzzy"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyArrayEmptyParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty(new Float[0], "xyzzy");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("xyzzy"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("xyzzy"));
     }
 
     @Test
@@ -233,26 +218,20 @@ public class ValidateTest {
         assertSame(array, Validate.notEmpty(array, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyArrayNullWithParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty((Object[]) null, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyArrayEmptyWithParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty(new Object[0], null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("parameter"));
     }
 
     // Not empty (Collection)
@@ -263,14 +242,18 @@ public class ValidateTest {
         assertSame(collection, Validate.notEmpty(collection));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCollectionNull() {
-        Validate.notEmpty((Collection<?>) null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notEmpty((Collection<?>) null);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCollectionEmpty() {
-        Validate.notEmpty(Collections.emptySet());
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notEmpty(Collections.emptySet());
+        });
     }
 
     @Test
@@ -279,26 +262,20 @@ public class ValidateTest {
         assertSame(collection, Validate.notEmpty(collection, "bar"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCollectionNullParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty((Collection<?>) null, "xyzzy");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("xyzzy"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("xyzzy"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCollectionEmptyParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty(new ArrayList<Object>(), "xyzzy");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("xyzzy"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("xyzzy"));
     }
 
     @Test
@@ -307,26 +284,20 @@ public class ValidateTest {
         assertSame(collection, Validate.notEmpty(collection, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCollectionNullWithParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty((Collection<?>) null, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyCollectionEmptyWithParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty((Collection<?>) null, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("parameter"));
     }
 
     // Not empty (Map)
@@ -340,14 +311,18 @@ public class ValidateTest {
         assertSame(map, Validate.notEmpty(map));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyMapNull() {
-        Validate.notEmpty((Map<?, ?>) null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notEmpty((Map<?, ?>) null);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyMapEmpty() {
-        Validate.notEmpty(Collections.emptyMap());
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notEmpty(Collections.emptyMap());
+        });
     }
 
     @Test
@@ -356,26 +331,20 @@ public class ValidateTest {
         assertSame(map, Validate.notEmpty(map, "bar"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyMapNullParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty((Map<?, ?>) null, "xyzzy");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("xyzzy"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("xyzzy"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyMapEmptyParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty(new HashMap<Object, Object>(), "xyzzy");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("xyzzy"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("xyzzy"));
     }
 
     @Test
@@ -384,26 +353,20 @@ public class ValidateTest {
         assertSame(map, Validate.notEmpty(map, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyMapNullWithParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty((Map<?, ?>) null, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNotEmptyMapEmptyWithParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.notEmpty((Map<?, ?>) null, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("parameter"));
     }
 
     // No null elements (array)
@@ -420,20 +383,27 @@ public class ValidateTest {
         assertSame(array, Validate.noNullElements(array));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsArrayNull() {
-        Validate.noNullElements((Object[]) null);
+
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullElements((Object[]) null);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsArrayNullElements() {
-        Validate.noNullElements(new Object[3]);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullElements(new Object[3]);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsArrayMixed() {
         String[] array = new String[] {"foo", null, "bar"};
-        Validate.noNullElements(array);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullElements(array);
+        });
     }
 
     @Test
@@ -448,37 +418,28 @@ public class ValidateTest {
         assertSame(array, Validate.noNullElements(array, "foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsArrayNullParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullElements((Object[]) null, "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsArrayNullElementsParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullElements(new Object[3], "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsArrayMixedParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullElements(new String[] {"foo", null, "bar"}, "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
     @Test
@@ -493,37 +454,28 @@ public class ValidateTest {
         assertSame(array, Validate.noNullElements(array, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsArrayNullParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullElements((Object[]) null, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsArrayNullElementsParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullElements(new Object[3], null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsArrayMixedParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullElements(new String[] {"foo", null, "bar"}, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
     // No null elements (Collection)
@@ -540,19 +492,25 @@ public class ValidateTest {
         assertSame(collection, Validate.noNullElements(collection));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsCollectionNull() {
-        Validate.noNullElements((Collection<?>) null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullElements((Collection<?>) null);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsCollectionNullElements() {
-        Validate.noNullElements(Arrays.asList(null, null, null));
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullElements(Arrays.asList(null, null, null));
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsCollectionMixed() {
-        Validate.noNullElements(Arrays.asList("foo", null, "bar"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullElements(Arrays.asList("foo", null, "bar"));
+        });
     }
 
     @Test
@@ -567,37 +525,28 @@ public class ValidateTest {
         assertSame(collection, Validate.noNullElements(collection, "foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsCollectionNullParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullElements((Set<?>) null, "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsCollectionNullElementsParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullElements(Collections.singletonList(null), "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsCollectionMixedParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullElements(Arrays.asList("foo", null, "bar"), "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
     @Test
@@ -612,38 +561,29 @@ public class ValidateTest {
         assertSame(collection, Validate.noNullElements(collection, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsCollectionNullParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullElements((ArrayList<?>) null, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsCollectionNullElementsParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullElements(Collections.singleton(null), null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullElementsCollectionMixedParameterNull() {
-        Collection<?> collection = Arrays.asList("foo", null, "bar");
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            Collection<?> collection = Arrays.asList("foo", null, "bar");
             Validate.noNullElements(collection, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
     // No null values (Map)
@@ -664,23 +604,29 @@ public class ValidateTest {
         assertSame(map, Validate.noNullValues(map));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullValuesNull() {
-        Validate.noNullValues((Map<?, ?>) null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullValues((Map<?, ?>) null);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullValuesNullElements() {
-        Validate.noNullValues(Collections.singletonMap("foo", null));
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullValues(Collections.singletonMap("foo", null));
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullValuesMixed() {
-        Validate.noNullValues(new HashMap<String, Object>() {{
-            put("foo", 1);
-            put(null, null);
-            put("baz", null);
-        }});
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullValues(new HashMap<String, Object>() {{
+                put("foo", 1);
+                put(null, null);
+                put("baz", null);
+            }});
+        });
     }
 
     @Test
@@ -699,41 +645,32 @@ public class ValidateTest {
         assertSame(map, Validate.noNullValues(map, "foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullValuesNullParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullValues((Map<?, ?>) null, "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullValuesNullElementsParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullValues(Collections.singletonMap("bar", null), "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullValuesMixedParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullValues(new HashMap<String, Object>() {{
                 put("foo", 1);
                 put(null, null);
                 put("bar", null);
             }}, "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
     @Test
@@ -752,42 +689,32 @@ public class ValidateTest {
         assertSame(map, Validate.noNullValues(map, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullValuesNullParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullValues((Map<?, ?>) null, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullValuesNullElementsParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullValues(Collections.singletonMap(null, null), null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullValuesMixedParameterNull() {
-
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullValues(new HashMap<String, Object>() {{
                 put("foo", 1);
                 put(null, null);
                 put("bar", null);
             }}, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
     // No null keys (Map)
@@ -808,23 +735,29 @@ public class ValidateTest {
         assertSame(map, Validate.noNullKeys(map));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullKeysNull() {
-        Validate.noNullKeys((Map<?, ?>) null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullKeys((Map<?, ?>) null);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullKeysNullElements() {
-        Validate.noNullKeys(Collections.singletonMap(null, "foo"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullKeys(Collections.singletonMap(null, "foo"));
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullKeysMixed() {
-        Validate.noNullKeys(new HashMap<String, Object>() {{
-            put("foo", 1);
-            put(null, null);
-            put("baz", null);
-        }});
+        assertThrows(IllegalArgumentException.class, () -> {
+            Validate.noNullKeys(new HashMap<String, Object>() {{
+                put("foo", 1);
+                put(null, null);
+                put("baz", null);
+            }});
+        });
     }
 
     @Test
@@ -843,41 +776,32 @@ public class ValidateTest {
         assertSame(map, Validate.noNullKeys(map, "foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullKeysNullParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullKeys((Map<?, ?>) null, "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullKeysNullElementsParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullKeys(Collections.singletonMap(null, "bar"), "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullKeysMixedParameter() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullKeys(new HashMap<String, Object>() {{
                 put("foo", 1);
                 put(null, null);
                 put("bar", null);
             }}, "foo");
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
     @Test
@@ -896,42 +820,32 @@ public class ValidateTest {
         assertSame(map, Validate.noNullKeys(map, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullKeysNullParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullKeys((Map<?, ?>) null, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullKeysNullElementsParameterNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullKeys(Collections.singletonMap(null, null), null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testNoNullKeysMixedParameterNull() {
-
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.noNullKeys(new HashMap<String, Object>() {{
                 put("foo", 1);
                 put(null, null);
                 put("bar", null);
             }}, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("method parameter"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("method parameter"));
     }
 
     // Is true
@@ -941,26 +855,20 @@ public class ValidateTest {
         assertTrue(Validate.isTrue(true, "%s"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIsTrueFalse() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.isTrue(false, "is %s");
-        }
-        catch (IllegalArgumentException e) {
-            assertEquals("is false", e.getMessage());
-            throw e;
-        }
+        });
+        assertEquals("is false", exception.getMessage());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIsTrueFalseNullParam() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.isTrue(false, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("false"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("false"));
     }
 
     @Test
@@ -969,15 +877,12 @@ public class ValidateTest {
         assertSame(object, Validate.isTrue(true, object, "%s"));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIsTrueFalseValue() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.isTrue(false, "baz", "foo is '%s'");
-        }
-        catch (IllegalArgumentException e) {
-            assertEquals("foo is 'baz'", e.getMessage());
-            throw e;
-        }
+        });
+        assertEquals("foo is 'baz'", exception.getMessage());
     }
 
     @Test
@@ -985,15 +890,12 @@ public class ValidateTest {
         assertEquals("foo", Validate.isTrue(true, "foo", null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIsTrueFalseValueParamNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.isTrue(false, "foo", null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("foo"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("foo"));
     }
 
     @Test
@@ -1001,15 +903,11 @@ public class ValidateTest {
         assertNull(Validate.isTrue(true, null, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIsTrueFalseValueNullParamNull() {
-        try {
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
             Validate.isTrue(false, null, null);
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("null"));
-            throw e;
-        }
+        });
+        assertTrue(exception.getMessage().contains("null"));
     }
-
 }

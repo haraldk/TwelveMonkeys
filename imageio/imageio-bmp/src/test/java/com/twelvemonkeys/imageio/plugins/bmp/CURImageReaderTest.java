@@ -32,9 +32,6 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 import javax.imageio.ImageReadParam;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
@@ -44,7 +41,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * CURImageReaderTest
@@ -93,16 +92,16 @@ public class CURImageReaderTest extends ImageReaderAbstractTest<CURImageReader> 
         if (hotspot != Image.UndefinedProperty || pParam == null) {
 
             // Typically never happens, because of weirdness with UndefinedProperty
-            assertNotNull("Hotspot for cursor not present", hotspot);
+            assertNotNull(hotspot, "Hotspot for cursor not present");
 
             // Image weirdness
-            assertNotSame("Hotspot for cursor undefined (java.awt.Image.UndefinedProperty)", Image.UndefinedProperty, hotspot);
+            assertNotSame(Image.UndefinedProperty, hotspot, "Hotspot for cursor undefined (java.awt.Image.UndefinedProperty)");
 
-            assertTrue(String.format("Hotspot not a java.awt.Point: %s", hotspot.getClass()), hotspot instanceof Point);
+            assertTrue(hotspot instanceof Point, String.format("Hotspot not a java.awt.Point: %s", hotspot.getClass()));
             assertEquals(pExpected, hotspot);
         }
 
-        assertNotNull("Hotspot for cursor not present", reader.getHotSpot(0));
+        assertNotNull(reader.getHotSpot(0), "Hotspot for cursor not present");
         assertEquals(pExpected, reader.getHotSpot(0));
     }
 
@@ -141,14 +140,14 @@ public class CURImageReaderTest extends ImageReaderAbstractTest<CURImageReader> 
     // TODO: Test cursor is transparent
 
     @Test
-    @Ignore("Known issue")
+    @Disabled("Known issue")
     @Override
     public void testNotBadCaching() throws IOException {
         super.testNotBadCaching();
     }
 
     @Test
-    @Ignore("Known issue: Subsampled reading currently not supported")
+    @Disabled("Known issue: Subsampled reading currently not supported")
     @Override
     public void testReadWithSubsampleParamPixels() throws IOException {
         super.testReadWithSubsampleParamPixels();

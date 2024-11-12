@@ -33,7 +33,6 @@ package com.twelvemonkeys.imageio.stream;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.io.ole2.Entry;
 
-import org.junit.Test;
 
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
@@ -42,8 +41,10 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Random;
 
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
 import static java.util.Arrays.fill;
-import static org.junit.Assert.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -71,8 +72,8 @@ public class BufferedImageInputStreamTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue("Exception message does not contain parameter name", message.contains("stream"));
-            assertTrue("Exception message does not contain null", message.contains("null"));
+            assertTrue(message.contains("stream"), "Exception message does not contain parameter name");
+            assertTrue(message.contains("null"), "Exception message does not contain null");
         }
     }
 
@@ -313,7 +314,7 @@ public class BufferedImageInputStreamTest {
 
         for (int i = 1; i < 64; i++) {
             stream.seek(0);
-            assertEquals(i + " bits differ", value >>> (64L - i), stream.readBits(i));
+            assertEquals(value >>> (64L - i), stream.readBits(i), i + " bits differ");
         }
     }
 
@@ -340,8 +341,8 @@ public class BufferedImageInputStreamTest {
 
         Entry catalog = root.getChildEntry("Catalog");
 
-        assertNotNull("Catalog should not be null", catalog);
-        assertNotNull("Input stream can never be null", catalog.getInputStream());
+        assertNotNull(catalog, "Catalog should not be null");
+        assertNotNull(catalog.getInputStream(), "Input stream can never be null");
     }
 
     @Test

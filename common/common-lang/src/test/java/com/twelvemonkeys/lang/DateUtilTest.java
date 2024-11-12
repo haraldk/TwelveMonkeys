@@ -30,16 +30,16 @@
 
 package com.twelvemonkeys.lang;
 
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimeZone;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * DateUtilTest
@@ -48,22 +48,15 @@ import static org.junit.Assert.assertEquals;
  * @author last modified by $Author: haraldk$
  * @version $Id: DateUtilTest.java,v 1.0 11.04.12 16:21 haraldk Exp$
  */
-@RunWith(Parameterized.class)
+
 public class DateUtilTest {
 
-    private final TimeZone timeZone;
-
-    @Parameterized.Parameters
     public static List<Object[]> timeZones() {
         return Arrays.asList(new Object[][] {
                 {TimeZone.getTimeZone("UTC")},
                 {TimeZone.getTimeZone("CET")},
                 {TimeZone.getTimeZone("IST")}, // 30 min off
         });
-    }
-
-    public DateUtilTest(final TimeZone timeZone) {
-        this.timeZone = timeZone;
     }
 
     private Calendar getCalendar(long time) {
@@ -101,8 +94,9 @@ public class DateUtilTest {
         assertEquals(0, calendar.get(Calendar.MINUTE));
     }
 
-    @Test
-    public void testRoundToHourTZ() {
+    @ParameterizedTest
+    @MethodSource("timeZones")
+    public void testRoundToHourTZ(TimeZone timeZone) {
         Calendar calendar = getCalendar(DateUtil.roundToHour(System.currentTimeMillis(), timeZone), timeZone);
 
         assertEquals(0, calendar.get(Calendar.MILLISECOND));
@@ -120,8 +114,9 @@ public class DateUtilTest {
         assertEquals(0, calendar.get(Calendar.HOUR_OF_DAY));
     }
 
-    @Test
-    public void testRoundToDayTZ() {
+    @ParameterizedTest
+    @MethodSource("timeZones")
+    public void testRoundToDayTZ(TimeZone timeZone) {
         Calendar calendar = getCalendar(DateUtil.roundToDay(System.currentTimeMillis(), timeZone), timeZone);
 
         assertEquals(0, calendar.get(Calendar.MILLISECOND));

@@ -34,8 +34,6 @@ import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 
-import org.junit.Test;
-
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ImageWriterSpi;
@@ -49,7 +47,9 @@ import java.util.Arrays;
 import java.util.List;
 
 import static com.twelvemonkeys.imageio.util.ImageReaderAbstractTest.assertRGBEquals;
-import static org.junit.Assert.assertArrayEquals;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * BigTIFFImageWriterTest

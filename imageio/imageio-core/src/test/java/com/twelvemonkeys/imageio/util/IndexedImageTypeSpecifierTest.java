@@ -30,17 +30,14 @@
 
 package com.twelvemonkeys.imageio.util;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertNotNull;
-
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.IndexColorModel;
 
 import javax.imageio.ImageTypeSpecifier;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * IndexedImageTypeSpecifierTestCase
@@ -82,9 +79,9 @@ public class IndexedImageTypeSpecifierTest {
         assertNotEquals(spec.hashCode(), different.hashCode());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNull() {
-        new IndexedImageTypeSpecifier(null);
+        assertThrows(IllegalArgumentException.class, () -> new IndexedImageTypeSpecifier(null));
     }
 
     @Test

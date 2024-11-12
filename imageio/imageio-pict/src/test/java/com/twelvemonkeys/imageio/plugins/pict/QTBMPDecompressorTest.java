@@ -2,11 +2,10 @@ package com.twelvemonkeys.imageio.plugins.pict;
 
 import com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
 
-import org.junit.Test;
-
 import java.nio.charset.StandardCharsets;
 
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * QTBMPDecompressorTest.

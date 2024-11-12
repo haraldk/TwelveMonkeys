@@ -31,8 +31,6 @@
 package com.twelvemonkeys.imageio.metadata.jpeg;
 
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
@@ -47,8 +45,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Collections;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * JPEGQualityTest
@@ -97,7 +96,7 @@ public class JPEGQualityTest {
         }
     }
 
-    @Ignore("Need a JPEG test image with bad DQT data...")
+    @Disabled("Need a JPEG test image with bad DQT data...")
     @Test
     public void testGetQualityBadData() throws IOException {
         ImageInputStream stream = ImageIO.createImageInputStream(getClass().getResourceAsStream("/bad-data"));
@@ -257,9 +256,9 @@ public class JPEGQualityTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetQTablesNull() throws IOException {
-        JPEGQuality.getQTables(null);
+        assertThrows(IllegalArgumentException.class, () -> JPEGQuality.getQTables(null));
     }
 
     @Test

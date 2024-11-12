@@ -32,16 +32,16 @@ package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
-import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * SVGImageReaderSpiTest.
@@ -83,18 +83,20 @@ public class SVGImageReaderSpiTest {
     public void canDecodeInput() throws Exception {
         for (String validInput : VALID_INPUTS) {
             try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResource(validInput))) {
-                assertTrue("Can't read valid input: " + validInput, provider.canDecodeInput(input));
+                assertTrue(provider.canDecodeInput(input), "Can't read valid input: " + validInput);
             }
         }
     }
 
     // Test will time out, if EOFs are not properly detected, see #275
-    @Test(timeout = 5000)
+    @Test
     public void canDecodeInputInvalid() throws Exception {
-        for (String invalidInput : INVALID_INPUTS) {
-            try (ImageInputStream input = new ByteArrayImageInputStream(invalidInput.getBytes(StandardCharsets.UTF_8))) {
-                assertFalse("Claims to read invalid input:" + invalidInput, provider.canDecodeInput(input));
+        assertTimeoutPreemptively(Duration.ofMillis(5000), () -> {
+            for (String invalidInput : INVALID_INPUTS) {
+                try (ImageInputStream input = new ByteArrayImageInputStream(invalidInput.getBytes(StandardCharsets.UTF_8))) {
+                    assertFalse(provider.canDecodeInput(input), "Claims to read invalid input:" + invalidInput);
+                }
             }
-        }
+        });
     }
 }

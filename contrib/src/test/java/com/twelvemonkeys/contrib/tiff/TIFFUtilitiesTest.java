@@ -34,8 +34,6 @@ import com.twelvemonkeys.contrib.tiff.TIFFUtilities.TIFFExtension;
 import com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat;
 import com.twelvemonkeys.io.FileUtil;
 
-import org.junit.Assert;
-import org.junit.Test;
 import org.w3c.dom.Node;
 
 import javax.imageio.ImageIO;
@@ -53,6 +51,9 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * TIFFUtilitiesTest
@@ -95,7 +96,7 @@ public class TIFFUtilitiesTest {
         ImageInputStream iis = ImageIO.createImageInputStream(output);
         ImageReader reader = ImageIO.getImageReaders(iis).next();
         reader.setInput(iis);
-        Assert.assertEquals(3, reader.getNumImages(true));
+        assertEquals(3, reader.getNumImages(true));
 
         iis.close();
         output.delete();
@@ -119,11 +120,11 @@ public class TIFFUtilitiesTest {
         ImageReader reader = ImageIO.getImageReadersByFormatName("TIF").next();
 
         File[] outputFiles = outputDirectory.listFiles();
-        Assert.assertEquals(3, outputFiles.length);
+        assertEquals(3, outputFiles.length);
         for (File outputFile : outputFiles) {
             ImageInputStream iis = ImageIO.createImageInputStream(outputFile);
             reader.setInput(iis);
-            Assert.assertEquals(1, reader.getNumImages(true));
+            assertEquals(1, reader.getNumImages(true));
             iis.close();
             outputFile.delete();
         }
@@ -157,7 +158,7 @@ public class TIFFUtilitiesTest {
             Node metaData = reader.getImageMetadata(i)
                     .getAsTree(TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
             short orientation = ((Number) expression.evaluate(metaData, XPathConstants.NUMBER)).shortValue();
-            Assert.assertEquals(orientation, TIFFExtension.ORIENTATION_RIGHTTOP);
+            assertEquals(orientation, TIFFExtension.ORIENTATION_RIGHTTOP);
         }
         checkTest1.close();
 
@@ -174,7 +175,7 @@ public class TIFFUtilitiesTest {
             Node metaData = reader.getImageMetadata(i)
                     .getAsTree(TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
             short orientation = ((Number) expression.evaluate(metaData, XPathConstants.NUMBER)).shortValue();
-            Assert.assertEquals(orientation, i == 1
+            assertEquals(orientation, i == 1
                                              ? TIFFExtension.ORIENTATION_BOTRIGHT
                                              : TIFFExtension.ORIENTATION_RIGHTTOP);
         }
@@ -199,7 +200,7 @@ public class TIFFUtilitiesTest {
         byte[] original = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] rotated = ((DataBufferByte) image360.getData().getDataBuffer()).getData();
 
-        Assert.assertArrayEquals(original, rotated);
+        assertArrayEquals(original, rotated);
     }
 
     @Test

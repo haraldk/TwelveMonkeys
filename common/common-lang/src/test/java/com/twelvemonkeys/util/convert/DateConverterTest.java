@@ -31,7 +31,7 @@
 package com.twelvemonkeys.util.convert;
 
 import com.twelvemonkeys.lang.DateUtil;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.text.DateFormat;
 import java.util.Date;

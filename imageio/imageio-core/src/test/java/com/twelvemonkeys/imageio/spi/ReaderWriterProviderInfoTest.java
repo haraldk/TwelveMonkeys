@@ -30,9 +30,9 @@
 
 package com.twelvemonkeys.imageio.spi;
 
+import org.junit.jupiter.api.Test;
 import org.hamcrest.Description;
 import org.hamcrest.TypeSafeMatcher;
-import org.junit.Test;
 
 import javax.imageio.ImageReader;
 import javax.imageio.ImageWriter;
@@ -43,7 +43,7 @@ import java.util.List;
 
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * ReaderWriterProviderInfoTest.

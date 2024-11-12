@@ -32,7 +32,6 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.DecoderStream;
-import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -42,8 +41,8 @@ import java.nio.channels.Channels;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Arrays;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class RLE4DecoderTest {
 
@@ -82,8 +81,8 @@ public class RLE4DecoderTest {
             int r = channel.read(plain);
             plain.rewind();
 
-            assertEquals("Difference at line " + i, r, d);
-            assertArrayEquals("Difference at line " + i, plain.array(), decoded.array());
+            assertEquals(r, d, "Difference at line " + i);
+            assertArrayEquals(plain.array(), decoded.array(), "Difference at line " + i);
         }
     }
 
@@ -104,7 +103,7 @@ public class RLE4DecoderTest {
         int pos = 0;
         while (true) {
             int expected = plainSream.read();
-            assertEquals("Differs at " + pos, expected, decoded.read());
+            assertEquals(expected, decoded.read(), "Differs at " + pos);
 
             if (expected < 0) {
                 break;

@@ -1,8 +1,7 @@
 package com.twelvemonkeys.imageio.plugins.hdr.tonemap;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertArrayEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class GammaToneMapperTest {
     private final GammaToneMapper mapper = new GammaToneMapper();

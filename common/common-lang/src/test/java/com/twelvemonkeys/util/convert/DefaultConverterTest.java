@@ -31,13 +31,13 @@
 package com.twelvemonkeys.util.convert;
 
 import com.twelvemonkeys.lang.Validate;
-import org.junit.Ignore;
-import org.junit.Test;
 
 import java.io.File;
 import java.net.URI;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * DefaultConverterTest
@@ -138,7 +138,7 @@ public class DefaultConverterTest extends PropertyConverterAbstractTest {
         assertEquals(-2.3456, (Double) converter.toObject("-2.3456", Double.TYPE, null), 0);
     }
 
-    @Ignore("Known issue. Why would anyone do something like this?")
+    @Disabled("Known issue. Why would anyone do something like this?")
     @Test
     public void testConvertCharPrimitive() {
         PropertyConverter converter = makePropertyConverter();

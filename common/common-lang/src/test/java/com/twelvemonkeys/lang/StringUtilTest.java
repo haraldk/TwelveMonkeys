@@ -30,8 +30,6 @@
 
 package com.twelvemonkeys.lang;
 
-import static org.junit.Assert.*;
-
 import java.awt.*;
 import java.sql.Timestamp;
 import java.text.DateFormat;
@@ -41,8 +39,8 @@ import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.Locale;
 
-import org.junit.Test;
-
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 /**
  * StringUtilTestCase
  *
@@ -165,10 +163,10 @@ public class StringUtilTest {
         // Test all alpha-chars
         for (int i = 'a'; i < 'z'; i++) {
             if (TEST_STRING.indexOf(i) < 0) {
-                assertFalse(TEST_STRING + " seems to contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i), StringUtil.contains(TEST_STRING, i));
+                assertFalse(StringUtil.contains(TEST_STRING, i), TEST_STRING + " seems to contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i));
             }
             else {
-                assertTrue(TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i), StringUtil.contains(TEST_STRING, i));
+                assertTrue(StringUtil.contains(TEST_STRING, i), TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i));
             }
         }
     }
@@ -199,10 +197,10 @@ public class StringUtilTest {
         // Test all alpha-chars
         for (int i = 'a'; i < 'z'; i++) {
             if ((TEST_STRING.indexOf(i) < 0) && (TEST_STRING.indexOf(Character.toUpperCase((char) i)) < 0)) {
-                assertFalse(TEST_STRING + " seems to contain '" + (char) i + "', at index " + Math.max(TEST_STRING.indexOf(i), TEST_STRING.indexOf(Character.toUpperCase((char) i))), StringUtil.containsIgnoreCase(TEST_STRING, i));
+                assertFalse(StringUtil.containsIgnoreCase(TEST_STRING, i), TEST_STRING + " seems to contain '" + (char) i + "', at index " + Math.max(TEST_STRING.indexOf(i), TEST_STRING.indexOf(Character.toUpperCase((char) i))));
             }
             else {
-                assertTrue(TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i), StringUtil.containsIgnoreCase(TEST_STRING, i));
+                assertTrue(StringUtil.containsIgnoreCase(TEST_STRING, i), TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i));
             }
         }
     }
@@ -350,10 +348,10 @@ public class StringUtilTest {
         // Test all alpha-chars
         for (int i = 'a'; i < 'z'; i++) {
             if ((TEST_STRING.indexOf(i) < 0) && (TEST_STRING.indexOf(Character.toUpperCase((char) i)) < 0)) {
-                assertEquals(TEST_STRING + " seems to contain '" + (char) i + "', at index " + Math.max(TEST_STRING.indexOf(i), TEST_STRING.indexOf(Character.toUpperCase((char) i))), -1, StringUtil.indexOfIgnoreCase(TEST_STRING, i));
+                assertEquals(-1, StringUtil.indexOfIgnoreCase(TEST_STRING, i), TEST_STRING + " seems to contain '" + (char) i + "', at index " + Math.max(TEST_STRING.indexOf(i), TEST_STRING.indexOf(Character.toUpperCase((char) i))));
             }
             else {
-                assertTrue(TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i), 0 <= StringUtil.indexOfIgnoreCase(TEST_STRING, i));
+                assertTrue(0 <= StringUtil.indexOfIgnoreCase(TEST_STRING, i), TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i));
             }
         }
     }
@@ -385,10 +383,10 @@ public class StringUtilTest {
         // Test all alpha-chars
         for (int i = 'a'; i < 'z'; i++) {
             if ((TEST_STRING.indexOf(i) < 0) && (TEST_STRING.indexOf(Character.toUpperCase((char) i)) < 0)) {
-                assertEquals(TEST_STRING + " seems to contain '" + (char) i + "', at index " + Math.max(TEST_STRING.indexOf(i), TEST_STRING.indexOf(Character.toUpperCase((char) i))), -1, StringUtil.indexOfIgnoreCase(TEST_STRING, i, 0));
+                assertEquals(-1, StringUtil.indexOfIgnoreCase(TEST_STRING, i, 0), TEST_STRING + " seems to contain '" + (char) i + "', at index " + Math.max(TEST_STRING.indexOf(i), TEST_STRING.indexOf(Character.toUpperCase((char) i))));
             }
             else {
-                assertTrue(TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i), 0 <= StringUtil.indexOfIgnoreCase(TEST_STRING, i, 0));
+                assertTrue(0 <= StringUtil.indexOfIgnoreCase(TEST_STRING, i, 0), TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i));
             }
         }
     }
@@ -420,10 +418,10 @@ public class StringUtilTest {
         // Test all alpha-chars
         for (int i = 'a'; i < 'z'; i++) {
             if ((TEST_STRING.indexOf(i) < 0) && (TEST_STRING.indexOf(Character.toUpperCase((char) i)) < 0)) {
-                assertEquals(TEST_STRING + " seems to contain '" + (char) i + "', at index " + Math.max(TEST_STRING.indexOf(i), TEST_STRING.indexOf(Character.toUpperCase((char) i))), -1, StringUtil.lastIndexOfIgnoreCase(TEST_STRING, i));
+                assertEquals(-1, StringUtil.lastIndexOfIgnoreCase(TEST_STRING, i), TEST_STRING + " seems to contain '" + (char) i + "', at index " + Math.max(TEST_STRING.indexOf(i), TEST_STRING.indexOf(Character.toUpperCase((char) i))));
             }
             else {
-                assertTrue(TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i), 0 <= StringUtil.lastIndexOfIgnoreCase(TEST_STRING, i));
+                assertTrue(0 <= StringUtil.lastIndexOfIgnoreCase(TEST_STRING, i), TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i));
             }
         }
     }
@@ -455,10 +453,10 @@ public class StringUtilTest {
         // Test all alpha-chars
         for (int i = 'a'; i < 'z'; i++) {
             if ((TEST_STRING.indexOf(i) < 0) && (TEST_STRING.indexOf(Character.toUpperCase((char) i)) < 0)) {
-                assertEquals(TEST_STRING + " seems to contain '" + (char) i + "', at index " + Math.max(TEST_STRING.indexOf(i), TEST_STRING.indexOf(Character.toUpperCase((char) i))), -1, StringUtil.lastIndexOfIgnoreCase(TEST_STRING, i, TEST_STRING.length()));
+                assertEquals(-1, StringUtil.lastIndexOfIgnoreCase(TEST_STRING, i, TEST_STRING.length()), TEST_STRING + " seems to contain '" + (char) i + "', at index " + Math.max(TEST_STRING.indexOf(i), TEST_STRING.indexOf(Character.toUpperCase((char) i))));
             }
             else {
-                assertTrue(TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i), 0 <= StringUtil.lastIndexOfIgnoreCase(TEST_STRING, i, TEST_STRING.length()));
+                assertTrue(0 <= StringUtil.lastIndexOfIgnoreCase(TEST_STRING, i, TEST_STRING.length()), TEST_STRING + " seems to not contain '" + (char) i + "', at index " + TEST_STRING.indexOf(i));
             }
         }
     }

@@ -33,8 +33,8 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.xml.XMLSerializer;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Disabled;
 import org.mockito.InOrder;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -59,8 +59,8 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.junit.Assert.*;
-import static org.junit.Assume.assumeNoException;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.mockito.ArgumentMatchers.anyFloat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
@@ -204,11 +204,11 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
                 }
             }
 
-            assertTrue("ImageTypeSepcifier from getRawImageType should be in the iterator from getImageTypes", rawFound);
+            assertTrue(rawFound, "ImageTypeSepcifier from getRawImageType should be in the iterator from getImageTypes");
         }
     }
 
-    @Ignore("Known issue: Subsampled reading is currently broken")
+    @Disabled("Known issue: Subsampled reading is currently broken")
     @Test
     public void testReadWithSubsampleParamPixelsIndexed8() throws IOException {
         ImageReader reader = createReader();
@@ -235,7 +235,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
     // TODO: 1. Subsampling is currently broken, should fix it.
     //       2. BMPs are (normally) stored bottom/up, meaning y subsampling offsets will differ from normal
     //          subsampling of the same data with an offset... Should we deal with this in the reader? Yes?
-    @Ignore("Known issue: Subsampled reading is currently broken")
+    @Disabled("Known issue: Subsampled reading is currently broken")
     @Test
     @Override
     public void testReadWithSubsampleParamPixels() throws IOException {
@@ -260,7 +260,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         assertSubsampledImageDataEquals("Subsampled image data does not match expected", image, subsampled, param);
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testReadCorruptCausesIIOException() throws IOException {
         // See https://bugs.openjdk.java.net/browse/JDK-8066904
         // NullPointerException when calling ImageIO.read(InputStream) with corrupt BMP
@@ -268,7 +268,9 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
 
         try {
             reader.setInput(ImageIO.createImageInputStream(getClassLoaderResource("/broken-bmp/corrupted-bmp.bmp")));
-            reader.read(0);
+            assertThrows(IIOException.class, () -> {
+                reader.read(0);
+            });
         }
         finally {
             reader.dispose();
@@ -331,7 +333,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         catch (Exception e) {
             e.printStackTrace();
             // Ignore this test if not on an Oracle JRE (com.sun...BMPImageReader not available)
-            assumeNoException(e);
+            assumeTrue(false, "Skipping test: BMPImageReaderSpi not available on non-Oracle JREs");
             return;
         }
 
@@ -383,7 +385,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
                     new XMLSerializer(expected, "UTF-8").serialize(expectedTree, false);
                     new XMLSerializer(actual, "UTF-8").serialize(actualTree, false);
 
-                    assertEquals(e.getMessage(), new String(expected.toByteArray(), StandardCharsets.UTF_8), new String(actual.toByteArray(), StandardCharsets.UTF_8));
+                    assertEquals(new String(expected.toByteArray(), StandardCharsets.UTF_8), new String(actual.toByteArray(), StandardCharsets.UTF_8), e.getMessage());
 
                     throw e;
                 }
@@ -392,24 +394,24 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
     }
 
     private void assertNodeEquals(final String message, final Node expected, final Node actual) {
-        assertEquals(message + " class differs", expected.getClass(), actual.getClass());
+        assertEquals(expected.getClass(), actual.getClass(), message + " class differs");
 
         if (!excludeEqualValueTest(expected)) {
-            assertEquals(message, expected.getNodeValue(), actual.getNodeValue());
+            assertEquals(expected.getNodeValue(), actual.getNodeValue(), message);
 
             if (expected instanceof IIOMetadataNode) {
                 IIOMetadataNode expectedIIO = (IIOMetadataNode) expected;
                 IIOMetadataNode actualIIO = (IIOMetadataNode) actual;
 
-                assertEquals(message, expectedIIO.getUserObject(), actualIIO.getUserObject());
+                assertEquals(expectedIIO.getUserObject(), actualIIO.getUserObject(), message);
             }
         }
 
         NodeList expectedChildNodes = expected.getChildNodes();
         NodeList actualChildNodes = actual.getChildNodes();
 
-        assertTrue(message + " child length differs: " + toString(expectedChildNodes) + " != " + toString(actualChildNodes),
-                expectedChildNodes.getLength() <= actualChildNodes.getLength());
+        assertTrue(expectedChildNodes.getLength() <= actualChildNodes.getLength(),
+                message + " child length differs: " + toString(expectedChildNodes) + " != " + toString(actualChildNodes));
 
         for (int i = 0; i < expectedChildNodes.getLength(); i++) {
             Node expectedChild = expectedChildNodes.item(i);
@@ -423,7 +425,7 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
                 }
             }
 
-            assertEquals(message + " node name differs", expectedChild.getLocalName(), actualChild.getLocalName());
+            assertEquals(expectedChild.getLocalName(), actualChild.getLocalName(), message + " node name differs");
             assertNodeEquals(message + "/" + expectedChild.getLocalName(), expectedChild, actualChild);
         }
     }

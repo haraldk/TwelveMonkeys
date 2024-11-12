@@ -30,8 +30,9 @@
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import static com.twelvemonkeys.imageio.plugins.tiff.TIFFImageMetadataFormat.SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
 
+import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
@@ -46,7 +47,6 @@ import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.stream.ImageInputStream;
 
-import org.junit.Test;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
@@ -373,28 +373,28 @@ public class TIFFImageMetadataTest {
         assertEquals(TIFFBaseline.RESOLUTION_UNIT_NONE, ((Number) ifd.getEntryById(TIFF.TAG_RESOLUTION_UNIT).getValue()).intValue());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testMergeTreeUnsupportedFormat() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/sm_colors_tile.tif");
 
         String nativeFormat = "com_foo_bar_tiff_42";
-        metadata.mergeTree(nativeFormat, new IIOMetadataNode(nativeFormat));
+        assertThrows(IllegalArgumentException.class, () -> metadata.mergeTree(nativeFormat, new IIOMetadataNode(nativeFormat)));
     }
 
-    @Test(expected = IIOInvalidTreeException.class)
+    @Test
     public void testMergeTreeFormatMisMatch() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/sm_colors_tile.tif");
 
         String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
-        metadata.mergeTree(nativeFormat, new IIOMetadataNode("com_foo_bar_tiff_42"));
+        assertThrows(IIOInvalidTreeException.class, () -> metadata.mergeTree(nativeFormat, new IIOMetadataNode("com_foo_bar_tiff_42")));
     }
 
-    @Test(expected = IIOInvalidTreeException.class)
+    @Test
     public void testMergeTreeInvalid() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/sm_colors_tile.tif");
 
         String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
-        metadata.mergeTree(nativeFormat, new IIOMetadataNode(nativeFormat)); // Requires at least one child node
+        assertThrows(IIOInvalidTreeException.class, () ->metadata.mergeTree(nativeFormat, new IIOMetadataNode(nativeFormat))); // Requires at least one child node
     }
 
     // TODO: Test that failed merge leaves metadata unchanged
@@ -489,28 +489,28 @@ public class TIFFImageMetadataTest {
         assertEquals(copyrightString, ifd.getEntryById(TIFF.TAG_COPYRIGHT).getValue());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testSetFromTreeUnsupportedFormat() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/sm_colors_tile.tif");
 
         String nativeFormat = "com_foo_bar_tiff_42";
-        metadata.setFromTree(nativeFormat, new IIOMetadataNode(nativeFormat));
+        assertThrows(IllegalArgumentException.class, () -> metadata.setFromTree(nativeFormat, new IIOMetadataNode(nativeFormat)));
     }
 
-    @Test(expected = IIOInvalidTreeException.class)
+    @Test
     public void testSetFromTreeFormatMisMatch() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/sm_colors_tile.tif");
 
         String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
-        metadata.setFromTree(nativeFormat, new IIOMetadataNode("com_foo_bar_tiff_42"));
+        assertThrows(IIOInvalidTreeException.class, () -> metadata.setFromTree(nativeFormat, new IIOMetadataNode("com_foo_bar_tiff_42")));
     }
 
-    @Test(expected = IIOInvalidTreeException.class)
+    @Test
     public void testSetFromTreeInvalid() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/sm_colors_tile.tif");
 
         String nativeFormat = SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME;
-        metadata.setFromTree(nativeFormat, new IIOMetadataNode(nativeFormat)); // Requires at least one child node
+        assertThrows(IIOInvalidTreeException.class, () -> metadata.setFromTree(nativeFormat, new IIOMetadataNode(nativeFormat))); // Requires at least one child nod
     }
 
     @Test
@@ -594,26 +594,26 @@ public class TIFFImageMetadataTest {
             Element field = (Element) fields.item(i);
 
             if (tagNumber.equals(field.getAttribute("number"))) {
-                assertFalse("Duplicate tag " + tagNumber + " found", foundTag);
+                assertFalse(foundTag, "Duplicate tag " + tagNumber + " found");
 
                 assertEquals(1, field.getChildNodes().getLength());
                 Node containerNode = field.getFirstChild();
                 assertEquals("TIFF" + typeName + "s", containerNode.getNodeName());
 
                 NodeList valueNodes = containerNode.getChildNodes();
-                assertEquals("Unexpected number of values for tag " + tagNumber, expectedValue.length, valueNodes.getLength());
+                assertEquals(expectedValue.length, valueNodes.getLength(), "Unexpected number of values for tag " + tagNumber);
 
                 for (int j = 0; j < expectedValue.length; j++) {
                     Element valueNode = (Element) valueNodes.item(j);
                     assertEquals("TIFF" + typeName, valueNode.getNodeName());
-                    assertEquals("Unexpected tag " + tagNumber + " value", expectedValue[j], valueNode.getAttribute("value"));
+                    assertEquals(expectedValue[j], valueNode.getAttribute("value"), "Unexpected tag " + tagNumber + " value");
                 }
 
                 foundTag = true;
             }
         }
 
-        assertTrue("No tag " + tagNumber + " found", foundTag);
+        assertTrue(foundTag, "No tag " + tagNumber + " found");
     }
 
     static void createTIFFFieldNode(final IIOMetadataNode parentIFDNode, int tag, short type, Object value) {
@@ -662,27 +662,27 @@ public class TIFFImageMetadataTest {
     }
 
     private void assertNodeEquals(final String message, final Node expected, final Node actual) {
-        assertEquals(message + " class differs", expected.getClass(), actual.getClass());
-        assertEquals(message, expected.getNodeValue(), actual.getNodeValue());
+        assertEquals(expected.getClass(), actual.getClass(), message + " class differs");
+        assertEquals(expected.getNodeValue(), actual.getNodeValue(), message);
 
         if (expected instanceof IIOMetadataNode) {
             IIOMetadataNode expectedIIO = (IIOMetadataNode) expected;
             IIOMetadataNode actualIIO = (IIOMetadataNode) actual;
 
-            assertEquals(message, expectedIIO.getUserObject(), actualIIO.getUserObject());
+            assertEquals(expectedIIO.getUserObject(), actualIIO.getUserObject(), message);
         }
 
         NodeList expectedChildNodes = expected.getChildNodes();
         NodeList actualChildNodes = actual.getChildNodes();
 
-        assertEquals(message + " child length differs: " + toString(expectedChildNodes) + " != " + toString(actualChildNodes),
-                expectedChildNodes.getLength(), actualChildNodes.getLength());
+        assertEquals(expectedChildNodes.getLength(), actualChildNodes.getLength(),
+                message + " child length differs: " + toString(expectedChildNodes) + " != " + toString(actualChildNodes));
 
         for (int i = 0; i < expectedChildNodes.getLength(); i++) {
             Node expectedChild = expectedChildNodes.item(i);
             Node actualChild = actualChildNodes.item(i);
 
-            assertEquals(message + " node name differs", expectedChild.getLocalName(), actualChild.getLocalName());
+            assertEquals(expectedChild.getLocalName(), actualChild.getLocalName(), message + " node name differs");
             assertNodeEquals(message + "/" + expectedChild.getLocalName(), expectedChild, actualChild);
         }
     }

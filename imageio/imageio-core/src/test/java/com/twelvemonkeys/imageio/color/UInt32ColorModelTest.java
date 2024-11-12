@@ -30,12 +30,11 @@
 
 package com.twelvemonkeys.imageio.color;
 
-import org.junit.Test;
-
 import java.awt.color.ColorSpace;
 import java.awt.image.ComponentColorModel;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class UInt32ColorModelTest {
 

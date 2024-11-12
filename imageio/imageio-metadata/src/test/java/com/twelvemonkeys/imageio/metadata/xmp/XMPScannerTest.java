@@ -30,15 +30,14 @@
 
 package com.twelvemonkeys.imageio.metadata.xmp;
 
-import org.junit.Test;
-
 import java.io.*;
 import java.nio.charset.UnsupportedCharsetException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Random;
 
-import static org.junit.Assert.assertNotNull;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * XMPScannerTestCase

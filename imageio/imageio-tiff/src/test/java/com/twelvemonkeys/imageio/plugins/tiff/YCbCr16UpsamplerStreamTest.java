@@ -31,7 +31,6 @@
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
-import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
@@ -39,9 +38,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * YCbCr16UpsamplerStreamTest
@@ -51,24 +49,24 @@ import static org.junit.Assert.assertEquals;
  * @version $Id: YCbCr16UpsamplerStreamTest.java,v 1.0 31.01.13 14:35 haraldk Exp$
  */
 public class YCbCr16UpsamplerStreamTest {
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullStream() {
-        new YCbCr16UpsamplerStream(null, new int[2], 7, 5, ByteOrder.LITTLE_ENDIAN);
+        assertThrows(IllegalArgumentException.class, () -> new YCbCr16UpsamplerStream(null, new int[2], 7, 5, ByteOrder.LITTLE_ENDIAN));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullChroma() {
-        new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[3], 7, 5, ByteOrder.LITTLE_ENDIAN);
+        assertThrows(IllegalArgumentException.class, () -> new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[3], 7, 5, ByteOrder.LITTLE_ENDIAN));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateShortChroma() {
-        new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[1], 7, 5, ByteOrder.LITTLE_ENDIAN);
+        assertThrows(IllegalArgumentException.class, () -> new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[1], 7, 5, ByteOrder.LITTLE_ENDIAN));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNoByteOrder() {
-        new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[] {2, 2}, 7, 5, null);
+        assertThrows(IllegalArgumentException.class, () -> new YCbCr16UpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[] {2, 2}, 7, 5, null));
     }
 
     // TODO: The expected values seems bogus...

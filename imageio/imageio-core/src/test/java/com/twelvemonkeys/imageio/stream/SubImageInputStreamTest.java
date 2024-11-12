@@ -30,8 +30,6 @@
 
 package com.twelvemonkeys.imageio.stream;
 
-import org.junit.Test;
-
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageInputStreamImpl;
 import javax.imageio.stream.MemoryCacheImageInputStream;
@@ -40,7 +38,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * SubImageInputStreamTestCase
@@ -66,16 +65,18 @@ public class SubImageInputStreamTest {
         };
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullStream() throws IOException {
-        new SubImageInputStream(null, 1);
-        fail("Expected IllegalArgumentException with null stream");
+        assertThrows(IllegalArgumentException.class, () -> {
+            new SubImageInputStream(null, 1);
+        }, "Expected IllegalArgumentException with null stream");
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNegativeLength() throws IOException {
-        new SubImageInputStream(createStream(0), -1);
-        fail("Expected IllegalArgumentException with negative length");
+        assertThrows(IllegalArgumentException.class, () -> {
+            new SubImageInputStream(createStream(0), -1);
+        }, "Expected IllegalArgumentException with negative length");
     }
 
     @Test

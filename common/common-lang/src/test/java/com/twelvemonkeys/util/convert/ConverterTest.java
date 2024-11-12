@@ -30,8 +30,8 @@
 
 package com.twelvemonkeys.util.convert;
 
-import org.junit.Ignore;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * ConverterTest
@@ -43,7 +43,7 @@ import org.junit.Test;
  */
 public class ConverterTest {
 
-    @Ignore("Not implemented")
+    @Disabled("Not implemented")
     @Test
     public void testMe() {
         // TODO: Implement tests

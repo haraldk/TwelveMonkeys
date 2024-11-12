@@ -1,13 +1,12 @@
 package com.twelvemonkeys.imageio.stream;
 
-import org.junit.Test;
 
 import javax.imageio.spi.ImageInputStreamSpi;
 import java.io.File;
 import java.io.IOException;
-
-import static org.junit.Assert.assertNull;
-import static org.junit.Assume.assumeFalse;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.*;
 
 public class BufferedFileImageInputStreamSpiTest extends ImageInputStreamSpiTest<File> {
     @Override
@@ -24,7 +23,7 @@ public class BufferedFileImageInputStreamSpiTest extends ImageInputStreamSpiTest
     public void testReturnNullWhenFileDoesNotExist() throws IOException {
         // This is really stupid behavior, but it is consistent with the JRE bundled SPIs.
         File input = new File("a-file-that-should-not-exist-ever.fnf");
-        assumeFalse("File should not exist: " + input.getPath(), input.exists());
+        assumeFalse(input.exists(), "File should not exist: " + input.getPath());
         assertNull(provider.createInputStreamInstance(input));
     }
 }

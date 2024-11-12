@@ -32,9 +32,6 @@ package com.twelvemonkeys.imageio.plugins.svg;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
@@ -52,10 +49,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 /**
@@ -128,18 +124,18 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
                 int current = image.getRGB(x, y);
                 if (x < quadPoint) {
                     if (y < quadPoint) {
-                        assertEquals("x=" + x + " y=" + y + " q=" + quadPoint, 0xFF0000FF, current);
+                        assertEquals( 0xFF0000FF, current, "x=" + x + " y=" + y + " q=" + quadPoint);
                     }
                     else {
-                        assertEquals("x=" + x + " y=" + y + " q=" + quadPoint, 0xFFFF0000, current);
+                        assertEquals(0xFFFF0000, current, "x=" + x + " y=" + y + " q=" + quadPoint);
                     }
                 }
                 else {
                     if (y < quadPoint) {
-                        assertEquals("x=" + x + " y=" + y + " q=" + quadPoint, 0xFF00FF00, current);
+                        assertEquals(0xFF00FF00, current, "x=" + x + " y=" + y + " q=" + quadPoint);
                     }
                     else {
-                        assertEquals("x=" + x + " y=" + y + " q=" + quadPoint, 0xFF000000, current);
+                        assertEquals(0xFF000000, current, "x=" + x + " y=" + y + " q=" + quadPoint);
                     }
                 }
             }
@@ -171,14 +167,14 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
     }
 
     @Test
-    @Ignore("Known issue: Source region reading not supported")
+    @Disabled("Known issue: Source region reading not supported")
     @Override
     public void testReadWithSourceRegionParamEqualImage() throws IOException {
         super.testReadWithSourceRegionParamEqualImage();
     }
 
     @Test
-    @Ignore("Known issue: Subsampled reading not supported")
+    @Disabled("Known issue: Subsampled reading not supported")
     @Override
     public void testReadWithSubsampleParamPixels() throws IOException {
         super.testReadWithSubsampleParamPixels();
@@ -316,7 +312,7 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
         }
     }
 
-    @Test(expected = SecurityException.class)
+    @Test
     public void testDisallowedExternalResources() throws URISyntaxException, IOException {
         // system-property set to true in surefire-plugin-settings in the pom
         URL resource = getClassLoaderResource("/svg/barChart.svg");
@@ -333,7 +329,9 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
             // `reader.read` for `/svg/barChart.svg` should raise
             // a SecurityException when External Resources are blocked
             // because the API invocation gets preference
-            reader.read(0, param);
+            assertThrows(SecurityException.class, () -> {
+                reader.read(0, param);
+            });
         }
         finally {
             reader.dispose();

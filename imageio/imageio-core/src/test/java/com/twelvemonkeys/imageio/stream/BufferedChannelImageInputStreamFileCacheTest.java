@@ -30,8 +30,8 @@
 
 package com.twelvemonkeys.imageio.stream;
 
-import org.junit.Test;
-import org.junit.function.ThrowingRunnable;
+
+import org.junit.jupiter.api.Test;
 
 import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayInputStream;
@@ -44,7 +44,8 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Random;
 
 import static com.twelvemonkeys.imageio.stream.BufferedImageInputStreamTest.rangeEquals;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.*;
+
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.only;
 import static org.mockito.Mockito.verify;
@@ -69,7 +70,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
     @Test
     public void testCreate() throws IOException {
         try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(new ByteArrayInputStream(new byte[0]), null))) {
-            assertEquals("Stream length should be unknown", -1, stream.length());
+            assertEquals(-1, stream.length(), "Stream length should be unknown");
         }
     }
 
@@ -82,8 +83,8 @@ public class BufferedChannelImageInputStreamFileCacheTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue("Exception message does not contain parameter name", message.contains("stream"));
-            assertTrue("Exception message does not contain null", message.contains("null"));
+            assertTrue(message.contains("stream"), "Exception message does not contain parameter name");
+            assertTrue(message.contains("null"), "Exception message does not contain null");
         }
     }
 
@@ -96,8 +97,8 @@ public class BufferedChannelImageInputStreamFileCacheTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue("Exception message does not contain parameter name", message.contains("channel"));
-            assertTrue("Exception message does not contain null", message.contains("null"));
+            assertTrue(message.contains("channel"), "Exception message does not contain parameter name");
+            assertTrue(message.contains("null"), "Exception message does not contain null");
         }
     }
 
@@ -107,13 +108,13 @@ public class BufferedChannelImageInputStreamFileCacheTest {
         InputStream input = randomDataToInputStream(data);
 
         try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
-            assertEquals("Stream length should be unknown", -1, stream.length());
+            assertEquals(-1, stream.length(), "Stream length should be unknown");
 
             for (byte value : data) {
-                assertEquals("Wrong data read", value & 0xff, stream.read());
+                assertEquals(value & 0xff, stream.read(), "Wrong data read");
             }
 
-            assertEquals("Wrong data read", -1, stream.read());
+            assertEquals(-1, stream.read(), "Wrong data read");
         }
     }
 
@@ -123,16 +124,16 @@ public class BufferedChannelImageInputStreamFileCacheTest {
         InputStream input = randomDataToInputStream(data);
 
         try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
-            assertEquals("Stream length should be unknown", -1, stream.length());
+            assertEquals(-1, stream.length(), "Stream length should be unknown");
 
             byte[] result = new byte[1024];
 
             for (int i = 0; i < data.length / result.length; i++) {
                 stream.readFully(result);
-                assertTrue("Wrong data read: " + i, rangeEquals(data, i * result.length, result, 0, result.length));
+                assertTrue(rangeEquals(data, i * result.length, result, 0, result.length), "Wrong data read: " + i);
             }
 
-            assertEquals("Wrong data read", -1, stream.read());
+            assertEquals(-1, stream.read(), "Wrong data read");
         }
     }
 
@@ -142,14 +143,14 @@ public class BufferedChannelImageInputStreamFileCacheTest {
         InputStream input = randomDataToInputStream(data);
 
         try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
-            assertEquals("Stream length should be unknown", -1, stream.length());
+            assertEquals(-1, stream.length(), "Stream length should be unknown");
 
             byte[] result = new byte[7];
 
             for (int i = 0; i < data.length / result.length; i += 2) {
                 stream.readFully(result);
                 stream.skipBytes(result.length);
-                assertTrue("Wrong data read: " + i, rangeEquals(data, i * result.length, result, 0, result.length));
+                assertTrue(rangeEquals(data, i * result.length, result, 0, result.length), "Wrong data read: " + i);
             }
         }
     }
@@ -160,7 +161,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
         InputStream input = randomDataToInputStream(data);
 
         try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
-            assertEquals("Stream length should be unknown", -1, stream.length());
+            assertEquals(-1, stream.length(), "Stream length should be unknown");
 
             byte[] result = new byte[9];
 
@@ -168,9 +169,9 @@ public class BufferedChannelImageInputStreamFileCacheTest {
                 // Read backwards
                 long newPos = data.length - result.length - i * result.length;
                 stream.seek(newPos);
-                assertEquals("Wrong stream position", newPos, stream.getStreamPosition());
+                assertEquals(newPos, stream.getStreamPosition(), "Wrong stream position");
                 stream.readFully(result);
-                assertTrue("Wrong data read: " + i, rangeEquals(data, (int) newPos, result, 0, result.length));
+                assertTrue(rangeEquals(data, (int) newPos, result, 0, result.length), "Wrong data read: " + i);
             }
         }
     }
@@ -181,7 +182,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
         InputStream input = randomDataToInputStream(data);
 
         try (BufferedChannelImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
-            assertEquals("Stream length should be unknown", -1, stream.length());
+            assertEquals(-1, stream.length(), "Stream length should be unknown");
 
             byte[] buffer = new byte[data.length * 2];
             stream.read(buffer);
@@ -200,7 +201,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
         // Create stream
         try (ImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             for (int i = 1; i <= 64; i++) {
-                assertEquals(String.format("bit %d differ", i), (value << (i - 1L)) >>> 63L, stream.readBit());
+                assertEquals((value << (i - 1L)) >>> 63L, stream.readBit(), String.format("bit %d differ", i));
             }
         }
     }
@@ -215,7 +216,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
         try (ImageInputStream stream = new BufferedChannelImageInputStream(new FileCache(input, null))) {
             for (int i = 1; i <= 64; i++) {
                 stream.seek(0);
-                assertEquals(String.format("bit %d differ", i), value >>> (64L - i), stream.readBits(i));
+                assertEquals(value >>> (64L - i), stream.readBits(i), String.format("bit %d differ", i));
                 assertEquals(i % 8, stream.getBitOffset());
             }
         }
@@ -232,7 +233,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
             for (int i = 1; i <= 60; i++) {
                 stream.seek(0);
                 stream.setBitOffset(i % 8);
-                assertEquals(String.format("bit %d differ", i), (value << (i % 8)) >>> (64L - i), stream.readBits(i));
+                assertEquals((value << (i % 8)) >>> (64L - i), stream.readBits(i), String.format("bit %d differ", i));
                 assertEquals(i * 2 % 8, stream.getBitOffset());
             }
         }
@@ -251,12 +252,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
                 assertEquals(buffer.getShort(), stream.readShort());
             }
 
-            assertThrows(EOFException.class, new ThrowingRunnable() {
-                @Override
-                public void run() throws Throwable {
-                    stream.readShort();
-                }
-            });
+            assertThrows(EOFException.class, stream::readShort);
 
             stream.seek(0);
             stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
@@ -267,12 +263,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
                 assertEquals(buffer.getShort(), stream.readShort());
             }
 
-            assertThrows(EOFException.class, new ThrowingRunnable() {
-                @Override
-                public void run() throws Throwable {
-                    stream.readShort();
-                }
-            });
+            assertThrows(EOFException.class, stream::readShort);
         }
     }
 
@@ -289,12 +280,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
                 assertEquals(buffer.getInt(), stream.readInt());
             }
 
-            assertThrows(EOFException.class, new ThrowingRunnable() {
-                @Override
-                public void run() throws Throwable {
-                    stream.readInt();
-                }
-            });
+            assertThrows(EOFException.class, stream::readInt);
 
             stream.seek(0);
             stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
@@ -305,12 +291,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
                 assertEquals(buffer.getInt(), stream.readInt());
             }
 
-            assertThrows(EOFException.class, new ThrowingRunnable() {
-                @Override
-                public void run() throws Throwable {
-                    stream.readInt();
-                }
-            });
+            assertThrows(EOFException.class, stream::readInt);
         }
     }
 
@@ -327,12 +308,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
                 assertEquals(buffer.getLong(), stream.readLong());
             }
 
-            assertThrows(EOFException.class, new ThrowingRunnable() {
-                @Override
-                public void run() throws Throwable {
-                    stream.readLong();
-                }
-            });
+            assertThrows(EOFException.class, stream::readLong);
 
             stream.seek(0);
             stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
@@ -343,12 +319,7 @@ public class BufferedChannelImageInputStreamFileCacheTest {
                 assertEquals(buffer.getLong(), stream.readLong());
             }
 
-            assertThrows(EOFException.class, new ThrowingRunnable() {
-                @Override
-                public void run() throws Throwable {
-                    stream.readLong();
-                }
-            });
+            assertThrows(EOFException.class, stream::readLong);
         }
     }
 
@@ -363,36 +334,12 @@ public class BufferedChannelImageInputStreamFileCacheTest {
             assertEquals(-1, stream.read());
             assertEquals(-1, stream.read(new byte[1], 0, 1));
 
-            assertThrows(EOFException.class, new ThrowingRunnable() {
-                @Override
-                public void run() throws Throwable {
-                    stream.readFully(new byte[1]);
-                }
-            });
-            assertThrows(EOFException.class, new ThrowingRunnable() {
-                @Override
-                public void run() throws Throwable {
-                    stream.readByte();
-                }
-            });
-            assertThrows(EOFException.class, new ThrowingRunnable() {
-                @Override
-                public void run() throws Throwable {
-                    stream.readShort();
-                }
-            });
-            assertThrows(EOFException.class, new ThrowingRunnable() {
-                @Override
-                public void run() throws Throwable {
-                    stream.readInt();
-                }
-            });
-            assertThrows(EOFException.class, new ThrowingRunnable() {
-                @Override
-                public void run() throws Throwable {
-                    stream.readLong();
-                }
-            });
+
+            assertThrows(EOFException.class, () -> stream.readFully(new byte[1]));
+            assertThrows(EOFException.class, stream::readByte);
+            assertThrows(EOFException.class, stream::readShort);
+            assertThrows(EOFException.class, stream::readInt);
+            assertThrows(EOFException.class, stream::readLong);
 
             stream.seek(0);
             for (byte value : bytes) {

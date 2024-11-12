@@ -33,8 +33,6 @@ package com.twelvemonkeys.imageio.plugins.iff;
 import com.twelvemonkeys.image.MonochromeColorModel;
 import com.twelvemonkeys.imageio.util.ImageWriterAbstractTest;
 
-import org.junit.Test;
-
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriter;
 import javax.imageio.spi.ImageWriterSpi;
@@ -49,8 +47,8 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.junit.Assert.*;
-
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 /**
  * JPEG2000ImageWriterTest
  *
@@ -104,7 +102,7 @@ public class IFFImageWriterTest extends ImageWriterAbstractTest<IFFImageWriter> 
                     stream.close(); // Force data to be written
                 }
     
-                assertTrue("No image data written", buffer.size() > 0);
+                assertTrue(buffer.size() > 0, "No image data written");
     
                 ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(buffer.toByteArray()));
                 BufferedImage written = ImageIO.read(input);
@@ -129,14 +127,14 @@ public class IFFImageWriterTest extends ImageWriterAbstractTest<IFFImageWriter> 
 
                 if (expected.getColorModel().getColorSpace().getType() == ColorSpace.TYPE_GRAY) {
                     // NOTE: For some reason, gray data seems to be one step off...
-                    assertEquals("R(" + x + "," + y + ")", expectedRGB & 0xff0000, actualRGB & 0xff0000, 0x10000);
-                    assertEquals("G(" + x + "," + y + ")", expectedRGB & 0x00ff00, actualRGB & 0x00ff00, 0x100);
-                    assertEquals("B(" + x + "," + y + ")", expectedRGB & 0x0000ff, actualRGB & 0x0000ff, 0x1);
+                    assertEquals(expectedRGB & 0xff0000, actualRGB & 0xff0000, 0x10000, "R(" + x + "," + y + ")");
+                    assertEquals(expectedRGB & 0x00ff00, actualRGB & 0x00ff00, 0x100, "G(" + x + "," + y + ")");
+                    assertEquals(expectedRGB & 0x0000ff, actualRGB & 0x0000ff, 0x1, "B(" + x + "," + y + ")");
                 }
                 else {
-                    assertEquals("R(" + x + "," + y + ")", expectedRGB & 0xff0000, actualRGB & 0xff0000);
-                    assertEquals("G(" + x + "," + y + ")", expectedRGB & 0x00ff00, actualRGB & 0x00ff00);
-                    assertEquals("B(" + x + "," + y + ")", expectedRGB & 0x0000ff, actualRGB & 0x0000ff);
+                    assertEquals(expectedRGB & 0xff0000, actualRGB & 0xff0000, "R(" + x + "," + y + ")");
+                    assertEquals(expectedRGB & 0x00ff00, actualRGB & 0x00ff00, "G(" + x + "," + y + ")");
+                    assertEquals(expectedRGB & 0x0000ff, actualRGB & 0x0000ff, "B(" + x + "," + y + ")");
                 }
             }
         }

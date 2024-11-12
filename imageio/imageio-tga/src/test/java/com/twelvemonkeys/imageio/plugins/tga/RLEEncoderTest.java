@@ -34,13 +34,14 @@ import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.Encoder;
 import com.twelvemonkeys.io.enc.EncoderAbstractTest;
 
-import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import static org.junit.Assert.assertArrayEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
 
 /**
  * RLEEncoderTest.

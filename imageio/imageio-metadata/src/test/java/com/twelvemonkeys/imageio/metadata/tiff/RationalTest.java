@@ -30,9 +30,8 @@
 
 package com.twelvemonkeys.imageio.metadata.tiff;
 
-import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * RationalTest
@@ -42,20 +41,20 @@ import static org.junit.Assert.assertEquals;
  * @version $Id: RationalTest.java,v 1.0 Nov 18, 2009 3:23:17 PM haraldk Exp$
  */
 public class RationalTest {
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testZeroDenominator() {
-        new Rational(1, 0);
+        assertThrows(IllegalArgumentException.class, () -> new Rational(1, 0));
     }
 
     // TODO: Find a solution to this problem, as we should be able to work with it...
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testLongMinValueNumerator() {
-        new Rational(Long.MIN_VALUE, 1);
+        assertThrows(IllegalArgumentException.class, () -> new Rational(Long.MIN_VALUE, 1));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testLongMinValueDenominator() {
-        new Rational(1, Long.MIN_VALUE);
+        assertThrows(IllegalArgumentException.class, () -> new Rational(1, Long.MIN_VALUE));
     }
 
     @Test
@@ -162,8 +161,8 @@ public class RationalTest {
         assertEquals(Rational.ZERO, new Rational(0, 386).divides(x));
     }
 
-    @Test(expected = ArithmeticException.class)
+    @Test
     public void testDivideZero() {
-        new Rational(3037141, 3247033).divides(new Rational(0, 1));
+        assertThrows(ArithmeticException.class, () -> new Rational(3037141, 3247033).divides(new Rational(0, 1)));
     }
 }

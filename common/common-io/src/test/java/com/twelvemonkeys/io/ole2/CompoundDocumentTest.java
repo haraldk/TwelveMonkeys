@@ -31,9 +31,9 @@
 package com.twelvemonkeys.io.ole2;
 
 import com.twelvemonkeys.io.MemoryCacheSeekableStream;
-import org.junit.Test;
 
 import javax.imageio.stream.MemoryCacheImageInputStream;
+import java.awt.image.ImageProducer;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -43,8 +43,8 @@ import java.nio.ByteOrder;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import static org.junit.Assert.*;
-
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 /**
  * CompoundDocumentTestCase
  *
@@ -59,8 +59,8 @@ public class CompoundDocumentTest {
     protected final CompoundDocument createTestDocument() throws IOException {
         URL input = getClass().getResource(SAMPLE_DATA);
 
-        assertNotNull("Missing test resource!", input);
-        assertEquals("Test resource not a file:// resource", "file", input.getProtocol());
+        assertNotNull(input, "Missing test resource!");
+        assertEquals( "file", input.getProtocol(), "Test resource not a file:// resource");
 
         try {
             return new CompoundDocument(new File(input.toURI()));
@@ -103,7 +103,7 @@ public class CompoundDocumentTest {
         }
     }
 
-    @Test(expected = UnsupportedOperationException.class)
+    @Test
     public void testChildEntriesUnmodifiable() throws IOException {
         try (CompoundDocument document = createTestDocument()) {
             Entry root = document.getRootEntry();
@@ -111,9 +111,10 @@ public class CompoundDocumentTest {
             assertNotNull(root);
 
             SortedSet<Entry> children = root.getChildEntries();
-
-            // Should not be allowed, as it modifies the internal structure
-            children.remove(children.first());
+            assertThrows(UnsupportedOperationException.class, () -> {
+                // Should not be allowed, as it modifies the internal structure
+                children.remove(children.first());
+            });
         }
     }
 
@@ -128,7 +129,7 @@ public class CompoundDocumentTest {
             Entry catalog = root.getChildEntry("Catalog");
 
             assertNotNull(catalog);
-            assertNotNull("Input stream may not be null", catalog.getInputStream());
+            assertNotNull(catalog.getInputStream(), "Input stream may not be null");
         }
     }
 
@@ -136,7 +137,7 @@ public class CompoundDocumentTest {
     public void testReadCatalogInputStream() throws IOException {
         InputStream input = getClass().getResourceAsStream(SAMPLE_DATA);
 
-        assertNotNull("Missing test resource!", input);
+        assertNotNull(input, "Missing test resource!");
 
         CompoundDocument document = new CompoundDocument(input);
         Entry root = document.getRootEntry();
@@ -145,14 +146,14 @@ public class CompoundDocumentTest {
 
         Entry catalog = root.getChildEntry("Catalog");
         assertNotNull(catalog);
-        assertNotNull("Input stream may not be null", catalog.getInputStream());
+        assertNotNull(catalog.getInputStream(), "Input stream may not be null");
     }
 
     @Test
     public void testReadCatalogSeekableStream() throws IOException {
         InputStream input = getClass().getResourceAsStream(SAMPLE_DATA);
 
-        assertNotNull("Missing test resource!", input);
+        assertNotNull(input, "Missing test resource!");
 
         CompoundDocument document = new CompoundDocument(new MemoryCacheSeekableStream(input));
         Entry root = document.getRootEntry();
@@ -161,14 +162,14 @@ public class CompoundDocumentTest {
 
         Entry catalog = root.getChildEntry("Catalog");
         assertNotNull(catalog);
-        assertNotNull("Input stream may not be null", catalog.getInputStream());
+        assertNotNull(catalog.getInputStream(), "Input stream may not be null");
     }
 
     @Test
     public void testReadCatalogImageInputStream() throws IOException {
         InputStream input = getClass().getResourceAsStream(SAMPLE_DATA);
 
-        assertNotNull("Missing test resource!", input);
+        assertNotNull(input, "Missing test resource!");
 
         MemoryCacheImageInputStream stream = new MemoryCacheImageInputStream(input);
         stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
@@ -183,6 +184,6 @@ public class CompoundDocumentTest {
         Entry catalog = root.getChildEntry("Catalog");
 
         assertNotNull(catalog);
-        assertNotNull("Input stream may not be null", catalog.getInputStream());
+        assertNotNull(catalog.getInputStream(), "Input stream may not be null");
     }
 }

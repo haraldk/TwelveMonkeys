@@ -1,7 +1,5 @@
 package com.twelvemonkeys.imageio.color;
 
-import org.junit.Test;
-
 import java.awt.color.ColorSpace;
 import java.awt.color.ICC_ColorSpace;
 import java.awt.color.ICC_Profile;
@@ -9,7 +7,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 public class ColorProfilesTest {
     @Test
@@ -53,9 +52,9 @@ public class ColorProfilesTest {
         assertFalse(ColorProfiles.isCS_sRGB(ICC_Profile.getInstance(ColorSpace.CS_PYCC)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIsCS_sRGBNull() {
-        ColorProfiles.isCS_sRGB(null);
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.isCS_sRGB(null));
     }
 
     @Test
@@ -71,29 +70,29 @@ public class ColorProfilesTest {
         assertFalse(ColorProfiles.isCS_GRAY(ICC_Profile.getInstance(ColorSpace.CS_PYCC)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testIsCS_GRAYNull() {
-        ColorProfiles.isCS_GRAY(null);
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.isCS_GRAY(null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateProfileNull() {
-        ColorProfiles.createProfile(null);
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.createProfile(null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReadProfileNull() throws IOException {
-        ColorProfiles.readProfile(null);
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.readProfile(null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateProfileRawNull() {
-        ColorProfiles.createProfileRaw(null);
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.createProfileRaw(null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReadProfileRawNull() throws IOException {
-        ColorProfiles.readProfileRaw(null);
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.readProfileRaw(null));
     }
 
     @Test
@@ -110,74 +109,74 @@ public class ColorProfilesTest {
         assertArrayEquals(data, profileRaw.getData());
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateProfileRawBadData() {
-        ColorProfiles.createProfileRaw(new byte[5]);
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.createProfileRaw(new byte[5]));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReadProfileRawBadData() throws IOException {
         // NOTE: The array here is larger, as there's a bug in OpenJDK 15 & 16, that throws
         // ArrayIndexOutOfBoundsException if the stream is shorter than the profile signature...
-        ColorProfiles.readProfileRaw(new ByteArrayInputStream(new byte[40]));
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.readProfileRaw(new ByteArrayInputStream(new byte[40])));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateProfileBadData() {
-        ColorProfiles.createProfile(new byte[5]);
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.createProfile(new byte[5]));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReadProfileBadData() throws IOException {
-        ColorProfiles.readProfile(new ByteArrayInputStream(new byte[5]));
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.readProfile(new ByteArrayInputStream(new byte[5])));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateProfileRawTruncated() throws IOException {
         byte[] data = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc")).getData();
-        ColorProfiles.createProfileRaw(Arrays.copyOf(data, 200));
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.createProfileRaw(Arrays.copyOf(data, 200)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReadProfileRawTruncated() throws IOException {
         byte[] data = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc")).getData();
-        ColorProfiles.readProfileRaw(new ByteArrayInputStream(data, 0, 200));
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.readProfileRaw(new ByteArrayInputStream(data, 0, 200)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateProfileTruncated() throws IOException {
         byte[] data = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc")).getData();
-        ColorProfiles.createProfile(Arrays.copyOf(data, 200));
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.createProfile(Arrays.copyOf(data, 200)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReadProfileTruncated() throws IOException {
         byte[] data = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc")).getData();
-        ColorProfiles.readProfile(new ByteArrayInputStream(data, 0, 200));
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.readProfile(new ByteArrayInputStream(data, 0, 200)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateProfileRawTruncatedHeader() throws IOException {
         byte[] data = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc")).getData();
-        ColorProfiles.createProfileRaw(Arrays.copyOf(data, 125));
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.createProfileRaw(Arrays.copyOf(data, 125)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReadProfileRawTruncatedHeader() throws IOException {
         byte[] data = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc")).getData();
-        ColorProfiles.readProfileRaw(new ByteArrayInputStream(data, 0, 125));
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.readProfileRaw(new ByteArrayInputStream(data, 0, 125)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateProfileTruncatedHeader() throws IOException {
         byte[] data = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc")).getData();
-        ColorProfiles.createProfile(Arrays.copyOf(data, 125));
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.createProfile(Arrays.copyOf(data, 125)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReadProfileTruncatedHeader() throws IOException {
         byte[] data = ICC_Profile.getInstance(getClass().getResourceAsStream("/profiles/adobe_rgb_1998.icc")).getData();
-        ColorProfiles.readProfile(new ByteArrayInputStream(data, 0, 125));
+        assertThrows(IllegalArgumentException.class, () -> ColorProfiles.readProfile(new ByteArrayInputStream(data, 0, 125)));
     }
 
     @Test

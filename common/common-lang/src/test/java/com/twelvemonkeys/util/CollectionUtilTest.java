@@ -30,13 +30,11 @@
 
 package com.twelvemonkeys.util;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 import java.util.*;
 
-import static org.junit.Assert.*;
-
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 /**
  * CollectionUtilTest
  *
@@ -61,44 +59,60 @@ public class CollectionUtilTest {
         assertArrayEquals(new Object[] {"bar", "baz", 3}, merged);
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testMergeArraysObjectBadOffset() {
-        CollectionUtil.mergeArrays(stringObjects, 4, 2, integerObjects, 2, 1);
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            CollectionUtil.mergeArrays(stringObjects, 4, 2, integerObjects, 2, 1);
+        });
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testMergeArraysObjectBadSecondOffset() {
-        CollectionUtil.mergeArrays(stringObjects, 1, 2, integerObjects, 4, 1);
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            CollectionUtil.mergeArrays(stringObjects, 1, 2, integerObjects, 4, 1);
+        });
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testMergeArraysObjectBadLength() {
-        CollectionUtil.mergeArrays(stringObjects, 1, 4, integerObjects, 2, 1);
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            CollectionUtil.mergeArrays(stringObjects, 1, 4, integerObjects, 2, 1);
+        });
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testMergeArraysObjectBadSecondLength() {
-        CollectionUtil.mergeArrays(stringObjects, 1, 2, integerObjects, 2, 2);
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            CollectionUtil.mergeArrays(stringObjects, 1, 2, integerObjects, 2, 2);
+        });
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testMergeArraysObjectNegativeOffset() {
-        CollectionUtil.mergeArrays(stringObjects, -1, 2, integerObjects, 2, 1);
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            CollectionUtil.mergeArrays(stringObjects, -1, 2, integerObjects, 2, 1);
+        });
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testMergeArraysObjectNegativeSecondOffset() {
-        CollectionUtil.mergeArrays(stringObjects, 1, 2, integerObjects, -1, 1);
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            CollectionUtil.mergeArrays(stringObjects, 1, 2, integerObjects, -1, 1);
+        });
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testMergeArraysObjectNegativeLength() {
-        CollectionUtil.mergeArrays(stringObjects, 1, -1, integerObjects, 2, 1);
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            CollectionUtil.mergeArrays(stringObjects, 1, -1, integerObjects, 2, 1);
+        });
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testMergeArraysObjectNegativeSecondLength() {
-        CollectionUtil.mergeArrays(stringObjects, 1, 2, integerObjects, 2, -1);
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            CollectionUtil.mergeArrays(stringObjects, 1, 2, integerObjects, 2, -1);
+        });
     }
 
     @Test
@@ -109,20 +123,24 @@ public class CollectionUtilTest {
         assertArrayEquals(new Object[] {"foo", "bar", "baz", 1, 2, 3}, merged);
     }
 
-    @Test(expected = ArrayStoreException.class)
+    @Test
     public void testMergeArraysObjectIllegalType() {
         String[] strings = {"foo", "bar", "baz"};
         Integer[] integers = {1, 2, 3}; // Integer not assignable to String
 
-        CollectionUtil.mergeArrays(strings, integers);
+        assertThrows(ArrayStoreException.class, () -> {
+            CollectionUtil.mergeArrays(strings, integers);
+        });
     }
 
-    @Test(expected = ArrayStoreException.class)
+    @Test
     public void testMergeArraysNativeIllegalType() {
         char[] chars = {'a', 'b', 'c'};
         int[] integers = {1, 2, 3}; // Integer not assignable to String
 
-        CollectionUtil.mergeArrays(chars, integers);
+        assertThrows(ArrayStoreException.class, () -> {
+            CollectionUtil.mergeArrays(chars, integers);
+        });
 
     }
 
@@ -147,9 +165,11 @@ public class CollectionUtilTest {
         assertArrayEquals(new int[] {2, 3, 4}, numbers);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testEnumIteratorNull() {
-        CollectionUtil.iterator((Enumeration<Object>) null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            CollectionUtil.iterator((Enumeration<Object>) null);
+        });
     }
     
     @Test
@@ -183,9 +203,11 @@ public class CollectionUtilTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testArrayIteratorNull() {
-        CollectionUtil.iterator((Object[]) null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            CollectionUtil.iterator((Object[]) null);
+        });
     }
 
     @Test
@@ -262,7 +284,7 @@ public class CollectionUtilTest {
 
         int count = 0;
         for (Object element : elements) {
-            assertTrue("No next element for element '" + element + "' at index: " + count, iterator.hasNext());
+            assertTrue(iterator.hasNext(), "No next element for element '" + element + "' at index: " + count);
             assertEquals(count > 0, iterator.hasPrevious());
             assertEquals(count, iterator.nextIndex());
             assertEquals(count - 1, iterator.previousIndex());
@@ -318,7 +340,7 @@ public class CollectionUtilTest {
         assertEquals(elements.length, iterator.nextIndex());
 
         for (int i = count; i > 0; i--) {
-            assertTrue("No previous element for element '" + elements[i - 1] + "' at index: " + (i - 1), iterator.hasPrevious());
+            assertTrue(iterator.hasPrevious(), "No previous element for element '" + elements[i - 1] + "' at index: " + (i - 1));
             assertEquals(i < elements.length, iterator.hasNext());
             assertEquals(i - 1, iterator.previousIndex());
             assertEquals(i, iterator.nextIndex());
@@ -339,18 +361,24 @@ public class CollectionUtilTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testArrayIteratorRangeNull() {
-        CollectionUtil.iterator(null, 0, 0);
+        assertThrows(IllegalArgumentException.class, () -> {
+            CollectionUtil.iterator(null, 0, 0);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testArrayIteratorRangeBadStart() {
-        CollectionUtil.iterator(stringObjects, stringObjects.length + 1, 2);
+        assertThrows(IllegalArgumentException.class, () -> {
+            CollectionUtil.iterator(stringObjects, stringObjects.length + 1, 2);
+        });
     }
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testArrayIteratorRangeBadLength() {
-        CollectionUtil.iterator(stringObjects, 1, stringObjects.length);
+        assertThrows(IllegalArgumentException.class, () -> {
+            CollectionUtil.iterator(stringObjects, 1, stringObjects.length);
+        });
     }
 
     @Test
@@ -379,9 +407,11 @@ public class CollectionUtilTest {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testReverseOrderNull() {
-        CollectionUtil.reverseOrder(null);
+        assertThrows(IllegalArgumentException.class, () -> {
+            CollectionUtil.reverseOrder(null);
+        });
     }
 
     @Test
@@ -431,7 +461,7 @@ public class CollectionUtilTest {
         }
     }
 
-    @Ignore("For development only")
+    @Disabled("For development only")
     @Test
     @SuppressWarnings({"UnusedDeclaration"})
     public void testGenerify() {

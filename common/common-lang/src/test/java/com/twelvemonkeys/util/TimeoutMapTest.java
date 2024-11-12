@@ -30,12 +30,10 @@
 
 package com.twelvemonkeys.util;
 
-import org.junit.Test;
-
 import java.util.*;
 
-import static org.junit.Assert.*;
-
+import org.junit.jupiter.api.*;
+import static org.junit.jupiter.api.Assertions.*;
 /**
  * TimeoutMapTest
  * <p/>
@@ -541,7 +539,7 @@ public class TimeoutMapTest extends MapAbstractTest {
             }
         }
 
-        assertTrue("Elements expired too early, test did not run as expected.", count > 0);
+        assertTrue(count > 0, "Elements expired too early, test did not run as expected.");
         //assertEquals("Elements did not expire as expected.", 1, count);
     }
 
@@ -573,7 +571,7 @@ public class TimeoutMapTest extends MapAbstractTest {
             }
         }
 
-        assertTrue("Elements expired too early, test did not run as expected.", count > 0);
+        assertTrue(count > 0, "Elements expired too early, test did not run as expected.");
         //assertEquals("Elements did not expire as expected.", 1, count);
     }
 
@@ -613,7 +611,7 @@ public class TimeoutMapTest extends MapAbstractTest {
             }
         }
 
-        assertTrue("Elements expired too early, test did not run as expected.", count > 0);
+        assertTrue(count > 0, "Elements expired too early, test did not run as expected.");
         //assertEquals("Elements did not expire as expected.", 1, count);
     }
 
@@ -630,7 +628,7 @@ public class TimeoutMapTest extends MapAbstractTest {
         Object removedKey = null;
         Object otherKey = null;
         Iterator iterator = map.entrySet().iterator();
-        assertTrue("Iterator was empty", iterator.hasNext());
+        assertTrue(iterator.hasNext(), "Iterator was empty");
         try {
             Map.Entry entry = (Map.Entry) iterator.next();
             assertNotNull(entry);
@@ -648,8 +646,8 @@ public class TimeoutMapTest extends MapAbstractTest {
             fail("Elements expired between Interator.hasNext() and Iterator.remove()");
         }
 
-        assertTrue("Wrong entry removed, keySet().iterator() is broken.", !map.containsKey(removedKey));
-        assertTrue("Wrong entry removed, keySet().iterator() is broken.", map.containsKey(otherKey));
+        assertTrue(!map.containsKey(removedKey), "Wrong entry removed, keySet().iterator() is broken.");
+        assertTrue(map.containsKey(otherKey), "Wrong entry removed, keySet().iterator() is broken.");
     }
 
 

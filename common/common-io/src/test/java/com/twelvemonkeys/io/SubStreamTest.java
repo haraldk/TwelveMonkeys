@@ -1,15 +1,14 @@
 package com.twelvemonkeys.io;
 
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Random;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * SubStreamTest.
@@ -23,14 +22,18 @@ public class SubStreamTest {
     private final Random rng = new Random(2918475687L);
 
     @SuppressWarnings("resource")
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullStream() {
-        new SubStream(null, 42);
+        assertThrows(IllegalArgumentException.class, () -> {
+            new SubStream(null, 42);
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNegativeLength() {
-        new SubStream(new ByteArrayInputStream(new byte[1]), -1);
+        assertThrows(IllegalArgumentException.class, () -> {
+            new SubStream(new ByteArrayInputStream(new byte[1]), -1);
+        });
     }
 
     @Test
@@ -100,15 +103,17 @@ public class SubStreamTest {
     }
 
     @SuppressWarnings("EmptyTryBlock")
-    @Test(timeout = 500L)
+    @Test
     public void testCloseConsumesAllShortStream() throws IOException {
-        ByteArrayInputStream stream = new ByteArrayInputStream(new byte[13]);
+        assertTimeoutPreemptively(Duration.ofMillis(500), () -> {
+            ByteArrayInputStream stream = new ByteArrayInputStream(new byte[13]);
 
-        try (InputStream ignore = new SubStream(stream, 42)) {
-            // Nothing here...
-        }
+            try (InputStream ignore = new SubStream(stream, 42)) {
+                // Nothing here...
+            }
 
-        assertEquals(0, stream.available());
-        assertEquals(-1, stream.read());
+            assertEquals(0, stream.available());
+            assertEquals(-1, stream.read());
+        });
     }
 }

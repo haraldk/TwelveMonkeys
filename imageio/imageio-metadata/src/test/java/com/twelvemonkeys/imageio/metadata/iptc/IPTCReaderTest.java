@@ -33,14 +33,13 @@ package com.twelvemonkeys.imageio.metadata.iptc;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
 
-import org.junit.Test;
-
 import javax.imageio.ImageIO;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
 
 /**
  * IPTCReaderTest

@@ -36,17 +36,16 @@ import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 
-import org.junit.Test;
-
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
 
 /**
  * EXIFReaderTest
@@ -83,14 +82,16 @@ public class EXIFReaderTest extends MetadataReaderAbstractTest {
         assertEquals(exif.size(), exif.getDirectory(0).size() + exif.getDirectory(1).size());
     }
 
-    @Test(expected = IndexOutOfBoundsException.class)
+    @Test
     public void testDirectoryOutOfBounds() throws IOException {
         InputStream data = getData();
 
         CompoundDirectory exif = (CompoundDirectory) createReader().read(ImageIO.createImageInputStream(data));
 
         assertEquals(2, exif.directoryCount());
-        assertNotNull(exif.getDirectory(exif.directoryCount()));
+        assertThrows(IndexOutOfBoundsException.class, () -> {
+            exif.getDirectory(exif.directoryCount());
+        });
     }
 
     @Test

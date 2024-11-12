@@ -30,8 +30,6 @@
 
 package com.twelvemonkeys.imageio.path;
 
-import org.junit.Test;
-
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.geom.Path2D;
@@ -39,36 +37,39 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
 import static com.twelvemonkeys.imageio.path.PathsTest.assertPathEquals;
 import static com.twelvemonkeys.imageio.path.PathsTest.readExpectedPath;
-import static org.junit.Assert.assertNotNull;
 
 @SuppressWarnings("deprecation")
 public class AdobePathBuilderTest {
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullBytes() {
-        new AdobePathBuilder((byte[]) null);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathBuilder((byte[]) null));
+
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNull() {
-        new AdobePathBuilder((DataInput) null);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathBuilder((DataInput) null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateEmpty() {
-        new AdobePathBuilder(new byte[0]);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathBuilder(new byte[0]));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateShortPath() {
-        new AdobePathBuilder(new byte[3]);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathBuilder(new byte[3]));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateImpossiblePath() {
-        new AdobePathBuilder(new byte[7]);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathBuilder(new byte[7]));
     }
 
     @Test
@@ -82,18 +83,20 @@ public class AdobePathBuilderTest {
         assertNotNull(path);
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testShortPath() throws IOException {
         byte[] data = new byte[26];
         ByteBuffer buffer = ByteBuffer.wrap(data);
         buffer.putShort((short) AdobePathSegment.CLOSED_SUBPATH_LENGTH_RECORD);
         buffer.putShort((short) 1);
 
-        Path2D path = new AdobePathBuilder(data).path();
-        assertNotNull(path);
+        assertThrows(IIOException.class, () -> {
+            Path2D path = new AdobePathBuilder(data).path();
+            assertNotNull(path);
+        });
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testShortPathToo() throws IOException {
         byte[] data = new byte[52];
         ByteBuffer buffer = ByteBuffer.wrap(data);
@@ -102,11 +105,13 @@ public class AdobePathBuilderTest {
         buffer.position(buffer.position() + 22);
         buffer.putShort((short) AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED);
 
-        Path2D path = new AdobePathBuilder(data).path();
-        assertNotNull(path);
+        assertThrows(IIOException.class, () -> {
+            Path2D path = new AdobePathBuilder(data).path();
+            assertNotNull(path);
+        });
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testLongPath() throws IOException {
         byte[] data = new byte[78];
         ByteBuffer buffer = ByteBuffer.wrap(data);
@@ -117,18 +122,22 @@ public class AdobePathBuilderTest {
         buffer.position(buffer.position() + 24);
         buffer.putShort((short) AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED);
 
-        Path2D path = new AdobePathBuilder(data).path();
-        assertNotNull(path);
+        assertThrows(IIOException.class, () -> {
+            Path2D path = new AdobePathBuilder(data).path();
+            assertNotNull(path);
+        });
     }
 
-    @Test(expected = IIOException.class)
+    @Test
     public void testPathMissingLength() throws IOException {
         byte[] data = new byte[26];
         ByteBuffer buffer = ByteBuffer.wrap(data);
         buffer.putShort((short) AdobePathSegment.CLOSED_SUBPATH_BEZIER_LINKED);
 
-        Path2D path = new AdobePathBuilder(data).path();
-        assertNotNull(path);
+        assertThrows(IIOException.class, () -> {
+            Path2D path = new AdobePathBuilder(data).path();
+            assertNotNull(path);
+        });
     }
 
     @Test

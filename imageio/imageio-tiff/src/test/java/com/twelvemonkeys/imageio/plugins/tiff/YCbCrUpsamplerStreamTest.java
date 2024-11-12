@@ -30,15 +30,13 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import org.junit.Test;
-
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * YCbCrUpsamplerStreamTest
@@ -48,19 +46,19 @@ import static org.junit.Assert.assertEquals;
  * @version $Id: YCbCrUpsamplerStreamTest.java,v 1.0 31.01.13 14:35 haraldk Exp$
  */
 public class YCbCrUpsamplerStreamTest  {
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullStream() {
-        new YCbCrUpsamplerStream(null, new int[2], 7, 5);
+        assertThrows(IllegalArgumentException.class, () -> new YCbCrUpsamplerStream(null, new int[2], 7, 5));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNullChroma() {
-        new YCbCrUpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[3], 7, 5);
+        assertThrows(IllegalArgumentException.class, () -> new YCbCrUpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[3], 7, 5));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateShortChroma() {
-        new YCbCrUpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[1], 7, 5);
+        assertThrows(IllegalArgumentException.class, () -> new YCbCrUpsamplerStream(new ByteArrayInputStream(new byte[0]), new int[1], 7, 5));
     }
 
     @Test

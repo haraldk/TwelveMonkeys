@@ -31,7 +31,7 @@
 package com.twelvemonkeys.io.ole2;
 
 import com.twelvemonkeys.io.*;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 

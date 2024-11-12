@@ -31,14 +31,14 @@
 package com.twelvemonkeys.imageio.util;
 
 import com.twelvemonkeys.io.OutputStreamAbstractTest;
-import org.junit.Test;
 
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 
-import static org.junit.Assert.assertEquals;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * IIOOutputStreamAdapterTestCase
@@ -53,9 +53,9 @@ public class IIOOutputStreamAdapterTest extends OutputStreamAbstractTest {
         return new IIOOutputStreamAdapter(new MemoryCacheImageOutputStream(new ByteArrayOutputStream()));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNull() {
-        new IIOOutputStreamAdapter(null);
+        assertThrows(IllegalArgumentException.class, () -> new IIOOutputStreamAdapter(null));
     }
 
     @Test

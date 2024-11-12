@@ -1,9 +1,9 @@
 package com.twelvemonkeys.contrib.exif;
 
-import org.junit.Test;
-
 import static com.twelvemonkeys.contrib.exif.Orientation.*;
-import static org.junit.Assert.assertEquals;
+
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * OrientationTest.

@@ -32,15 +32,15 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 /**
  * ICOImageReaderTest
@@ -98,14 +98,14 @@ public class ICOImageReaderTest extends ImageReaderAbstractTest<ICOImageReader> 
     }
 
     @Test
-    @Ignore("Known issue")
+    @Disabled("Known issue")
     @Override
     public void testNotBadCaching() throws IOException {
         super.testNotBadCaching();
     }
 
     @Test
-    @Ignore("Known issue: Subsampled reading currently not supported")
+    @Disabled("Known issue: Subsampled reading currently not supported")
     @Override
     public void testReadWithSubsampleParamPixels() throws IOException {
         super.testReadWithSubsampleParamPixels();

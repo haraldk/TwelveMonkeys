@@ -31,7 +31,6 @@
 package com.twelvemonkeys.imageio.path;
 
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
-import org.junit.Test;
 
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
@@ -41,11 +40,11 @@ import java.awt.geom.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import org.junit.jupiter.api.Test;
 
 import static com.twelvemonkeys.imageio.path.AdobePathSegment.*;
 import static com.twelvemonkeys.imageio.path.PathsTest.assertPathEquals;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * AdobePathWriterTest.
@@ -56,22 +55,22 @@ import static org.junit.Assert.assertEquals;
  */
 public class AdobePathWriterTest {
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateWriterNull() {
-        new AdobePathWriter(null);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathWriter(null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateWriterInvalid() {
-        new AdobePathWriter(new Path2D.Double(Path2D.WIND_NON_ZERO));
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathWriter(new Path2D.Double(Path2D.WIND_NON_ZERO)));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateWriterOutOfBounds() {
         Path2D path = new Path2D.Float(Path2D.WIND_EVEN_ODD);
         path.append(new Ellipse2D.Double(.5, 0.5, 2, 2), false);
 
-        new AdobePathWriter(path);
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathWriter(path));
     }
 
     @Test
@@ -93,14 +92,14 @@ public class AdobePathWriterTest {
         new AdobePathWriter(path);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testCreateNotClosed() {
         GeneralPath path = new GeneralPath(Path2D.WIND_EVEN_ODD);
         path.moveTo(.5, .5);
         path.lineTo(1, .5);
         path.curveTo(1, 1, 1, 1, .5, 1);
 
-        new AdobePathWriter(path).writePath();
+        assertThrows(IllegalArgumentException.class, () -> new AdobePathWriter(path).writePath());
     }
 
     @Test

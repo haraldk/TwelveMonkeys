@@ -30,7 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.tiff;
 
-import org.junit.Test;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
@@ -46,7 +45,9 @@ import static java.nio.ByteOrder.BIG_ENDIAN;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
+
 import static org.mockito.Mockito.*;
 
 /**
@@ -55,9 +56,9 @@ import static org.mockito.Mockito.*;
 public class TIFFStreamMetadataTest {
     // Test that we configure byte order of stream correctly (MM + II)
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testConfigureStreamNullStream() throws IIOInvalidTreeException {
-        TIFFStreamMetadata.configureStreamByteOrder(new TIFFStreamMetadata(), null);
+        assertThrows(IllegalArgumentException.class, () -> TIFFStreamMetadata.configureStreamByteOrder(new TIFFStreamMetadata(), null));
     }
 
     @Test
@@ -123,14 +124,14 @@ public class TIFFStreamMetadataTest {
     }
 
     // Test that we merge correctly with "forreign" metadata class, as long as format names are the same (MM + II)
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testMergeNull() throws IIOInvalidTreeException {
-        new TIFFStreamMetadata().mergeTree(SUN_NATIVE_STREAM_METADATA_FORMAT_NAME, null);
+        assertThrows(IllegalArgumentException.class, () -> new TIFFStreamMetadata().mergeTree(SUN_NATIVE_STREAM_METADATA_FORMAT_NAME, null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testMergeIllegal() throws IIOInvalidTreeException {
-        new TIFFStreamMetadata().mergeTree("com.foo.bar", createForeignTree(BIG_ENDIAN));
+        assertThrows(IllegalArgumentException.class, () -> new TIFFStreamMetadata().mergeTree("com.foo.bar", createForeignTree(BIG_ENDIAN)));
     }
 
     @Test
@@ -148,14 +149,14 @@ public class TIFFStreamMetadataTest {
         assertEquals(BIG_ENDIAN, metadata.byteOrder);
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetAsTreeNull() {
-        new TIFFStreamMetadata().getAsTree(null);
+        assertThrows(IllegalArgumentException.class, () -> new TIFFStreamMetadata().getAsTree(null));
     }
 
-    @Test(expected = IllegalArgumentException.class)
+    @Test
     public void testGetAsTreeIllegal() {
-        new TIFFStreamMetadata().getAsTree("com.foo.bar");
+        assertThrows(IllegalArgumentException.class, () -> new TIFFStreamMetadata().getAsTree("com.foo.bar"));
     }
 
     @Test

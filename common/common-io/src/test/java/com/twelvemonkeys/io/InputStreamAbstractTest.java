@@ -46,14 +46,14 @@
 package com.twelvemonkeys.io;
 
 import com.twelvemonkeys.lang.ObjectAbstractTest;
-import org.junit.Test;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Random;
 
-import static org.junit.Assert.*;
+import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * InputStreamAbstractTestCase
@@ -104,15 +104,15 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
         int size = 5;
         InputStream input = makeInputStream(makeOrderedArray(size));
         for (int i = 0; i < size; i++) {
-            assertTrue("Check Size [" + i + "]", (size - i) >= input.available());
-            assertEquals("Check Value [" + i + "]", i, input.read());
+            assertTrue((size - i) >= input.available(), "Check Size [" + i + "]");
+            assertEquals(i, input.read(), "Check Value [" + i + "]");
         }
-        assertEquals("Available after contents all read", 0, input.available());
+        assertEquals(0, input.available(), "Available after contents all read");
 
         // Test reading after the end of file
         try {
             int result = input.read();
-            assertEquals("Wrong value read after end of file", -1, result);
+            assertEquals( -1, result, "Wrong value read after end of file");
         }
         catch (IOException e) {
             fail("Should not have thrown an IOException: " + e.getMessage());
@@ -122,12 +122,12 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
     @Test
     public void testAvailable() throws Exception {
         InputStream input = makeInputStream(1);
-        assertFalse("Unexpected EOF", input.read() < 0);
-        assertEquals("Available after contents all read", 0, input.available());
+        assertFalse(input.read() < 0, "Unexpected EOF");
+        assertEquals(0, input.available(), "Available after contents all read");
 
         // Check availbale is zero after End of file
-        assertEquals("End of File", -1, input.read());
-        assertEquals("Available after End of File", 0, input.available());
+        assertEquals(-1, input.read(), "End of File");
+        assertEquals( 0, input.available(), "Available after End of File");
     }
 
     @Test
@@ -138,26 +138,26 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
 
         // Read into array
         int count1 = input.read(bytes);
-        assertEquals("Read 1", bytes.length, count1);
+        assertEquals(bytes.length, count1, "Read 1");
         for (int i = 0; i < count1; i++) {
-            assertEquals("Check Bytes 1", i, bytes[i]);
+            assertEquals(i, bytes[i], "Check Bytes 1");
         }
 
         // Read into array
         int count2 = input.read(bytes);
-        assertEquals("Read 2", 5, count2);
+        assertEquals(5, count2, "Read 2");
         for (int i = 0; i < count2; i++) {
-            assertEquals("Check Bytes 2", count1 + i, bytes[i]);
+            assertEquals(count1 + i, bytes[i], "Check Bytes 2");
         }
 
         // End of File
         int count3 = input.read(bytes);
-        assertEquals("Read 3 (EOF)", -1, count3);
+        assertEquals(-1, count3, "Read 3 (EOF)");
 
         // Test reading after the end of file
         try {
             int result = input.read(bytes);
-            assertEquals("Wrong value read after end of file", -1, result);
+            assertEquals(-1, result, "Wrong value read after end of file");
         }
         catch (IOException e) {
             fail("Should not have thrown an IOException: " + e.getMessage());
@@ -170,20 +170,20 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
         int offset = 2;
         int lth = 4;
         int count5 = input.read(bytes, offset, lth);
-        assertEquals("Read 5", lth, count5);
+        assertEquals(lth, count5, "Read 5");
         for (int i = offset; i < lth; i++) {
-            assertEquals("Check Bytes 2", i - offset, bytes[i]);
+            assertEquals(i - offset, bytes[i], "Check Bytes 2");
         }
     }
 
     @Test
     public void testEOF() throws Exception {
         InputStream input = makeInputStream(makeOrderedArray(2));
-        assertEquals("Read 1", 0, input.read());
-        assertEquals("Read 2", 1, input.read());
-        assertEquals("Read 3", -1, input.read());
-        assertEquals("Read 4", -1, input.read());
-        assertEquals("Read 5", -1, input.read());
+        assertEquals(0, input.read(), "Read 1");
+        assertEquals(1, input.read(), "Read 2");
+        assertEquals(-1, input.read(), "Read 3");
+        assertEquals(-1, input.read(), "Read 4");
+        assertEquals(-1, input.read(), "Read 5");
     }
 
     @Test
@@ -205,7 +205,7 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
             fail("Should throw IOException");
         }
         catch (IOException e) {
-            assertTrue("Wrong messge: " + e.getMessage(), e.getMessage().contains("reset"));
+            assertTrue(e.getMessage().contains("reset"), "Wrong messge: " + e.getMessage());
         }
     }
 
@@ -223,10 +223,10 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
         // No mark may either throw exception, or reset to beginning of stream.
         try {
             input.reset();
-            assertEquals("Re-read of reset data should be same", 0, input.read());
+            assertEquals(0, input.read(), "Re-read of reset data should be same");
         }
         catch (Exception e) {
-            assertTrue("Wrong no mark IOException message", e.getMessage().contains("mark"));
+            assertTrue(e.getMessage().contains("mark"), "Wrong no mark IOException message");
         }
     }
 
@@ -249,7 +249,7 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
 
         // Read further
         for (int i = 0; i < 3; i++) {
-            assertEquals("Read After Mark [" + i + "]", (position + i), input.read());
+            assertEquals((position + i), input.read(), "Read After Mark [" + i + "]");
         }
 
         // Reset
@@ -257,7 +257,7 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
 
         // Read from marked position
         for (int i = 0; i < readlimit + 1; i++) {
-            assertEquals("Read After Reset [" + i + "]", (position + i), input.read());
+            assertEquals((position + i), input.read(), "Read After Reset [" + i + "]");
         }
     }
 
@@ -280,16 +280,16 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
 
         // Read past marked position
         for (int i = 0; i < readlimit + 1; i++) {
-            assertEquals("Read After Reset [" + i + "]", (position + i), input.read());
+            assertEquals((position + i), input.read(), "Read After Reset [" + i + "]");
         }
 
         // Reset after read limit passed, may either throw exception, or reset to last mark
         try {
             input.reset();
-            assertEquals("Re-read of reset data should be same", 1, input.read());
+            assertEquals(1, input.read(), "Re-read of reset data should be same");
         }
         catch (Exception e) {
-            assertTrue("Wrong read-limit IOException message", e.getMessage().contains("mark"));
+            assertTrue(e.getMessage().contains("mark"), "Wrong read-limit IOException message");
         }
     }
 
@@ -302,29 +302,29 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
         }
 
         int first = input.read();
-        assertTrue("Expected to read positive value", first >= 0);
+        assertTrue(first >= 0, "Expected to read positive value");
 
         int readlimit = 5;
 
         // Mark
         input.mark(readlimit);
         int read = input.read();
-        assertTrue("Expected to read positive value", read >= 0);
+        assertTrue(read >= 0, "Expected to read positive value");
 
         assertTrue(input.read() >= 0);
         assertTrue(input.read() >= 0);
 
         input.reset();
-        assertEquals("Expected value read differs from actual", read, input.read());
+        assertEquals(read, input.read(), "Expected value read differs from actual");
 
         // Reset after read limit passed, may either throw exception, or reset to last good mark
         try {
             input.reset();
             int reRead = input.read();
-            assertTrue("Re-read of reset data should be same as initially marked or first", reRead == read || reRead == first);
+            assertTrue(reRead == read || reRead == first, "Re-read of reset data should be same as initially marked or first");
         }
         catch (Exception e) {
-            assertTrue("Wrong read-limit IOException message", e.getMessage().contains("mark"));
+            assertTrue(e.getMessage().contains("mark"), "Wrong read-limit IOException message");
         }
     }
 
@@ -332,17 +332,17 @@ public abstract class InputStreamAbstractTest extends ObjectAbstractTest {
     public void testSkip() throws Exception {
         InputStream input = makeInputStream(makeOrderedArray(10));
 
-        assertEquals("Unexpected value read", 0, input.read());
-        assertEquals("Unexpected value read", 1, input.read());
-        assertEquals("Unexpected number of bytes skipped", 5, input.skip(5));
-        assertEquals("Unexpected value read", 7, input.read());
+        assertEquals(0, input.read(), "Unexpected value read");
+        assertEquals(1, input.read(), "Unexpected value read");
+        assertEquals(5, input.skip(5), "Unexpected number of bytes skipped");
+        assertEquals(7, input.read(), "Unexpected value read");
 
-        assertEquals("Unexpected number of bytes skipped", 2, input.skip(5)); // only 2 left to skip
-        assertEquals("Unexpected value read after EOF", -1, input.read());
+        assertEquals(2, input.skip(5), "Unexpected number of bytes skipped"); // only 2 left to skip
+        assertEquals(-1, input.read(), "Unexpected value read after EOF");
 
         // Spec says skip might return 0 or negative after EOF...
-        assertTrue("Positive value skipped after EOF", input.skip(5) <= 0); // End of file
-        assertEquals("Unexpected value read after EOF", -1, input.read());
+        assertTrue(input.skip(5) <= 0, "Positive value skipped after EOF"); // End of file
+        assertEquals(-1, input.read(), "Unexpected value read after EOF");
     }
 
     @Test
