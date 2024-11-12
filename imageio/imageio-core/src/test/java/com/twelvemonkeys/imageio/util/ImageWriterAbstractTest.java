@@ -169,11 +169,7 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
         ImageWriter writer = createWriter();
 
         assertThrows(IllegalStateException.class, () -> {
-            try {
                 writer.write(getTestData(0));
-            } catch (IOException e) {
-                fail(e.getMessage()); // Fail if IOException is thrown
-            }
         }, "Expected IllegalStateException when no output is set on writer");
     }
 
