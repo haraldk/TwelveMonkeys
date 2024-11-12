@@ -64,15 +64,10 @@ public class ValidateTest {
 
     @Test
     public void testNotNullWithParameterNull() {
-        try {
-            assertThrows(IllegalArgumentException.class, () -> {
-                Validate.notNull(null, "xyzzy");
-            });
-        }
-        catch (IllegalArgumentException e) {
-            assertTrue(e.getMessage().contains("xyzzy"));
-            throw e;
-        }
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class, () -> {
+            Validate.notNull(null, "xyzzy");
+        });
+        assertTrue(exception.getMessage().contains("xyzzy"));
     }
 
     @Test
