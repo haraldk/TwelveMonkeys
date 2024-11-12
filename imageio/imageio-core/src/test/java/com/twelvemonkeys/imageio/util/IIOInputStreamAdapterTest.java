@@ -73,8 +73,8 @@ public class IIOInputStreamAdapterTest extends InputStreamAbstractTest {
             assertTrue(-1 != stream.read(), "Unexpected end of stream");
         }
 
-        assertEquals( -1, stream.read(), "Read value after end of stream");
-        assertEquals( -1, stream.read(), "Read value after end of stream");
+        assertEquals(-1, stream.read(), "Read value after end of stream");
+        assertEquals(-1, stream.read(), "Read value after end of stream");
 
         // Make sure underlying stream is positioned at end of substream after close
         stream.close();

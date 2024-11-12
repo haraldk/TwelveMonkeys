@@ -161,7 +161,7 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
             throw new AssertionError(e.getMessage(), e);
         }
 
-        assertEquals( 0, buffer.size(), "Image data written");
+        assertEquals(0, buffer.size(), "Image data written");
     }
 
     @Test

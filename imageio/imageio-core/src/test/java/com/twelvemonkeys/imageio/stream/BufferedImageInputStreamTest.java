@@ -72,8 +72,8 @@ public class BufferedImageInputStreamTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue( message.contains("stream"), "Exception message does not contain parameter name");
-            assertTrue( message.contains("null"), "Exception message does not contain null");
+            assertTrue(message.contains("stream"), "Exception message does not contain parameter name");
+            assertTrue(message.contains("null"), "Exception message does not contain null");
         }
     }
 

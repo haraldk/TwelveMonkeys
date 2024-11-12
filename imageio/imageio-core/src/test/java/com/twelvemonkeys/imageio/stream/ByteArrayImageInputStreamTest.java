@@ -52,7 +52,7 @@ public class ByteArrayImageInputStreamTest {
     @Test
     public void testCreate() {
         ByteArrayImageInputStream stream = new ByteArrayImageInputStream(new byte[0]);
-        assertEquals( 0, stream.length(), "Data length should be same as stream length");
+        assertEquals(0, stream.length(), "Data length should be same as stream length");
     }
 
     @Test
@@ -78,8 +78,8 @@ public class ByteArrayImageInputStreamTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue( message.contains("data"), "Exception message does not contain parameter name");
-            assertTrue( message.contains("null"), "Exception message does not contain null");
+            assertTrue(message.contains("data"), "Exception message does not contain parameter name");
+            assertTrue(message.contains("null"), "Exception message does not contain null");
         }
     }
 
@@ -93,7 +93,7 @@ public class ByteArrayImageInputStreamTest {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
             assertTrue(message.contains("offset"), "Exception message does not contain parameter name");
-            assertTrue( message.contains("-1"), "Exception message does not contain -1");
+            assertTrue(message.contains("-1"), "Exception message does not contain -1");
         }
     }
 
@@ -106,8 +106,8 @@ public class ByteArrayImageInputStreamTest {
         catch (IllegalArgumentException expected) {
             assertNotNull("Null exception message", expected.getMessage());
             String message = expected.getMessage().toLowerCase();
-            assertTrue( message.contains("offset"), "Exception message does not contain parameter name");
-            assertTrue( message.contains("2"), "Exception message does not contain 2");
+            assertTrue(message.contains("offset"), "Exception message does not contain parameter name");
+            assertTrue(message.contains("2"), "Exception message does not contain 2");
         }
     }
 

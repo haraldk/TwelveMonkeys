@@ -139,7 +139,7 @@ public class DirectImageInputStreamTest {
                 stream.seek(newPos);
                 assertEquals(newPos, stream.getStreamPosition(), "Wrong stream position");
                 stream.readFully(result);
-                assertTrue( rangeEquals(data, (int) newPos, result, 0, result.length), "Wrong data read: " + i);
+                assertTrue(rangeEquals(data, (int) newPos, result, 0, result.length), "Wrong data read: " + i);
             }
         }
     }
