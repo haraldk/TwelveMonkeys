@@ -195,7 +195,8 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
                     if (marker == JPEG.SOS) {
                         // Treat rest of stream as a single segment (scanning for EOI is too much work)
                         // TODO: For progressive, there will be more than one SOS...
-                        segments.add(new Segment(-1, segment.realEnd(), segment.end(), Long.MAX_VALUE - segment.realEnd()));
+                        long end = stream.length() > 0 ? stream.length() : Long.MAX_VALUE;
+                        segments.add(new Segment(-1, segment.realEnd(), segment.end(), end - segment.realEnd()));
                     }
 
                     if (streamPos >= segment.start && streamPos < segment.end()) {
