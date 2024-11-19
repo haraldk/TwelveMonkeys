@@ -268,7 +268,8 @@ class JPEGImage10Metadata extends AbstractMetadata {
                 default:
                     IIOMetadataNode unknown = new IIOMetadataNode("unknown");
                     unknown.setAttribute("MarkerTag", String.valueOf(segment.marker & 0xFF));
-                    unknown.setUserObject(((Application) segment).data);
+                    byte[] data = segment instanceof Application ? ((Application) segment).data : ((Unknown) segment).data;
+                    unknown.setUserObject(data);
                     markerSequence.appendChild(unknown);
 
                     break;
