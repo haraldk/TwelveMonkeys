@@ -115,14 +115,14 @@ jobs:
           server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
           server-username: MAVEN_CENTRAL_USERNAME # env variable for username in deploy (1)
           server-password: MAVEN_CENTRAL_PASSWORD # env variable for token in deploy (2)
-          gpg-private-key: ${{ secrets.GPG_KEY }} # Value of the GPG private key to import
       - name: Get Project Version
         run: |
           echo "PROJECT_VERSION=$(mvn --batch-mode help:evaluate -Dexpression=project.version -q -DforceStdout)" >> $GITHUB_ENV
       - name: Publish to Maven Central
         if: ${{ endsWith(env.PROJECT_VERSION, '-SNAPSHOT') }}
-        run: mvn --batch-mode --no-transfer-progress deploy -P release -DskipTests
+        run: mvn --batch-mode --no-transfer-progress deploy -P release -DskipTests -Dgpg.signer=bc
         env:
           MAVEN_CENTRAL_USERNAME: ${{ secrets.SONATYPE_USERNAME }} # must be the same env variable name as (1)
           MAVEN_CENTRAL_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }} # must be the same env variable name as (2)
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }} # must be the same env variable name as (3)
+          MAVEN_GPG_KEY: ${{ secrets.GPG_KEY }}                    # Value of the GPG private key to import
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
