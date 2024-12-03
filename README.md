@@ -225,38 +225,40 @@ BufferedImage output = ditherer.filter(input, null);
 
 #### Working with damaged images
 
-When using the normal patterns for loading images, trying to load a damaged image will result in an Exception being thrown.
+When using the normal patterns for loading images, trying to load a damaged image will result in an `IOException` being thrown.
 
 ```java
 BufferedImage image = null;
 try {
     image = ImageIO.read(file);
 } catch (IOException exception) {
-    // TODO: Optionally handle, log a warning/error etc
+    // Handle, log a warning/error etc
 }
 ```
 
-In this scenario, if the image is damaged, and `ImageIO.read` throws an exception, `image` is still null - it's not possible for a function to both return a value and throw an exception.
+In this scenario, if the image is damaged, and `ImageIO.read` throws an exception, `image` is still `null` - it's not possible for a function to both return a value and throw an exception.
 
 However, in some cases it may be possible to get usable image data from a damaged image. The way to do this is use an `ImageReadParam` to set a `BufferedImage` as a destination.
 
 ```java
-ImageReadParam param = reader.getDefaultReadParam();
 int width = reader.getWidth(0);
 int height = reader.getHeight(0);
-BufferedImage image = reader.getRawImageType(0).createBufferedImage(width, height);
+ImageTypeSpecifier imageType = reader.getRawImageType(0);
+BufferedImage image = imageType.createBufferedImage(width, height);
+
+ImageReadParam param = reader.getDefaultReadParam();
 param.setDestination(image);
 
 try {
     reader.read(0, param);
 }
 catch (IOException e) {
-    // TODO: Optionally handle, log a warning/error etc
+    // Handle, log a warning/error etc
 }
 ```
 
 In theory this should work for all plugins, but the result is very much plugin/implementation specific. With some formats and some forms of damaged file, you may get an image that is mostly useful.
-However you should be prepared for the possibility this just gives a blank or empty image.
+However, you should be prepared for the possibility this just gives a blank or empty image.
 
 ## Building
 
