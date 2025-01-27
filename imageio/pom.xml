@@ -149,19 +149,19 @@
                 <version>${project.version}</version>
             </dependency>
 
-	        <dependency>
+            <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-metadata</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
-	        <dependency>
+            <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-jpeg</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
-	        <dependency>
+            <dependency>
                 <groupId>${project.groupId}</groupId>
                 <artifactId>imageio-tiff</artifactId>
                 <version>${project.version}</version>
@@ -185,7 +185,7 @@
                     <artifactId>maven-bundle-plugin</artifactId>
                     <configuration>
                         <instructions>
-                            <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                            <!--<Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>-->
                         </instructions>
                     </configuration>
                 </plugin>
