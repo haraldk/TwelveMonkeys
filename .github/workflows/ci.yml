@@ -32,7 +32,7 @@ jobs:
       - name: Run Tests
         run: mvn --batch-mode --no-transfer-progress test
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@ee6b445351cd81e2f73a16a0e52d598aeac2197f # v5
+        uses: mikepenz/action-junit-report@b14027d33d3a745ccc4d6a12f649e83110b5a373 # v5
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
@@ -59,7 +59,7 @@ jobs:
       - name: Run Tests
         run: mvn --batch-mode --no-transfer-progress test
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@ee6b445351cd81e2f73a16a0e52d598aeac2197f # v5
+        uses: mikepenz/action-junit-report@b14027d33d3a745ccc4d6a12f649e83110b5a373 # v5
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
@@ -93,7 +93,7 @@ jobs:
       - name: Run Tests
         run: mvn --batch-mode --no-transfer-progress test
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@ee6b445351cd81e2f73a16a0e52d598aeac2197f # v5
+        uses: mikepenz/action-junit-report@b14027d33d3a745ccc4d6a12f649e83110b5a373 # v5
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
