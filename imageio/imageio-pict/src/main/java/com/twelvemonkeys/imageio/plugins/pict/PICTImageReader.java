@@ -134,6 +134,9 @@ public final class PICTImageReader extends ImageReaderBase {
     private final List<BufferedImage> images = new ArrayList<>();
     private long imageStartStreamPos;
     protected int picSize;
+    
+    // Location of last compressedQT image that was successfully decoded and rendered
+    private Rectangle lastQTRect;
 
     @Deprecated
     public PICTImageReader() {
@@ -1570,10 +1573,13 @@ public final class PICTImageReader extends ImageReaderBase {
         }
 
         // Matrix
-        int[] matrix = new int[9];
+        float[] matrix = new float[9];
         for (int i = 0; i < matrix.length; i++) {
-            matrix[i] = pStream.readInt();
+        	int fp = i%3==2 ? 30 : 16;	// u v w are 2.30 fixed point, a b c d x y are 16.16 fixed point
+            matrix[i] = pStream.readInt() / (float)(1<<fp);
         }
+        matrix[6] = matrix[6] / (float)screenImageXRatio;
+        matrix[7] = matrix[7] / (float)screenImageYRatio;
         if (DEBUG) {
             System.out.printf("matrix: %s%n", Arrays.toString(matrix));
         }
@@ -1606,7 +1612,20 @@ public final class PICTImageReader extends ImageReaderBase {
         BufferedImage image = QuickTime.decompress(pStream);
 
         if (image != null) {
-            context.copyBits(image, srcRect, srcRect, mode, null);
+        	Rectangle dstRect = new Rectangle();
+        	int x0 = srcRect.x;
+        	int y0 = srcRect.y;
+        	int x1 = srcRect.x + srcRect.width;
+        	int y1 = srcRect.y + srcRect.height;
+        	dstRect.x = (int)(matrix[0] * x0 + matrix[1] * y0 + matrix[6] + 0.5f);
+        	dstRect.y = (int)(matrix[3] * x0 + matrix[4] * y0 + matrix[7] + 0.5f);
+        	dstRect.width = (int)(matrix[0] * x1 + matrix[1] * y1 + matrix[6] + 0.5f) - dstRect.x;
+        	dstRect.height = (int)(matrix[3] * x1 + matrix[4] * y1 + matrix[7] + 0.5f) - dstRect.y;
+            srcRect.width = (int)(srcRect.width * screenImageXRatio + 0.5);
+            srcRect.height = (int)(srcRect.height * screenImageYRatio + 0.5);
+        	if (DEBUG) System.out.println("srcRect: "+srcRect+", dstRect: "+dstRect);
+    		context.copyBits(image, srcRect, dstRect, mode, null);
+        	lastQTRect = dstRect;
 
             pStream.seek(pos + dataLength); // Might be word-align mismatch here
 
@@ -1622,6 +1641,8 @@ public final class PICTImageReader extends ImageReaderBase {
             }
         }
         else {
+        	if (DEBUG) System.out.println("*** readCompressedQT failed to read image! ***");
+        	lastQTRect = null;
             pStream.seek(pos + dataLength);
         }
     }
@@ -1876,8 +1897,12 @@ public final class PICTImageReader extends ImageReaderBase {
         // Draw the image
         BufferedImage img = images.get(pPixmapCount);
         if (img != null) {
-            srcRect.setLocation(0, 0); // Raster always start at 0,0
-            context.copyBits(img, srcRect, dstRect, transferMode, region);
+    		srcRect.setLocation(0, 0); // Raster always start at 0,0
+    		if (dstRect.equals(lastQTRect)) {
+    			if (DEBUG) System.out.println("NOT overwriting compressedQT image at "+lastQTRect);
+    		} else {
+    			context.copyBits(img, srcRect, dstRect, transferMode, region);
+    		}
         }
 
 //      // Line break at the end
