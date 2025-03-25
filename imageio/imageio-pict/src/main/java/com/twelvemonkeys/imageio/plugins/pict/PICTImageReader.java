@@ -1590,6 +1590,7 @@ public final class PICTImageReader extends ImageReaderBase {
         // ...and more
         int accuracy = pStream.readInt();
         int maskSize = pStream.readInt();
+        pStream.skipBytes(maskSize);
 
         if (DEBUG) {
             System.out.print("matteSize: " + matteSize);
