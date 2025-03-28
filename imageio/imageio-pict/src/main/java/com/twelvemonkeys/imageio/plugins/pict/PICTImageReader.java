@@ -393,7 +393,7 @@ public final class PICTImageReader extends ImageReaderBase {
                     opCode = pStream.readUnsignedShort();
                 }
                 if (DEBUG) {
-                	System.out.println("--- opCode 0x"+Integer.toHexString(opCode)+" at pos 0x"+Long.toHexString(pStream.getStreamPosition()-2)+" ---");
+                    System.out.printf("opCode 0x%04x at pos %04x :\n", opCode, pStream.getStreamPosition()-2);
                 }
 
                 // See what we got and react in consequence
@@ -1879,11 +1879,6 @@ public final class PICTImageReader extends ImageReaderBase {
             srcRect.setLocation(0, 0); // Raster always start at 0,0
             context.copyBits(img, srcRect, dstRect, transferMode, region);
         }
-
-//      // Line break at the end
-//      if (DEBUG) {
-//          System.out.println();
-//      }
     }
 
     /**
@@ -2076,14 +2071,16 @@ public final class PICTImageReader extends ImageReaderBase {
                     packedBytesCount = pStream.readUnsignedByte();
                 }
 
-                if (DEBUG && (scanline<6 || scanline>=srcRect.height-5)) {
-                	if (scanline==5 && srcRect.height>10) {
-                		System.out.println("...");
-                	} else {
-	                    System.out.print("Line " + scanline + ", byteCount: " + packedBytesCount);
-	                    System.out.print(" dstBytes: " + dstBytes.length);
-	                    System.out.println();
-                	}
+                if (DEBUG) {
+                    if (scanline<5 || scanline>=srcRect.height-5) {
+                        System.out.print("Line " + scanline + ", byteCount: " + packedBytesCount);
+                        System.out.print(" dstBytes: " + dstBytes.length);
+                        System.out.println();
+                    }
+                    else if (scanline == 5) {
+                        // Truncate any remaining scanlines...
+                        System.out.println("...");
+                    }
                 }
 
                 // Unpack them all
@@ -2196,11 +2193,6 @@ public final class PICTImageReader extends ImageReaderBase {
             srcRect.setLocation(0, 0); // Raster always starts at 0,0
             context.copyBits(img, srcRect, dstRect, transferMode, region);
         }
-
-//        // Line break at the end
-//        if (DEBUG) {
-//            System.out.println();
-//        }
     }
 
     /*
@@ -2565,7 +2557,6 @@ public final class PICTImageReader extends ImageReaderBase {
 //        for (int i = 1; pPolygon != null && i < pPolygon.npoints; i++) {
 //            System.out.print(", (" + pPolygon.xpoints[i] + "," + pPolygon.ypoints[i] + ")");
 //        }
-//        System.out.println();
     }
 
     @Override
@@ -2660,7 +2651,7 @@ public final class PICTImageReader extends ImageReaderBase {
             try {
                 ImageInputStream input = ImageIO.createImageInputStream(file);
                 String title = file.getName();
-                System.out.println("======= "+title+" =======");
+                System.out.println("Processing "+file);
 
                 System.out.println("canRead: " + reader.getOriginatingProvider().canDecodeInput(input));
 
@@ -2676,6 +2667,7 @@ public final class PICTImageReader extends ImageReaderBase {
                 showIt(image, title);
 
                 System.out.println("image = " + image);
+                System.out.println();
             }
             catch (IOException e) {
                 System.err.println("Could not read " + file.getAbsolutePath() + ": " + e);
