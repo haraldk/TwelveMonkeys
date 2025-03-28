@@ -393,7 +393,7 @@ public final class PICTImageReader extends ImageReaderBase {
                     opCode = pStream.readUnsignedShort();
                 }
                 if (DEBUG) {
-                    System.out.printf("opCode 0x%04x at pos %04x :\n", opCode, pStream.getStreamPosition()-2);
+                    System.out.printf("opCode 0x%04x at pos %08x:\n", opCode, pStream.getStreamPosition() - 2);
                 }
 
                 // See what we got and react in consequence
