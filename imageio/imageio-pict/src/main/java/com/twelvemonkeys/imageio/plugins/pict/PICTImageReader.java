@@ -2651,7 +2651,7 @@ public final class PICTImageReader extends ImageReaderBase {
             try {
                 ImageInputStream input = ImageIO.createImageInputStream(file);
                 String title = file.getName();
-                System.out.println("Processing "+file);
+                System.out.println("Processing " + file);
 
                 System.out.println("canRead: " + reader.getOriginatingProvider().canDecodeInput(input));
 
