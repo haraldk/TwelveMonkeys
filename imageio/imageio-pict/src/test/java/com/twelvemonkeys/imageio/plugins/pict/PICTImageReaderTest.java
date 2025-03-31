@@ -82,6 +82,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
                 new TestData(getClassLoaderResource("/pict/FC10.PCT"), new Dimension(2265, 2593)),
                 // 1000 DPI with bounding box not matching DPI
                 new TestData(getClassLoaderResource("/pict/oom.pict"), new Dimension(1713, 1263)),
+                new TestData(getClassLoaderResource("/pict/J19.pict"), new Dimension(640, 480)),
 
                 // Sample data from http://developer.apple.com/documentation/mac/QuickDraw/QuickDraw-458.html
                 new TestData(DATA_V1, new Dimension(168, 108)),
