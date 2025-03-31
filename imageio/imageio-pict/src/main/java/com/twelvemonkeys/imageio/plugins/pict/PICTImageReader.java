@@ -2072,7 +2072,7 @@ public final class PICTImageReader extends ImageReaderBase {
                 }
 
                 if (DEBUG) {
-                    if (scanline<5 || scanline>=srcRect.height-5) {
+                    if (scanline < 5 || scanline >= srcRect.height - 5) {
                         System.out.print("Line " + scanline + ", byteCount: " + packedBytesCount);
                         System.out.print(" dstBytes: " + dstBytes.length);
                         System.out.println();
