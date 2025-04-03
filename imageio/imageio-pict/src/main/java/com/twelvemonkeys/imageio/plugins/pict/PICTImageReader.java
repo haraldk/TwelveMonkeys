@@ -1468,7 +1468,7 @@ public final class PICTImageReader extends ImageReaderBase {
                     case PICT.OP_COMPRESSED_QUICKTIME:
                         // $8200: CompressedQuickTime Data length (Long), data (private to QuickTime) 4 + data length
                         lastQTRect = readCompressedQT(pStream);
-						continue;
+                        continue;
 
                     case PICT.OP_UNCOMPRESSED_QUICKTIME:// JUST JUMP OVER
                         // $8201: UncompressedQuickTime Data length (Long), data (private to QuickTime) 4 + data length
@@ -1641,7 +1641,7 @@ public final class PICTImageReader extends ImageReaderBase {
             else {
                 pStream.seek(pos + dataLength);
             }
-            return dstRect;	// return last rectangle that was correctly rendered
+            return dstRect; // return last rectangle that was correctly rendered
         }
         else {
             if (DEBUG) {
