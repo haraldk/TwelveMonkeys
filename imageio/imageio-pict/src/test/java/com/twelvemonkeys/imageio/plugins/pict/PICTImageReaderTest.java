@@ -112,6 +112,23 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
     }
 
     @Test
+    public void testQTSliceFallback() throws IOException {
+        PICTImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/pict/J19.pict"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0, null);
+            assertRGBEquals("RGB values differ", 0xff5e6e47, image.getRGB(0, 240), 1);    // black when it fails
+            assertRGBEquals("RGB values differ", 0xff312c28, image.getRGB(320, 240), 1);  // white when it fails
+            assertRGBEquals("RGB values differ", 0xff5d5059, image.getRGB(320, 10), 1);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
     public void testIsOtherFormat() throws IOException {
         assertFalse(isOtherFormat(new ByteArrayImageInputStream(new byte[8])));
 
