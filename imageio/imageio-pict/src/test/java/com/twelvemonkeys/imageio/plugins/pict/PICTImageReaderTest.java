@@ -34,6 +34,7 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStreamSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
@@ -82,6 +83,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
                 new TestData(getClassLoaderResource("/pict/FC10.PCT"), new Dimension(2265, 2593)),
                 // 1000 DPI with bounding box not matching DPI
                 new TestData(getClassLoaderResource("/pict/oom.pict"), new Dimension(1713, 1263)),
+                new TestData(getClassLoaderResource("/pict/P564B1400.pict"), new Dimension(1745, 1022)),
 
                 // Sample data from http://developer.apple.com/documentation/mac/QuickDraw/QuickDraw-458.html
                 new TestData(DATA_V1, new Dimension(168, 108)),
@@ -227,6 +229,23 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1_COPY_BITS));
         reader.read(0);
+    }
+
+    @Test
+    public void testNegativeOrigin() throws IOException {
+        PICTImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/pict/P564B1400.pict"))) {
+            reader.setInput(stream);
+            // This file has a DirectBitsRect opcode with a destination of (0,-1) which wraps to 65535 if we read
+            // it using unsigned arithmetic
+            BufferedImage image = reader.read(0, null);
+            assertRGBEquals("RGB values differ", 0xff000000, image.getRGB(10, 10), 1);    // was transparent 00ffffff
+            assertRGBEquals("RGB values differ", 0xffe6e6e6, image.getRGB(100, 500), 1);
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     private static final byte[] DATA_EXT_V2 = {
