@@ -300,7 +300,15 @@ public final class PICTImageReader extends ImageReaderBase {
                 }
                 if (DEBUG) {
                     System.out.println("bounding rect: " + new Rectangle(x2, y2, w2 - x2, h2 - y2));
+                    if (frame.x != x2 || frame.y != y2 || frame.width != w2-x2 || frame.height != h2-y2) {
+                        System.out.println("*** replacing old frame " + frame);
+                    }
                 }
+
+                frame.x = x2;
+                frame.y = y2;
+                frame.width = w2 - x2;
+                frame.height = h2 - y2;
 
                 // long reserved
                 pStream.skipBytes(4);
@@ -2578,7 +2586,7 @@ public final class PICTImageReader extends ImageReaderBase {
         }
 
         Rectangle frame = getPICTFrame();
-        BufferedImage image = getDestination(pParam, getImageTypes(pIndex), getXPtCoord(frame.width), getYPtCoord(frame.height));
+        BufferedImage image = getDestination(pParam, getImageTypes(pIndex), frame.width, frame.height);
         Graphics2D g = image.createGraphics();
         try {
             // Might need to clear background
