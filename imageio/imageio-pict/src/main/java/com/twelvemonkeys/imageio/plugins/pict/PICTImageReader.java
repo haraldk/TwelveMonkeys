@@ -2359,10 +2359,10 @@ public final class PICTImageReader extends ImageReaderBase {
      * @throws IOException if an I/O error occurs while reading the image.
      */
     private void readRectangle(DataInput pStream, Rectangle pDestRect) throws IOException {
-        int y = pStream.readUnsignedShort();
-        int x = pStream.readUnsignedShort();
-        int h = pStream.readUnsignedShort();
-        int w = pStream.readUnsignedShort();
+        int y = pStream.readShort();
+        int x = pStream.readShort();
+        int h = pStream.readShort();
+        int w = pStream.readShort();
 
         pDestRect.setLocation(getXPtCoord(x), getYPtCoord(y));
         pDestRect.setSize(getXPtCoord(w - x), getYPtCoord(h - y));
