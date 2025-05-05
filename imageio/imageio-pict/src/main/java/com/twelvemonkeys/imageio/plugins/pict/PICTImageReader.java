@@ -1576,11 +1576,11 @@ public final class PICTImageReader extends ImageReaderBase {
         // Matrix
         float[] matrix = new float[9];
         for (int i = 0; i < matrix.length; i++) {
-            int fp = i%3==2 ? 30 : 16; // u v w are 2.30 fixed point, a b c d x y are 16.16 fixed point
-            matrix[i] = pStream.readInt() / (float)(1<<fp);
+            int fp = i % 3 == 2 ? 30 : 16; // u v w are 2.30 fixed point, a b c d x y are 16.16 fixed point
+            matrix[i] = pStream.readInt() / (float) (1 << fp);
         }
-        matrix[6] = matrix[6] / (float)screenImageXRatio;
-        matrix[7] = matrix[7] / (float)screenImageYRatio;
+        matrix[6] = matrix[6] / (float) screenImageXRatio;
+        matrix[7] = matrix[7] / (float) screenImageYRatio;
         if (DEBUG) {
             System.out.printf("matrix: %s%n", Arrays.toString(matrix));
         }
@@ -1625,7 +1625,7 @@ public final class PICTImageReader extends ImageReaderBase {
             srcRect.width = (int)(srcRect.width * screenImageXRatio + 0.5);
             srcRect.height = (int)(srcRect.height * screenImageYRatio + 0.5);
             if (DEBUG) {
-                System.out.println("srcRect: "+srcRect+", dstRect: "+dstRect);
+                System.out.println("srcRect: " + srcRect + ", dstRect: " + dstRect);
             }
             context.copyBits(image, srcRect, dstRect, mode, null);
 
