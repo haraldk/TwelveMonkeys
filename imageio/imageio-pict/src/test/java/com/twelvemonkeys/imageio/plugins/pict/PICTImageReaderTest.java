@@ -50,6 +50,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.twelvemonkeys.imageio.plugins.pict.PICTImageReaderSpi.isOtherFormat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * ICOImageReaderTestCase
@@ -233,6 +234,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
     @Test
     public void testQTMaskBytesSkipped() throws IOException {
         assumeTrue(ImageIO.getImageReadersByFormatName("TIFF").hasNext(), "No TIFF plugin available, skipping test");
+        
         PICTImageReader reader = createReader();
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/pict/P30946BDC.pict"))) {
             reader.setInput(stream);
