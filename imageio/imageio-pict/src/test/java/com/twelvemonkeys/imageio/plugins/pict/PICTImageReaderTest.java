@@ -232,8 +232,8 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
 
     @Test
     public void testQTMaskBytesSkipped() throws IOException {
+        assumeTrue("No TIFF plugin available, skipping test", ImageIO.getImageReadersByFormatName("TIFF").hasNext());
         PICTImageReader reader = createReader();
-
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/pict/P30946BDC.pict"))) {
             reader.setInput(stream);
 
