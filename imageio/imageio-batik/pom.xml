@@ -17,7 +17,7 @@
 
     <properties>
         <project.jpms.module.name>com.twelvemonkeys.imageio.batik</project.jpms.module.name>
-        <batik.version>1.18</batik.version>
+        <batik.version>1.19</batik.version>
     </properties>
 
     <build>
