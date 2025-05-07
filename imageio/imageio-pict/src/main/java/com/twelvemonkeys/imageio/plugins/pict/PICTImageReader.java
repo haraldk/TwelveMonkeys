@@ -251,8 +251,8 @@ public final class PICTImageReader extends ImageReaderBase {
                 // the default Mac screen resolution and the image resolution
 
                 // int y, x, w(?), h (fixed point)
-                double y2 = PICTUtil.readFixedPoint(pStream);
                 double x2 = PICTUtil.readFixedPoint(pStream);
+                double y2 = PICTUtil.readFixedPoint(pStream);
                 double w2 = PICTUtil.readFixedPoint(pStream); // ?!
                 double h2 = PICTUtil.readFixedPoint(pStream);
 
