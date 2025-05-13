@@ -34,6 +34,7 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStreamSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
@@ -49,6 +50,7 @@ import org.junit.jupiter.api.Test;
 
 import static com.twelvemonkeys.imageio.plugins.pict.PICTImageReaderSpi.isOtherFormat;
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * ICOImageReaderTestCase
@@ -227,6 +229,24 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1_COPY_BITS));
         reader.read(0);
+    }
+
+    @Test
+    public void testQTMaskBytesSkipped() throws IOException {
+        assumeTrue(ImageIO.getImageReadersByFormatName("TIFF").hasNext(), "No TIFF plugin available, skipping test");
+        
+        PICTImageReader reader = createReader();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/pict/P30946BDC.pict"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0, null);
+            assertRGBEquals("RGB values differ", 0xfff3f3f3, image.getRGB(0, 0), 1);
+            assertRGBEquals("RGB values differ", 0xffe1e1e1, image.getRGB(80, 80), 1);
+            assertRGBEquals("RGB values differ", 0xffe1e1e1, image.getRGB(290, 266), 1);
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     private static final byte[] DATA_EXT_V2 = {

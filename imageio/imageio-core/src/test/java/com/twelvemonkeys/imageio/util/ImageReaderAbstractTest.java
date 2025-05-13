@@ -1818,7 +1818,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             assertEquals((expectedRGB       ) & 0xff, (actualRGB       ) & 0xff, tolerance);
         }
         catch (AssertionError e) {
-            assertEquals(message, String.format("#%08x", expectedRGB), String.format("#%08x", actualRGB));
+            assertEquals(String.format("#%08x", expectedRGB), String.format("#%08x", actualRGB), message);
         }
     }
 
