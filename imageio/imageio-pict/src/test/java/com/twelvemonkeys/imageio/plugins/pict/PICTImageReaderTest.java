@@ -84,6 +84,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
                 new TestData(getClassLoaderResource("/pict/FC10.PCT"), new Dimension(2265, 2593)),
                 // 1000 DPI with bounding box not matching DPI
                 new TestData(getClassLoaderResource("/pict/oom.pict"), new Dimension(1713, 1263)),
+                new TestData(getClassLoaderResource("/pict/cow.pict"), new Dimension(787, 548)),
                 new TestData(getClassLoaderResource("/pict/CatDV==2.0=1=.pict"), new Dimension(375, 165)),
                 new TestData(getClassLoaderResource("/pict/Picture14.pict"), new Dimension(404, 136)),
                 new TestData(getClassLoaderResource("/pict/J19.pict"), new Dimension(640, 480)),
@@ -249,6 +250,22 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1_COPY_BITS));
         reader.read(0);
+    }
+
+    @Test
+    public void testFrameBoundsIssue() throws IOException {
+        PICTImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/pict/cow.pict"))) {
+            reader.setInput(stream);
+            // This file is from Apache POI test data. It should render as a black silhouette of a cow on a transparent
+            // background. Without the fix the image is completely transparent.
+            BufferedImage image = reader.read(0, null);
+            assertRGBEquals("RGB values differ", 0xff000000, image.getRGB(100, 100), 1);    // was transparent 00ffffff
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Test
