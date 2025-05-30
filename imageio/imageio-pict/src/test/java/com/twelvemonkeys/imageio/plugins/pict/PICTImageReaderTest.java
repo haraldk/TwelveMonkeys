@@ -84,6 +84,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
                 new TestData(getClassLoaderResource("/pict/FC10.PCT"), new Dimension(2265, 2593)),
                 // 1000 DPI with bounding box not matching DPI
                 new TestData(getClassLoaderResource("/pict/oom.pict"), new Dimension(1713, 1263)),
+                new TestData(getClassLoaderResource("/pict/J19.pict"), new Dimension(640, 480)),
 
                 // Sample data from http://developer.apple.com/documentation/mac/QuickDraw/QuickDraw-458.html
                 new TestData(DATA_V1, new Dimension(168, 108)),
@@ -110,6 +111,23 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
     @Override
     protected List<String> getMIMETypes() {
         return Arrays.asList("image/pict", "image/x-pict");
+    }
+
+    @Test
+    public void testQTSliceFallback() throws IOException {
+        PICTImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/pict/J19.pict"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0, null);
+            assertRGBEquals("RGB values differ", 0xff5e6e47, image.getRGB(0, 240), 1);    // black when it fails
+            assertRGBEquals("RGB values differ", 0xff312c28, image.getRGB(320, 240), 1);  // white when it fails
+            assertRGBEquals("RGB values differ", 0xff5d5059, image.getRGB(320, 10), 1);
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Test

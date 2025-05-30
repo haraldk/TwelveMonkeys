@@ -134,6 +134,9 @@ public final class PICTImageReader extends ImageReaderBase {
     private final List<BufferedImage> images = new ArrayList<>();
     private long imageStartStreamPos;
     protected int picSize;
+    
+    // Location of last compressedQT image that was successfully decoded and rendered
+    private Rectangle lastQTRect;
 
     @Deprecated
     public PICTImageReader() {
@@ -1467,9 +1470,8 @@ public final class PICTImageReader extends ImageReaderBase {
 
                     case PICT.OP_COMPRESSED_QUICKTIME:
                         // $8200: CompressedQuickTime Data length (Long), data (private to QuickTime) 4 + data length
-                        readCompressedQT(pStream);
-
-                        break;
+                        lastQTRect = readCompressedQT(pStream);
+                        continue;
 
                     case PICT.OP_UNCOMPRESSED_QUICKTIME:// JUST JUMP OVER
                         // $8201: UncompressedQuickTime Data length (Long), data (private to QuickTime) 4 + data length
@@ -1520,6 +1522,11 @@ public final class PICTImageReader extends ImageReaderBase {
                             pStream.readFully(new byte[dataLength], 0, dataLength);
                         }
                 }
+                // We remember the last rectangle that was successfully rendered by a CompressedQuickTime opcode because it
+                // is often followed by a "fall back" PackBitsRect opcode that renders an error message if the codec isn't
+                // available. We only suppress the fallback if it immediately follows the CompressedQuickTime opcode though,
+                // so we null out the rectangle after any subsequent opcodes.
+                lastQTRect = null;
             }
             while (opCode != PICT.OP_END_OF_PICTURE);
         }
@@ -1558,7 +1565,7 @@ public final class PICTImageReader extends ImageReaderBase {
     Accuracy        Preferred accuracy                      4
     MaskSize        Size of mask region in bytes            4
      */
-    private void readCompressedQT(final ImageInputStream pStream) throws IOException {
+    private Rectangle readCompressedQT(final ImageInputStream pStream) throws IOException {
         int dataLength = pStream.readInt();
         long pos = pStream.getStreamPosition();
 
@@ -1570,10 +1577,13 @@ public final class PICTImageReader extends ImageReaderBase {
         }
 
         // Matrix
-        int[] matrix = new int[9];
+        float[] matrix = new float[9];
         for (int i = 0; i < matrix.length; i++) {
-            matrix[i] = pStream.readInt();
+            int fp = i % 3 == 2 ? 30 : 16; // u v w are 2.30 fixed point, a b c d x y are 16.16 fixed point
+            matrix[i] = pStream.readInt() / (float) (1 << fp);
         }
+        matrix[6] = matrix[6] / (float) screenImageXRatio;
+        matrix[7] = matrix[7] / (float) screenImageYRatio;
         if (DEBUG) {
             System.out.printf("matrix: %s%n", Arrays.toString(matrix));
         }
@@ -1607,7 +1617,21 @@ public final class PICTImageReader extends ImageReaderBase {
         BufferedImage image = QuickTime.decompress(pStream);
 
         if (image != null) {
-            context.copyBits(image, srcRect, srcRect, mode, null);
+            Rectangle dstRect = new Rectangle();
+            int x0 = srcRect.x;
+            int y0 = srcRect.y;
+            int x1 = srcRect.x + srcRect.width;
+            int y1 = srcRect.y + srcRect.height;
+            dstRect.x = (int)(matrix[0] * x0 + matrix[1] * y0 + matrix[6] + 0.5f);
+            dstRect.y = (int)(matrix[3] * x0 + matrix[4] * y0 + matrix[7] + 0.5f);
+            dstRect.width = (int)(matrix[0] * x1 + matrix[1] * y1 + matrix[6] + 0.5f) - dstRect.x;
+            dstRect.height = (int)(matrix[3] * x1 + matrix[4] * y1 + matrix[7] + 0.5f) - dstRect.y;
+            srcRect.width = (int)(srcRect.width * screenImageXRatio + 0.5);
+            srcRect.height = (int)(srcRect.height * screenImageYRatio + 0.5);
+            if (DEBUG) {
+                System.out.println("srcRect: " + srcRect + ", dstRect: " + dstRect);
+            }
+            context.copyBits(image, srcRect, dstRect, mode, null);
 
             pStream.seek(pos + dataLength); // Might be word-align mismatch here
 
@@ -1621,9 +1645,14 @@ public final class PICTImageReader extends ImageReaderBase {
             else {
                 pStream.seek(pos + dataLength);
             }
+            return dstRect; // return last rectangle that was correctly rendered
         }
         else {
+            if (DEBUG) {
+                System.out.println("readCompressedQT failed to read image!");
+            }
             pStream.seek(pos + dataLength);
+            return null;
         }
     }
 
@@ -1878,7 +1907,16 @@ public final class PICTImageReader extends ImageReaderBase {
         BufferedImage img = images.get(pPixmapCount);
         if (img != null) {
             srcRect.setLocation(0, 0); // Raster always start at 0,0
-            context.copyBits(img, srcRect, dstRect, transferMode, region);
+            if (dstRect.equals(lastQTRect)) {
+                // If the previous CompressedQuickTime opcode succeeded and is immediately followed by a PackBitsRect opcode
+                // targeting EXACTLY the same rectangle then that seems to be a fallback "QuickTime PICT" error image which
+                // needs to be suppressed for correct rendering of the image.
+                if (DEBUG) {
+                    System.out.println("Not overwriting compressedQT image at "+lastQTRect);
+                }
+            } else {
+                context.copyBits(img, srcRect, dstRect, transferMode, region);
+            }
         }
     }
 
