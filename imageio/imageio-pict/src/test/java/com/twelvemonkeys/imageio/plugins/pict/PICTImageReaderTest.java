@@ -84,6 +84,8 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
                 new TestData(getClassLoaderResource("/pict/FC10.PCT"), new Dimension(2265, 2593)),
                 // 1000 DPI with bounding box not matching DPI
                 new TestData(getClassLoaderResource("/pict/oom.pict"), new Dimension(1713, 1263)),
+                new TestData(getClassLoaderResource("/pict/CatDV==2.0=1=.pict"), new Dimension(375, 165)),
+                new TestData(getClassLoaderResource("/pict/Picture14.pict"), new Dimension(404, 136)),
                 new TestData(getClassLoaderResource("/pict/J19.pict"), new Dimension(640, 480)),
 
                 // Sample data from http://developer.apple.com/documentation/mac/QuickDraw/QuickDraw-458.html
@@ -247,6 +249,23 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1_COPY_BITS));
         reader.read(0);
+    }
+
+    @Test
+    public void testBoundsIssue() throws IOException {
+        PICTImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/pict/Picture14.pict"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0, null);
+            assertRGBEquals("RGB values differ", 0xffcccccc, image.getRGB(4, 4), 1);    // was transparent 00ffffff
+            assertRGBEquals("RGB values differ", 0xffcccccc, image.getRGB(5, 118), 1);  // was red ffcc6666
+            assertRGBEquals("RGB values differ", 0xffcc6666, image.getRGB(28, 60), 1);  // was grey ffcccccc
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Test
