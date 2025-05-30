@@ -84,6 +84,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
                 new TestData(getClassLoaderResource("/pict/FC10.PCT"), new Dimension(2265, 2593)),
                 // 1000 DPI with bounding box not matching DPI
                 new TestData(getClassLoaderResource("/pict/oom.pict"), new Dimension(1713, 1263)),
+                new TestData(getClassLoaderResource("/pict/P564B1400.pict"), new Dimension(1745, 1022)),
                 new TestData(getClassLoaderResource("/pict/cow.pict"), new Dimension(787, 548)),
                 new TestData(getClassLoaderResource("/pict/CatDV==2.0=1=.pict"), new Dimension(375, 165)),
                 new TestData(getClassLoaderResource("/pict/Picture14.pict"), new Dimension(404, 136)),
@@ -250,6 +251,23 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1_COPY_BITS));
         reader.read(0);
+    }
+
+    @Test
+    public void testNegativeOrigin() throws IOException {
+        PICTImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/pict/P564B1400.pict"))) {
+            reader.setInput(stream);
+            // This file has a DirectBitsRect opcode with a destination of (0,-1) which wraps to 65535 if we read
+            // it using unsigned arithmetic
+            BufferedImage image = reader.read(0, null);
+            assertRGBEquals("RGB values differ", 0xfffcfcfc, image.getRGB(10, 10), 1);    // was transparent 00ffffff
+            assertRGBEquals("RGB values differ", 0xffe6e6e6, image.getRGB(100, 500), 1);
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Test
