@@ -13,6 +13,11 @@
       Contributions to TwelveMonkeys and code that doesn't fit anywhere else.
     </description>
 
+    <properties>
+        <junit.jupiter.version>5.13.0</junit.jupiter.version>
+    </properties>
+
+
     <dependencies>
         <dependency>
             <groupId>com.twelvemonkeys.common</groupId>
@@ -64,13 +69,13 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.12.2</version>
+            <version>${junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.12.2</version>
+            <version>${junit.jupiter.version}</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
