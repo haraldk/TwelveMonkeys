@@ -71,18 +71,18 @@ public final class TIFFImageMetadata extends AbstractMetadata {
 
     /**
      * Creates an empty TIFF metadata object.
-     *
+     * <br/>
      * Client code can update or change the metadata using the
      * {@link #setFromTree(String, Node)}
      * or {@link #mergeTree(String, Node)} methods.
      */
     public TIFFImageMetadata() {
-        this(new IFD(Collections.<Entry>emptyList()));
+        this(new IFD(Collections.emptyList()));
     }
 
     /**
      * Creates a TIFF metadata object, using the values from the given IFD.
-     *
+     * <br/>
      * Client code can update or change the metadata using the
      * {@link #setFromTree(String, Node)}
      * or {@link #mergeTree(String, Node)} methods.
@@ -95,7 +95,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
 
     /**
      * Creates a TIFF metadata object, using the values from the given entries.
-     *
+     * <br/>
      * Client code can update or change the metadata using the
      * {@link #setFromTree(String, Node)}
      * or {@link #mergeTree(String, Node)} methods.
@@ -493,10 +493,10 @@ public final class TIFFImageMetadata extends AbstractMetadata {
                 compressionTypeName.setAttribute("value", "CCITT RLE");
                 break;
             case TIFFExtension.COMPRESSION_CCITT_T4:
-                compressionTypeName.setAttribute("value", "CCITT T4");
+                compressionTypeName.setAttribute("value", "CCITT T.4");
                 break;
             case TIFFExtension.COMPRESSION_CCITT_T6:
-                compressionTypeName.setAttribute("value", "CCITT T6");
+                compressionTypeName.setAttribute("value", "CCITT T.6");
                 break;
             case TIFFExtension.COMPRESSION_LZW:
                 compressionTypeName.setAttribute("value", "LZW");
@@ -1038,7 +1038,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
         }
 
         // If we have resolution
-        if (xRes != null && yRes != null) {
+        if (xRes != null) { // yRes != null too
             // If old unit was DPI, convert values and keep DPI, otherwise use PPCM
             Entry resUnitEntry = entries.get(TIFF.TAG_RESOLUTION_UNIT);
             int resUnitValue = resUnitEntry != null && resUnitEntry.getValue() != null
