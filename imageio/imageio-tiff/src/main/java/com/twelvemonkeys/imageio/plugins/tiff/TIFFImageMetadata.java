@@ -71,7 +71,6 @@ public final class TIFFImageMetadata extends AbstractMetadata {
 
     /**
      * Creates an empty TIFF metadata object.
-     * <br/>
      * Client code can update or change the metadata using the
      * {@link #setFromTree(String, Node)}
      * or {@link #mergeTree(String, Node)} methods.
@@ -82,7 +81,6 @@ public final class TIFFImageMetadata extends AbstractMetadata {
 
     /**
      * Creates a TIFF metadata object, using the values from the given IFD.
-     * <br/>
      * Client code can update or change the metadata using the
      * {@link #setFromTree(String, Node)}
      * or {@link #mergeTree(String, Node)} methods.
@@ -95,7 +93,6 @@ public final class TIFFImageMetadata extends AbstractMetadata {
 
     /**
      * Creates a TIFF metadata object, using the values from the given entries.
-     * <br/>
      * Client code can update or change the metadata using the
      * {@link #setFromTree(String, Node)}
      * or {@link #mergeTree(String, Node)} methods.
