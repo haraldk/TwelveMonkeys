@@ -57,13 +57,17 @@ public final class HEICImageReaderSpi extends ImageReaderSpiBase {
     }
 
     private static boolean canDecode(ImageInputStream input) throws IOException {
-        try {
-            input.mark();
+        input.mark();
 
+        try {
+            // NOTE: Assumes the input to be ISO BMFF, only tests for "heic", other formats may throw exception
             return HeicImage.canLoad(new ImageInputStreamIOStreamAdapter(input));
         }
         catch (openize.io.IOException rtioe) {
-            throw new IIOException(rtioe.getMessage(), rtioe);
+            throw new IOException(rtioe.getMessage(), rtioe);
+        }
+        catch (Exception e) {
+            return false;
         }
         finally {
             input.reset();
