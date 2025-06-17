@@ -43,10 +43,11 @@ import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
-import java.io.DataInput;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
+
+import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
 
 /**
  * ImageReader for ISO/IEC 23008-12:2017 HEIF (HEIC) format.
@@ -78,7 +79,6 @@ public final class HEICImageReader extends ImageReaderBase {
 
         if (heicImage == null) {
             try {
-                // TODO: close the stream adapter...?
                 heicImage = HeicImage.load(new ImageInputStreamIOStreamAdapter(imageInput));
             }
             catch (openize.io.IOException rtioe) {
@@ -86,6 +86,7 @@ public final class HEICImageReader extends ImageReaderBase {
             }
 
             long defaultFrameId = heicImage.getHeader().getDefaultFrameId();
+
             // TODO: Sort? How?
             // TODO: Looks like we have thumbnails in here...
             long[] otherFrameIds = heicImage.getFrames().keySet().stream()
@@ -104,8 +105,9 @@ public final class HEICImageReader extends ImageReaderBase {
             // TODO: Split normal frames and thumbnails (derivativeType == thmb)
             //  How are the thumbnails connected to the full size image?
 
-            // TODO: Alpha seems to be applied, no need to decode as separate images, exclude
+            // TODO: Alpha seems to be applied, no need to decode as separate images, exclude?
 
+            /*
             for (int i = 0; i < frameIds.length; i++) {
                 HeicImageFrame heicImageFrame = getFrame(i);
 
@@ -123,6 +125,7 @@ public final class HEICImageReader extends ImageReaderBase {
                 System.out.println("heicImageFrame.textData = " + heicImageFrame.getTextData());
                 System.out.println();
             }
+             */
         }
     }
 
@@ -176,16 +179,30 @@ public final class HEICImageReader extends ImageReaderBase {
         try {
             processImageProgress(0);
 
-            // TODO: If subsampling, this array isn't large enough...
-            //  - need to allocate a temp buffer
-            int[] pixels = ((DataBufferInt) destination.getRaster().getDataBuffer()).getData();
+            // If subsampling, destination isn't large enough, need to allocate a temp buffer
+            int xSub = param != null ? param.getSourceXSubsampling() : 1;
+            int ySub = param != null ? param.getSourceYSubsampling() : 1;
+            boolean subsampling = xSub != 1 || ySub != 1;
 
+            int[] destPixels = ((DataBufferInt) destination.getRaster().getDataBuffer()).getData();
+            int[] pixels = subsampling ? new int[srcRegion.width * srcRegion.height] : destPixels;
+
+            // Decode the entire source region
             HeicImageFrame frame = getFrame(imageIndex);
-            // Decode the entire source region, regardless
             frame.getInt32Array(PixelFormat.Argb32, new openize.heic.decoder.Rectangle(srcRegion.x, srcRegion.y, srcRegion.width, srcRegion.height), pixels);
             processImageProgress(90);
 
-            // TODO: Subsample into dest if needed
+            // Subsample into dest if needed, otherwise we're good
+            if (subsampling) {
+                int ySteps = 1 + (srcRegion.height - 1) / ySub;
+
+                for (int y = 0; y < ySteps; y++) {
+                    int srcPos = y * ySub * srcRegion.width;
+                    int destPos = y * destRegion.width;
+
+                    subsampleRow(pixels, srcPos, srcRegion.width, destPixels, destPos, 1, 32, xSub);
+                }
+            }
 
             if (abortRequested()) {
                 processReadAborted();
