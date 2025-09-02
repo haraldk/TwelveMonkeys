@@ -231,7 +231,7 @@ final class JPEGLosslessDecoder {
                     current = decode(pred, temp, index);
 
                     while ((current == 0) && ((xLoc < xDim) && (yLoc < yDim))) {
-                        output(pred);
+                        output(pred);                        
                         current = decode(pred, temp, index);
                     }
 
@@ -270,7 +270,8 @@ final class JPEGLosslessDecoder {
         // TODO oe: 05.05.2018 Is it correct loop? Content of outputData from previous iteration is always lost.
         } while ((current != JPEG.EOI) && ((xLoc < xDim) && (yLoc < yDim)) && (scanNum == 0));
 
-        // Apply point transform to output.
+        // Apply point transform to output. This must be done after it has finished being
+        // used for predictive purposes.
         if(scan.approxLow != 0) {
         	for (int componentIndex = 0; componentIndex < numComp; ++componentIndex) {
         		int[] comp = outputData[componentIndex];

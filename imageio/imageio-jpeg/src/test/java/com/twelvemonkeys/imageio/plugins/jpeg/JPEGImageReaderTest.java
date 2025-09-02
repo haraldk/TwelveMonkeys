@@ -2033,4 +2033,65 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
             }
         });
     }
+    
+    @Test
+    public void testReadLosslessJPEGGradient() throws IOException {
+    	 JPEGImageReader reader = createReader();
+
+         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jpeg-lossless/gradient_ls.jpg"))) {
+             reader.setInput(stream);
+
+             assertEquals(256, reader.getWidth(0));
+             assertEquals(256, reader.getHeight(0));
+             
+             BufferedImage image = reader.read(0, null);
+
+             assertNotNull(image);
+             assertEquals(256, image.getWidth());
+             assertEquals(256, image.getHeight());
+             assertEquals(16, image.getColorModel().getComponentSize(0));
+             
+             for(int y = 0; y < 256; y++) {
+            	 for(int x = 0; x < 256; x++) {
+            		 assertEquals((y << 8) | x, image.getRaster().getSample(x, y, 0));
+            	 }
+             }
+         }
+         finally {
+             reader.dispose();
+         }
+    }
+    
+    @Test
+    public void testReadLosslessJPEGGradientWithPointTransform() throws IOException {
+    	 JPEGImageReader reader = createReader();
+
+         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jpeg-lossless/gradient_ls_pt.jpg"))) {
+             reader.setInput(stream);
+
+             assertEquals(256, reader.getWidth(0));
+             assertEquals(256, reader.getHeight(0));
+
+             BufferedImage image = reader.read(0, null);
+
+             assertNotNull(image);
+             assertEquals(256, image.getWidth());
+             assertEquals(256, image.getHeight());
+             assertEquals(16, image.getColorModel().getComponentSize(0));
+             
+             for(int y = 0; y < 256; y++) {
+            	 for(int x = 0; x < 256; x++) {
+            		 int expected = (y << 8) | x;
+            		 
+            		 // Simulate effect of precision loss due to point transform = 4
+            		 expected = (expected >> 4) << 4;
+            		 
+            		 assertEquals(expected, image.getRaster().getSample(x, y, 0));
+            	 }
+             }
+         }
+         finally {
+             reader.dispose();
+         }
+    }
 }
