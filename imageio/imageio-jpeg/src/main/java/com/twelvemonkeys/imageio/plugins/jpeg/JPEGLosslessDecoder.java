@@ -234,6 +234,11 @@ final class JPEGLosslessDecoder {
                         output(pred);                        
                         current = decode(pred, temp, index);
                     }
+                    
+                    if((current == JPEG.EOI) && (xLoc == xDim-1) && (yLoc == yDim-1)) {
+                    	// Output value left in pred if EOI is hit while decoding last pixel
+                    	output(pred);
+                    }
 
                     break; //current=MARKER
                 }
