@@ -231,11 +231,11 @@ final class JPEGLosslessDecoder {
                     current = decode(pred, temp, index);
 
                     while ((current == 0) && ((xLoc < xDim) && (yLoc < yDim))) {
-                        output(pred);                        
+                        output(pred);
                         current = decode(pred, temp, index);
                     }
                     
-                    if((current == JPEG.EOI) && (xLoc == xDim-1) && (yLoc == yDim-1)) {
+                    if ((current == JPEG.EOI) && (xLoc == xDim - 1) && (yLoc == yDim - 1)) {
                     	// Output value left in pred if EOI is hit while decoding last pixel
                     	output(pred);
                     }
@@ -277,10 +277,10 @@ final class JPEGLosslessDecoder {
 
         // Apply point transform to output. This must be done after it has finished being
         // used for predictive purposes.
-        if(scan.approxLow != 0) {
+        if (scan.approxLow != 0) {
         	for (int componentIndex = 0; componentIndex < numComp; ++componentIndex) {
         		int[] comp = outputData[componentIndex];
-        		for(int i = 0; i < comp.length; i++) {
+        		for (int i = 0; i < comp.length; i++) {
         			comp[i] = mask & (comp[i] << scan.approxLow);
         		}
         	}
