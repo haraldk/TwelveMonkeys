@@ -212,7 +212,9 @@ final class JPEGLosslessDecoder {
 
             final int[] firstValue = new int[numComp];
             for (int i = 0; i < numComp; i++) {
-                firstValue[i] = (1 << (precision - 1));
+            	// scan.approxLow is the point transformation (Pt) value
+            	// ref. ISO/IEC 10918-1 H.1.2.1
+                firstValue[i] = (1 << (precision - scan.approxLow - 1));
             }
 
             final int[] pred = new int[numComp];
@@ -231,6 +233,11 @@ final class JPEGLosslessDecoder {
                     while ((current == 0) && ((xLoc < xDim) && (yLoc < yDim))) {
                         output(pred);
                         current = decode(pred, temp, index);
+                    }
+                    
+                    if ((current == JPEG.EOI) && (xLoc == xDim - 1) && (yLoc == yDim - 1)) {
+                    	// Output value left in pred if EOI is hit while decoding last pixel
+                    	output(pred);
                     }
 
                     break; //current=MARKER
@@ -268,6 +275,17 @@ final class JPEGLosslessDecoder {
         // TODO oe: 05.05.2018 Is it correct loop? Content of outputData from previous iteration is always lost.
         } while ((current != JPEG.EOI) && ((xLoc < xDim) && (yLoc < yDim)) && (scanNum == 0));
 
+        // Apply point transform to output. This must be done after it has finished being
+        // used for predictive purposes.
+        if (scan.approxLow != 0) {
+        	for (int componentIndex = 0; componentIndex < numComp; ++componentIndex) {
+        		int[] comp = outputData[componentIndex];
+        		for (int i = 0; i < comp.length; i++) {
+        			comp[i] = mask & (comp[i] << scan.approxLow);
+        		}
+        	}
+        }
+        
         return outputData;
     }
 
@@ -329,9 +347,11 @@ final class JPEGLosslessDecoder {
     private int decodeSingle(final int[] prev, final int[] temp, final int[] index) throws IOException {
         // At the beginning of the first line and
         // at the beginning of each restart interval the prediction value of 2P – 1 is used, where P is the input precision.
+    	// If the point transformation parameter (see A.4) is non-zero, the prediction value at the beginning of the first lines and the
+    	// beginning of each restart interval is 2P – Pt – 1 , where Pt is the value of the point transformation parameter
         if (restarting) {
             restarting = false;
-            prev[0] = (1 << (frame.samplePrecision - 1));
+            prev[0] = (1 << (frame.samplePrecision - scan.approxLow - 1));
         }
         else {
             final int[] outputData = this.outputData[0];
@@ -686,7 +706,7 @@ final class JPEGLosslessDecoder {
             return getPreviousY(data);
         }
         else {
-            return (1 << (frame.samplePrecision - 1));
+            return (1 << (frame.samplePrecision - scan.approxLow - 1));
         }
     }
 
