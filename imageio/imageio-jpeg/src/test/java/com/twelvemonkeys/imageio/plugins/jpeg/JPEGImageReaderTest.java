@@ -2051,8 +2051,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
              assertEquals(256, image.getHeight());
              assertEquals(16, image.getColorModel().getComponentSize(0));
              
-             for(int y = 0; y < 256; y++) {
-            	 for(int x = 0; x < 256; x++) {
+             for (int y = 0; y < 256; y++) {
+            	 for (int x = 0; x < 256; x++) {
             		 assertEquals((y << 8) | x, image.getRaster().getSample(x, y, 0));
             	 }
              }
@@ -2079,8 +2079,8 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
              assertEquals(256, image.getHeight());
              assertEquals(16, image.getColorModel().getComponentSize(0));
              
-             for(int y = 0; y < 256; y++) {
-            	 for(int x = 0; x < 256; x++) {
+             for (int y = 0; y < 256; y++) {
+            	 for (int x = 0; x < 256; x++) {
             		 int expected = (y << 8) | x;
             		 
             		 // Simulate effect of precision loss due to point transform = 4
