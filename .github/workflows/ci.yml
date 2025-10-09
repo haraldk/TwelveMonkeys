@@ -101,7 +101,8 @@ jobs:
   release:
     name: Deploy
     needs: [ test, test-jdk8, test-oracle ]
-    if: github.ref == 'refs/heads/master' # only perform on latest master
+    # Temporarily disable deploy
+    if: false && github.ref == 'refs/heads/master' # only perform on latest master
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
