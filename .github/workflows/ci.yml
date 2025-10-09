@@ -39,7 +39,7 @@ jobs:
           check_name: Unit Test Results for OpenJDK ${{ matrix.java }} on ${{ matrix.os }}
 
   test-jdk8:
-    name: Test OpenJDK ${{ matrix.java }} on ${{ matrix.os }}
+    name: Test OpenJDK 8 on ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
