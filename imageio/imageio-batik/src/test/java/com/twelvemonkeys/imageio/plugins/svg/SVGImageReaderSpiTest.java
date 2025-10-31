@@ -56,7 +56,7 @@ public class SVGImageReaderSpiTest {
             "/svg/Android_robot.svg", // Minimal, no xml dec, no namespace
             "/svg/batikLogo.svg",     // xml dec, comments, namespace
             "/svg/blue-square.svg",   // xml dec, namespace
-            "/svg/red-square.svg",
+            "/svg/red-square.svg",    // prefixed namespace
     };
 
     private static final String[] INVALID_INPUTS = {

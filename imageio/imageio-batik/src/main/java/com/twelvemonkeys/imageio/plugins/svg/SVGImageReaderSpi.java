@@ -36,9 +36,11 @@ import com.twelvemonkeys.lang.SystemUtil;
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Locale;
+import java.util.function.Predicate;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
 
@@ -134,8 +136,38 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
                     if (buffer[0] == 's' && buffer[1] == 'v' && buffer[2] == 'g'
                             && (Character.isWhitespace((char) buffer[3]) || buffer[3] == ':')) {
                         // It's SVG, identified by root tag
-                        // TODO: Support svg with prefix + recognize namespace (http://www.w3.org/2000/svg)!
                         return true;
+                    }
+
+                    // Read the full tag name (may contain a prefix of any length)
+                    ByteArrayOutputStream nameBuf = new ByteArrayOutputStream();
+
+                    // We already have 4 bytes in 'buffer' (from input.readFully(buffer))
+                    int consumedFromBuffer = 0;
+                    for (; consumedFromBuffer < buffer.length; consumedFromBuffer++) {
+                        byte bb = buffer[consumedFromBuffer];
+                        if (bb == '>' || Character.isWhitespace((char) bb) || bb == '/') {
+                            break;
+                        }
+                        nameBuf.write(bb);
+                    }
+
+                    // If tag name not terminated yet, keep reading bytes (within limit)
+                    final int MAX_TAG_NAME = 256;
+                    final boolean incompleteTagName = consumedFromBuffer == buffer.length;
+                    readBuffer(input, nameBuf, x -> incompleteTagName && x.size() < MAX_TAG_NAME,
+                        bb -> bb == '>' || Character.isWhitespace(bb) || bb == '/');
+
+                    if (nameBuf.toString("US-ASCII").toLowerCase(Locale.ENGLISH).endsWith(":svg")) {
+                        // Scan the rest of the tag attributes until '>' to find the SVG namespace URI
+                        ByteArrayOutputStream attrBuf = new ByteArrayOutputStream();
+                        final int MAX_ATTR_SCAN = 1024; // safe upper bound to keep it fast
+                        readBuffer(input, attrBuf, x -> x.size() < MAX_ATTR_SCAN, bb -> bb == '>');
+
+                        // If the tag contains the SVG namespace, it's SVG.
+                        if (attrBuf.toString("US-ASCII").contains("http://www.w3.org/2000/svg")) {
+                            return true;
+                        }
                     }
 
                     // If the tag is not "svg", this isn't SVG
@@ -154,6 +186,21 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
         finally {
             //noinspection ThrowFromFinallyBlock
             input.reset();
+        }
+    }
+
+    private static void readBuffer(final ImageInputStream input, final ByteArrayOutputStream buffer,
+            final Predicate<ByteArrayOutputStream> loopCondition, Predicate<Byte> breakCondition) throws IOException {
+        while (loopCondition.test(buffer)) {
+            int r = input.read();
+            if (r == -1) {
+                throw new EOFException();
+            }
+            byte bb = (byte) r;
+            if (breakCondition.test(bb)) {
+                break;
+            }
+            buffer.write(bb);
         }
     }
 
