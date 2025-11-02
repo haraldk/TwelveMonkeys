@@ -70,6 +70,9 @@ public class SVGImageReaderSpiTest {
         "<!-- ", // #275 Infinite loop issue
         "<?123?>", // #275 Infinite loop issue
         "<svg",
+        "<ns0:svg>", // namespace prefix undefined
+        "<ns0:svg xmlns:ns0=\"foo\">", // not the official svg namespace
+        "<ns0:svg xmlns:ns1=\"http://www.w3.org/2000/svg\">", // mismatching prefix
     };
 
     static {

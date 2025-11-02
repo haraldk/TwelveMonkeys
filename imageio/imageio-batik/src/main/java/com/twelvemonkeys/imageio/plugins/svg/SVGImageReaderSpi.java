@@ -155,17 +155,19 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
                     // If tag name not terminated yet, keep reading bytes (within limit)
                     final int MAX_TAG_NAME = 256;
                     final boolean incompleteTagName = consumedFromBuffer == buffer.length;
-                    readBuffer(input, nameBuf, x -> incompleteTagName && x.size() < MAX_TAG_NAME,
+                    readBuffer(input, nameBuf, output -> incompleteTagName && output.size() < MAX_TAG_NAME,
                         bb -> bb == '>' || Character.isWhitespace(bb) || bb == '/');
 
-                    if (nameBuf.toString("US-ASCII").toLowerCase(Locale.ENGLISH).endsWith(":svg")) {
+                    final String name = nameBuf.toString("US-ASCII");
+                    if (name.toLowerCase(Locale.ENGLISH).endsWith(":svg")) {
                         // Scan the rest of the tag attributes until '>' to find the SVG namespace URI
                         ByteArrayOutputStream attrBuf = new ByteArrayOutputStream();
                         final int MAX_ATTR_SCAN = 1024; // safe upper bound to keep it fast
-                        readBuffer(input, attrBuf, x -> x.size() < MAX_ATTR_SCAN, bb -> bb == '>');
+                        readBuffer(input, attrBuf, output -> output.size() < MAX_ATTR_SCAN, bb -> bb == '>');
 
                         // If the tag contains the SVG namespace, it's SVG.
-                        if (attrBuf.toString("US-ASCII").contains("http://www.w3.org/2000/svg")) {
+                        if (attrBuf.toString("US-ASCII").matches(
+                            ".*xmlns:" + name.split(":")[0] + "\\s*=\\s*\"http://www.w3.org/2000/svg\".*")) {
                             return true;
                         }
                     }
@@ -192,11 +194,7 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
     private static void readBuffer(final ImageInputStream input, final ByteArrayOutputStream buffer,
             final Predicate<ByteArrayOutputStream> loopCondition, Predicate<Byte> breakCondition) throws IOException {
         while (loopCondition.test(buffer)) {
-            int r = input.read();
-            if (r == -1) {
-                throw new EOFException();
-            }
-            byte bb = (byte) r;
+            byte bb = input.readByte();
             if (breakCondition.test(bb)) {
                 break;
             }
