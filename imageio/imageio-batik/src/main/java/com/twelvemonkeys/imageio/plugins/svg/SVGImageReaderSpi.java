@@ -140,7 +140,8 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
                     }
 
                     // Read the full tag name (may contain a prefix of any length)
-                    ByteArrayOutputStream nameBuf = new ByteArrayOutputStream();
+                    final int MAX_TAG_NAME = 256;
+                    ByteArrayOutputStream nameBuf = new ByteArrayOutputStream(MAX_TAG_NAME);
 
                     // We already have 4 bytes in 'buffer' (from input.readFully(buffer))
                     int consumedFromBuffer = 0;
@@ -153,7 +154,6 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
                     }
 
                     // If tag name not terminated yet, keep reading bytes (within limit)
-                    final int MAX_TAG_NAME = 256;
                     final boolean incompleteTagName = consumedFromBuffer == buffer.length;
                     readBuffer(input, nameBuf, output -> incompleteTagName && output.size() < MAX_TAG_NAME,
                         bb -> bb == '>' || Character.isWhitespace(bb) || bb == '/');
