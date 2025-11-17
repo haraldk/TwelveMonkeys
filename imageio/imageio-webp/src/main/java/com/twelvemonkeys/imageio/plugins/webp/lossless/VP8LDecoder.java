@@ -148,8 +148,7 @@ public final class VP8LDecoder {
             if (param.getSourceRegion() != null && !param.getSourceRegion().contains(bounds) ||
                     param.getSourceXSubsampling() != 1 || param.getSourceYSubsampling() != 1) {
                 // Can't reuse existing
-                return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, bounds.width, bounds.height,
-                        4 * bounds.width, 4, new int[] {0, 1, 2, 3}, null);
+                return createCompatibleRaster(raster, bounds.width, bounds.height);
             }
             else {
                 bounds.setLocation(param.getDestinationOffset());
@@ -159,14 +158,18 @@ public final class VP8LDecoder {
 
         if (!raster.getBounds().contains(bounds)) {
             // Can't reuse existing
-            return Raster.createInterleavedRaster(DataBuffer.TYPE_BYTE, bounds.width, bounds.height, 4 * bounds.width,
-                    4, new int[] {0, 1, 2, 3}, null);
+            return createCompatibleRaster(raster, bounds.width, bounds.height);
         }
 
         return originSet ?
                 // Recenter to (0, 0)
                 raster.createWritableChild(bounds.x, bounds.y, bounds.width, bounds.height, 0, 0, null) :
                 raster;
+    }
+
+    private static WritableRaster createCompatibleRaster(WritableRaster src, int width, int height) {
+        SampleModel sampleModel = src.getSampleModel().createCompatibleSampleModel(width, height);
+        return Raster.createWritableRaster(sampleModel, sampleModel.createDataBuffer(), null);
     }
 
     /**
@@ -182,7 +185,8 @@ public final class VP8LDecoder {
 
         if (sourceXSubsampling == 1 && sourceYSubsampling == 1) {
             // Only apply offset (and limit to requested region)
-            dstRaster.setRect(destinationOffset.x, destinationOffset.y, srcRaster);
+            dstRaster.setRect(destinationOffset.x, destinationOffset.y, srcRaster.createChild(
+                    sourceRegion.x, sourceRegion.y, sourceRegion.width, sourceRegion.height, 0, 0, null));
         }
         else {
             // Subsampled case
