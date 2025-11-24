@@ -43,6 +43,7 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
                 new TestData(getClassLoaderResource("/webp/1_webp_ll.webp"), new Dimension(400, 301)),
                 new TestData(getClassLoaderResource("/webp/2_webp_ll.webp"), new Dimension(386, 395)),
                 new TestData(getClassLoaderResource("/webp/2_webp_ll_alt.webp"), new Dimension(386, 395)),
+                new TestData(getClassLoaderResource("/webp/2_webp_ll_noalpha.webp"), new Dimension(386, 395)),
                 new TestData(getClassLoaderResource("/webp/3_webp_ll.webp"), new Dimension(800, 600)),
                 new TestData(getClassLoaderResource("/webp/4_webp_ll.webp"), new Dimension(421, 163)),
                 new TestData(getClassLoaderResource("/webp/5_webp_ll.webp"), new Dimension(300, 300)),
@@ -183,6 +184,83 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
             assertRGBEquals("Expected transparent at (512, 320)", 0x00000000, image.getRGB(512, 320) & 0xFF000000, 8);
             assertRGBEquals("Expected opaque at (666, 444)", 0xFF000000, image.getRGB(666, 444) & 0xFF000000, 8);
             assertRGBEquals("Expected opaque corner (799, 799)", 0xFF000000, image.getRGB(699, 699) & 0xFF000000, 8);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testLosslessSourceRegionSubsampling() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/2_webp_ll_noalpha.webp"))) {
+            reader.setInput(stream);
+
+            // We'll read a small portion of the image using a subsampling factor of 2
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceRegion(new Rectangle(100, 20, 200, 200));
+            param.setSourceSubsampling(2, 2, 0, 0);
+
+            BufferedImage image = reader.read(0, param);
+
+            for (int x = 0; x < 23; x++) {
+                assertRGBEquals("Expected white at (" + x + ", 0)", 0xFFFFFFFF, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 24; x < 29; x++) {
+                assertRGBEquals("Expected black at (" + x + ", 0)", 0xFF000000, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 30; x < 64; x++) {
+                assertRGBEquals("Expected grey at (" + x + ", 0)", 0xFFF1F1F1, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 66; x < 69; x++) {
+                assertRGBEquals("Expected black at (" + x + ", 0)", 0xFF000000, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 70; x < 100; x++) {
+                assertRGBEquals("Expected white at (" + x + ", 0)", 0xFFFFFFFF, image.getRGB(x, 0), 0);
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testLosslessSourceRegionNoSubsampling() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/2_webp_ll_noalpha.webp"))) {
+            reader.setInput(stream);
+
+            // We'll read a small portion of the image without using subsampling
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceRegion(new Rectangle(100, 20, 200, 200));
+
+            BufferedImage image = reader.read(0, param);
+
+            for (int x = 0; x < 45; x++) {
+                assertRGBEquals("Expected white at (" + x + ", 0)", 0xFFFFFFFF, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 48; x < 58; x++) {
+                assertRGBEquals("Expected black at (" + x + ", 0)", 0xFF000000, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 60; x < 128; x++) {
+                assertRGBEquals("Expected grey at (" + x + ", 0)", 0xFFF1F1F1, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 131; x < 138; x++) {
+                assertRGBEquals("Expected black at (" + x + ", 0)", 0xFF000000, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 140; x < 200; x++) {
+                assertRGBEquals("Expected white at (" + x + ", 0)", 0xFFFFFFFF, image.getRGB(x, 0), 0);
+            }
         }
         finally {
             reader.dispose();
