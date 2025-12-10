@@ -34,8 +34,6 @@ import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.Dimension;
 import java.io.IOException;
-import java.math.BigInteger;
-import java.util.Arrays;
 
 final class DDSHeader {
 
@@ -58,10 +56,9 @@ final class DDSHeader {
         DDSHeader header = new DDSHeader();
 
         // Read MAGIC bytes [0,3]
-        byte[] magic = new byte[DDS.MAGIC.length];
-        imageInput.readFully(magic);
-        if (!Arrays.equals(DDS.MAGIC, magic)) {
-            throw new IIOException(String.format("Not a DDS file. Expected DDS magic 0x%08x', read 0x%08x", new BigInteger(DDS.MAGIC), new BigInteger(magic)));
+        int magic = imageInput.readInt();
+        if (magic != DDS.MAGIC) {
+            throw new IIOException(String.format("Not a DDS file. Expected DDS magic 0x%8x', read 0x%8x", Integer.reverseBytes(DDS.MAGIC), Integer.reverseBytes(magic)));
         }
 
         // DDS_HEADER structure
@@ -94,7 +91,7 @@ final class DDSHeader {
         header.addDimensions(dwWidth, dwHeight);
 
         byte[] dwReserved1 = new byte[11 * 4];  // [32,75]
-        imageInput.readFully(dwReserved1);
+        imageInput.skipBytes(44);
 
         // DDS_PIXELFORMAT structure
         int px_dwSize = imageInput.readInt(); // [76,79]

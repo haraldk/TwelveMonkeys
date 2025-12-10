@@ -57,6 +57,7 @@ public class DDSImageReaderTest extends ImageReaderAbstractTest<DDSImageReader> 
         Dimension dim1 = new Dimension(1, 1);
 
         return Arrays.asList(
+                new TestData(getClassLoaderResource("/dds/dxt10.dds"), dim256),
                 new TestData(getClassLoaderResource("/dds/dds_A1R5G5B5.dds"), dim256),
                 new TestData(getClassLoaderResource("/dds/dds_A1R5G5B5_mipmap.dds"), dim256, dim128, dim64, dim32, dim16, dim8, dim4, dim2, dim1),
                 new TestData(getClassLoaderResource("/dds/dds_A4R4G4B4.dds"), dim256),

@@ -32,7 +32,7 @@ package com.twelvemonkeys.imageio.plugins.dds;
 
 @SuppressWarnings("unused")
 interface DDS {
-    byte[] MAGIC = new byte[]{'D', 'D', 'S', ' '};
+    int MAGIC = 0x20534444;
     int HEADER_SIZE = 124;
 
     // Header Flags
