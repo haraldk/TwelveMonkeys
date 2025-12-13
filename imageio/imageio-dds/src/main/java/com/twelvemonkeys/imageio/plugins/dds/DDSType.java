@@ -31,12 +31,12 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
 enum DDSType {
-
     DXT1(0x31545844),
     DXT2(0x32545844),
     DXT3(0x33545844),
     DXT4(0x34545844),
     DXT5(0x35545844),
+    DXT10(0x30315844),
     A1R5G5B5((1 << 16) | 2),
     X1R5G5B5((2 << 16) | 2),
     A4R4G4B4((3 << 16) | 2),

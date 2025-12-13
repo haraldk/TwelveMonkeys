@@ -86,7 +86,13 @@ public class DDSImageReaderTest extends ImageReaderAbstractTest<DDSImageReader> 
                 new TestData(getClassLoaderResource("/dds/dds_X8B8G8R8.dds"), dim256),
                 new TestData(getClassLoaderResource("/dds/dds_X8B8G8R8_mipmap.dds"), dim256, dim128, dim64),
                 new TestData(getClassLoaderResource("/dds/dds_X8R8G8B8.dds"), dim256),
-                new TestData(getClassLoaderResource("/dds/dds_X8R8G8B8_mipmap.dds"), dim256, dim128, dim64)
+                new TestData(getClassLoaderResource("/dds/dds_X8R8G8B8_mipmap.dds"), dim256, dim128, dim64),
+                new TestData(getClassLoaderResource("/dds/dxt10_BC1_sRGB.dds"), dim256),
+                new TestData(getClassLoaderResource("/dds/dxt10_BC2_sRGB.dds"), dim256),
+                new TestData(getClassLoaderResource("/dds/dxt10_BC3_sRGB.dds"), dim256),
+                new TestData(getClassLoaderResource("/dds/dxt10_B8G8R8A8.dds"), dim256),
+                new TestData(getClassLoaderResource("/dds/dxt10_B8G8R8X8.dds"), dim256),
+                new TestData(getClassLoaderResource("/dds/dxt10_R8G8B8A8.dds"), dim256)
         );
     }
 

@@ -35,7 +35,6 @@ import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Locale;
 
 public final class DDSImageReaderSpi extends ImageReaderSpiBase {
@@ -55,10 +54,7 @@ public final class DDSImageReaderSpi extends ImageReaderSpiBase {
         stream.mark();
 
         try {
-            byte[] magic = new byte[DDS.MAGIC.length];
-            stream.readFully(magic);
-
-            return Arrays.equals(DDS.MAGIC, magic);
+            return stream.readInt() == DDS.MAGIC;
         } finally {
             stream.reset();
         }
