@@ -33,7 +33,7 @@ package com.twelvemonkeys.imageio.plugins.dds;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import javax.imageio.spi.ImageReaderSpi;
-import java.awt.*;
+import java.awt.Dimension;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
