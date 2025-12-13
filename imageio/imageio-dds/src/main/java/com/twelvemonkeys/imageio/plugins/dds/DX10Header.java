@@ -11,15 +11,19 @@ public final class DX10Header {
     private DX10Header(int dxgiFormat, int resourceDimension, int miscFlag, int arraySize, int miscFlags2) {
         this.dxgiFormat = DX10DXGIFormat.getFormat(dxgiFormat);
         this.resourceDimension = resourceDimension;
-        //only support D3D10_RESOURCE_DIMENSION_TEXTURE2D = 3
-        if (this.resourceDimension != 3) throw new UnsupportedOperationException("Resource dimension " + resourceDimension + " is not supported");
+        if (this.resourceDimension != DDS.D3D10_RESOURCE_DIMENSION_TEXTURE2D)
+            throw new IllegalArgumentException("Resource dimension " + resourceDimension + " is not supported, expected 3.");
         this.miscFlag = miscFlag;
         this.arraySize = arraySize;
         this.miscFlags2 = miscFlags2;
     }
 
     static DX10Header read(ImageInputStream inputStream) throws IOException {
-        final int dxgiFormat = inputStream.readInt(), resourceDimension = inputStream.readInt(), miscFlag = inputStream.readInt(), arraySize = inputStream.readInt(), miscFlags2 = inputStream.readInt();
+        int dxgiFormat = inputStream.readInt();
+        int resourceDimension = inputStream.readInt();
+        int miscFlag = inputStream.readInt();
+        int arraySize = inputStream.readInt();
+        int miscFlags2 = inputStream.readInt();
         return new DX10Header(dxgiFormat, resourceDimension, miscFlag, arraySize, miscFlags2);
     }
 

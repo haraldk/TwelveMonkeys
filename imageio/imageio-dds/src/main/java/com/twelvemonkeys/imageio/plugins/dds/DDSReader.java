@@ -81,12 +81,11 @@ final class DDSReader {
     }
 
     int[] read(ImageInputStream imageInput, int imageIndex) throws IOException {
-
         // type
         DDSType type = getType();
         if (type == DDSType.DXT10) {
-            this.dxt10Header = DX10Header.read(imageInput);
-            type = this.dxt10Header.getDDSType();
+            dxt10Header = DX10Header.read(imageInput);
+            type = dxt10Header.getDDSType();
         }
 
         // offset buffer to index mipmap image
@@ -276,7 +275,7 @@ final class DDSReader {
                     int a0 = (buffer[index++] & 0xFF);
                     int a1 = (buffer[index++] & 0xFF);
                     // 4bit alpha to 8bit alpha
-                    alphaTable[4 * k] = 17 * ((a0 & 0xF0) >> 4);
+                    alphaTable[4 * k    ] = 17 * ((a0 & 0xF0) >> 4);
                     alphaTable[4 * k + 1] = 17 * (a0 & 0x0F);
                     alphaTable[4 * k + 2] = 17 * ((a1 & 0xF0) >> 4);
                     alphaTable[4 * k + 3] = 17 * (a1 & 0x0F);

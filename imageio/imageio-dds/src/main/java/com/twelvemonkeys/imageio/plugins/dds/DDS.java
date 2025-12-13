@@ -32,7 +32,7 @@ package com.twelvemonkeys.imageio.plugins.dds;
 
 @SuppressWarnings("unused")
 interface DDS {
-    int MAGIC = 0x20534444;
+    int MAGIC = ('D' << 24) + ('D' << 16) + ('S' << 8) + ' '; //Big-Endian
     int HEADER_SIZE = 124;
 
     // Header Flags
@@ -48,4 +48,7 @@ interface DDS {
     // Pixel Format Flags
     int PIXEL_FORMAT_FLAG_FOURCC = 0x04;
     int PIXEL_FORMAT_FLAG_RGB = 0x40;
+
+    //DX10 Resource Dimensions
+    int D3D10_RESOURCE_DIMENSION_TEXTURE2D = 3;
 }

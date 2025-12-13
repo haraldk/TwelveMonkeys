@@ -54,7 +54,7 @@ public final class DDSImageReaderSpi extends ImageReaderSpiBase {
         stream.mark();
 
         try {
-            return Integer.reverseBytes(stream.readInt()) == DDS.MAGIC;
+            return stream.readInt() == DDS.MAGIC;
         } finally {
             stream.reset();
         }
