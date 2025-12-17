@@ -74,15 +74,19 @@ final class DDSReader {
     static final Order ARGB_ORDER = new Order(16, 8, 0, 24);
 
     private final DDSHeader header;
+    private DX10Header dxt10Header;
 
     DDSReader(DDSHeader header) {
         this.header = header;
     }
 
     int[] read(ImageInputStream imageInput, int imageIndex) throws IOException {
-
         // type
         DDSType type = getType();
+        if (type == DDSType.DXT10) {
+            dxt10Header = DX10Header.read(imageInput);
+            type = dxt10Header.getDDSType();
+        }
 
         // offset buffer to index mipmap image
         byte[] buffer = null;
@@ -138,7 +142,6 @@ final class DDSReader {
             // DXT
             int type = header.getFourCC();
             return DDSType.valueOf(type);
-
         } else if ((flags & DDS.PIXEL_FORMAT_FLAG_RGB) != 0) {
             // RGB
             int bitCount = header.getBitCount();
@@ -224,6 +227,7 @@ final class DDSReader {
         }
     }
 
+
     private static int[] decodeDXT1(int width, int height, byte[] buffer) {
         int[] pixels = new int[width * height];
         int index = 0;
@@ -241,7 +245,7 @@ final class DDSReader {
                     int t1 = (buffer[index] & 0x0C) >> 2;
                     int t2 = (buffer[index] & 0x30) >> 4;
                     int t3 = (buffer[index++] & 0xC0) >> 6;
-                    pixels[4 * width * i + 4 * j + width * k    ] = getDXTColor(c0, c1, 0xFF, t0);
+                    pixels[4 * width * i + 4 * j + width * k] = getDXTColor(c0, c1, 0xFF, t0);
                     if (4 * j + 1 >= width) continue;
                     pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, 0xFF, t1);
                     if (4 * j + 2 >= width) continue;
@@ -286,7 +290,7 @@ final class DDSReader {
                     int t1 = (buffer[index] & 0x0C) >> 2;
                     int t2 = (buffer[index] & 0x30) >> 4;
                     int t3 = (buffer[index++] & 0xC0) >> 6;
-                    pixels[4 * width * i + 4 * j + width * k    ] = getDXTColor(c0, c1, alphaTable[4 * k    ], t0);
+                    pixels[4 * width * i + 4 * j + width * k] = getDXTColor(c0, c1, alphaTable[4 * k], t0);
                     if (4 * j + 1 >= width) continue;
                     pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, alphaTable[4 * k + 1], t1);
                     if (4 * j + 2 >= width) continue;
@@ -344,7 +348,7 @@ final class DDSReader {
                     int t1 = (buffer[index] & 0x0C) >> 2;
                     int t2 = (buffer[index] & 0x30) >> 4;
                     int t3 = (buffer[index++] & 0xC0) >> 6;
-                    pixels[4 * width * i + 4 * j + width * k    ] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k    ]), t0);
+                    pixels[4 * width * i + 4 * j + width * k] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k]), t0);
                     if (4 * j + 1 >= width) continue;
                     pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k + 1]), t1);
                     if (4 * j + 2 >= width) continue;
