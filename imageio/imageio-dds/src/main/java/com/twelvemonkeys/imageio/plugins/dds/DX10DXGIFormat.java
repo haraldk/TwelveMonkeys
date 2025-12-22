@@ -2,12 +2,11 @@ package com.twelvemonkeys.imageio.plugins.dds;
 
 import java.util.Arrays;
 import java.util.function.IntPredicate;
-import java.util.stream.IntStream;
 
 /**
  * Enum that lists a certain types of DXGI Format this reader supports to read.
  *
- * @link <a href="https://learn.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format">DXGI Format List</a>
+ * <a href="https://learn.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format">DXGI Format List</a>
  */
 public enum DX10DXGIFormat {
     BC1(DDSType.DXT1, rangeInclusive(70, 72)),
