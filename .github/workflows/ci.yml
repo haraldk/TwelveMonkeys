@@ -112,7 +112,7 @@ jobs:
           distribution: 'temurin'
           java-version: '8'
           java-package: jdk
-          server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
+          server-id: central # Value of the distributionManagement/repository/id field of the pom.xml
           server-username: MAVEN_CENTRAL_USERNAME # env variable for username in deploy (1)
           server-password: MAVEN_CENTRAL_PASSWORD # env variable for token in deploy (2)
       - name: Get Project Version
@@ -122,7 +122,7 @@ jobs:
         if: ${{ endsWith(env.PROJECT_VERSION, '-SNAPSHOT') }}
         run: mvn --batch-mode --no-transfer-progress deploy -P release -DskipTests -Dgpg.signer=bc
         env:
-          MAVEN_CENTRAL_USERNAME: ${{ secrets.SONATYPE_USERNAME }} # must be the same env variable name as (1)
-          MAVEN_CENTRAL_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }} # must be the same env variable name as (2)
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }} # must be the same env variable name as (1)
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }} # must be the same env variable name as (2)
           MAVEN_GPG_KEY: ${{ secrets.GPG_KEY }}                    # Value of the GPG private key to import
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
