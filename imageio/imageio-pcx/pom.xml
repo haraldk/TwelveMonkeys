@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.13.0</version>
     </parent>
     <artifactId>imageio-pcx</artifactId>
     <name>TwelveMonkeys :: ImageIO :: PCX plugin</name>
