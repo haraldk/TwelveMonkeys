@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.Set;
 
 public class DDSWriterParam extends ImageWriteParam {
-    static final DDSWriterParam DEFAULT_PARAM = DDSWriterParam.builder().formatBC4_SNORM().build();
+    static final DDSWriterParam DEFAULT_PARAM = DDSWriterParam.builder().formatBC3().build();
     private final int optionalBitFlags;
     private final DDSEncoderType encoderType;
     private final boolean enableDxt10;
@@ -54,7 +54,7 @@ public class DDSWriterParam extends ImageWriteParam {
         /**
          * Enable saving file as Direct3D 10+ format.
          */
-        public Builder formatDXT10() {
+        public Builder enableDX10() {
             isUsingDxt10 = true;
             return this;
         }
@@ -92,7 +92,7 @@ public class DDSWriterParam extends ImageWriteParam {
          */
         public Builder formatBC4_UNORM() {
             encoderType = DDSEncoderType.BC4_UNORM;
-            return formatDXT10();
+            return enableDX10();
         }
         /**
          * Set the compression type to be BC4 (DX10). Enable DX10.
@@ -100,7 +100,7 @@ public class DDSWriterParam extends ImageWriteParam {
          */
         public Builder formatBC4_SNORM() {
             encoderType = DDSEncoderType.BC4_SNORM;
-            return formatDXT10();
+            return enableDX10();
         }
 
         /**

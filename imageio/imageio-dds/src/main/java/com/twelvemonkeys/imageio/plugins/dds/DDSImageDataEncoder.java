@@ -21,7 +21,13 @@ class DDSImageDataEncoder {
     static void writeImageData(ImageOutputStream imageOutput, RenderedImage renderedImage, DDSEncoderType type) throws IOException {
         switch (type) {
             case BC1:
-                BlockCompressor1.encode(imageOutput, renderedImage);
+                new BlockCompressor1().encode(imageOutput, renderedImage);
+                break;
+            case BC2:
+                new BlockCompressor2().encode(imageOutput, renderedImage);
+                break;
+            case BC3:
+                new BlockCompressor3().encode(imageOutput, renderedImage);
                 break;
             case BC4_SNORM:
             case BC4_UNORM:
@@ -41,37 +47,36 @@ class DDSImageDataEncoder {
      * <p>[3] <a href="https://mrelusive.com/publications/papers/Real-Time-Dxt-Compression.pdf">Real-Time DXT Compression by J.M.P. van Waveren</a></p>
      * </p>
      */
-    private static final class BlockCompressor1 {
-        static void encode(ImageOutputStream imageOutput, RenderedImage image) throws IOException {
+    private static class BlockCompressor1 {
+        void encode(ImageOutputStream imageOutput, RenderedImage image) throws IOException {
             int imageWidth = image.getWidth();
             int imageHeight = image.getHeight();
             int blocksXCount = (imageWidth + 3) / 4;
             int blocksYCount = (imageHeight + 3) / 4;
             Raster raster = image.getData();
-
             //r-g-b-a = 4 uint8 each pixel
             int[] sampled = new int[64];
             //color0,1 : space 565
             //color2,3 : space 888
-            int[] palettes = new int[4];
-            int[][] colors = new int[4][4];
-
-            //starting a 4x4 block
+            int[] palettes = new int[4]; //starting a 4x4 block
             for (int blockY = 0; blockY < blocksYCount; blockY++) {
                 for (int blockX = 0; blockX < blocksXCount; blockX++) {
                     raster.getPixels(blockX * 4, blockY * 4, 4, 4, sampled);
-                    boolean alphaMode = getBlockEndpoints2(sampled, palettes);
-
-                    imageOutput.writeShort((short) palettes[0]);
-                    imageOutput.writeShort((short) palettes[1]);
-                    calculateIntermediate(alphaMode, palettes);
-                    //indices encoding start.
-                    int indices =
-                            encodeBlockIndices(alphaMode, sampled, palettes);
-                    //encodeBlockIndices2(alphaMode, sampled, palettes[0], palettes[1], colors);
-                    imageOutput.writeInt(indices);
+                    startEncodeBlock(imageOutput, sampled, palettes);
                 }
             }
+        }
+
+        void startEncodeBlock(ImageOutputStream imageOutput, int[] sampled, int[] palettes) throws IOException {
+            boolean alphaMode = getBlockEndpoints2(sampled, palettes, false);
+
+            imageOutput.writeShort((short) palettes[0]);
+            imageOutput.writeShort((short) palettes[1]);
+            calculateIntermediate(alphaMode, palettes);
+            //indices encoding start.
+            int indices = encodeBlockIndices(alphaMode, sampled, palettes, false);
+            //encodeBlockIndices2(alphaMode, sampled, palettes[0], palettes[1], colors);
+            imageOutput.writeInt(indices);
         }
 
         //Reference [3] Page 10-12
@@ -134,7 +139,7 @@ class DDSImageDataEncoder {
 
 
         //all palettes now in 8:8:8 space
-        private static int encodeBlockIndices(boolean alphaMode, int[] sampled, int[] palettes) {
+        int encodeBlockIndices(boolean alphaMode, int[] sampled, int[] palettes, boolean forceOpaque) {
             int i = 0;
             int colorPos = 0;
             int indices = 0;
@@ -154,7 +159,7 @@ class DDSImageDataEncoder {
                     double distance0 = calculateDistance(c, c0);
                     double distance1 = calculateDistance(c, c1);
                     double distance2 = calculateDistance(c, c2);
-                    if (palettes[0] > palettes[1]) {
+                    if (forceOpaque || palettes[0] > palettes[1]) {
                         double distance3 = calculateDistance(c, c3);
                         index = getClosest(distance0, distance1, distance2, distance3);
                     } else index = getClosest(distance0, distance1, distance2, Long.MAX_VALUE);
@@ -183,8 +188,9 @@ class DDSImageDataEncoder {
         }
 
         //this method, we work in 888 space
-        @SuppressWarnings("DuplicatedCode")//just in case intellij warns for 'duplication'
-        private static void calculateIntermediate(boolean alphaMode, int[] palettes) {
+        @SuppressWarnings("DuplicatedCode")
+//just in case intellij warns for 'duplication'
+        void calculateIntermediate(boolean alphaMode, int[] palettes) {
             Color rgb0 = convertTo888(palettes[0]);
             Color rgb1 = convertTo888(palettes[1]);
             int rgb2;
@@ -255,12 +261,12 @@ class DDSImageDataEncoder {
 
 
         //Reference [3] Page 7
-        private static boolean getBlockEndpoints2(int[] sampled, int[] paletteBuffer) {
+        boolean getBlockEndpoints2(int[] sampled, int[] paletteBuffer, boolean forceOpaque) {
             int maxDistance = -1;
             boolean alphaMode = false;
             for (int i = 0; i < 60; i += 4) {
                 for (int j = i + 4; j < 64; j += 4) {
-                    if (isAlphaBelowCap(Math.min(sampled[i + 3], sampled[j + 3]))) {
+                    if (!forceOpaque && isAlphaBelowCap(Math.min(sampled[i + 3], sampled[j + 3]))) {
                         alphaMode = true;
                         continue;
                     }
@@ -273,7 +279,7 @@ class DDSImageDataEncoder {
                 }
             }
 
-            if ((alphaMode && paletteBuffer[0] > paletteBuffer[1]) || (!alphaMode && paletteBuffer[1] > paletteBuffer[0])) {
+            if ((alphaMode && paletteBuffer[0] > paletteBuffer[1]) || (!alphaMode && !forceOpaque && paletteBuffer[1] > paletteBuffer[0])) {
                 int a = paletteBuffer[0];
                 paletteBuffer[0] = paletteBuffer[1];
                 paletteBuffer[1] = a;
@@ -315,6 +321,127 @@ class DDSImageDataEncoder {
         }
     }
 
+    private static final class BlockCompressor2 extends BlockCompressor1 {
+
+        @Override
+        void startEncodeBlock(ImageOutputStream imageOutput, int[] sampled, int[] palettes) throws IOException {
+            //write 64 bit alpha first (4 bit alpha per pixel)
+            long alphaData = 0;
+            for (int i = 0; i < 16; i++) {
+                int alpha = sampled[i * 4 + 3] >> 4;
+                alphaData |= ((long) alpha) << (i * 4);
+            }
+            imageOutput.writeLong(alphaData);
+
+            super.startEncodeBlock(imageOutput, sampled, palettes);
+        }
+
+        @Override
+        int encodeBlockIndices(boolean alphaMode, int[] sampled, int[] palettes, boolean forceOpaque) {
+            return super.encodeBlockIndices(alphaMode, sampled, palettes, true);
+        }
+
+        @Override
+        void calculateIntermediate(boolean alphaMode, int[] palettes) {
+            super.calculateIntermediate(false, palettes);
+        }
+
+        @Override
+        boolean getBlockEndpoints2(int[] sampled, int[] paletteBuffer, boolean forceOpaque) {
+            super.getBlockEndpoints2(sampled, paletteBuffer, true);
+            return false;
+        }
+    }
+
+    private static final class BlockCompressor3 extends BlockCompressor1 {
+        private final int[] alphas = new int[8];
+
+        @Override
+        void startEncodeBlock(ImageOutputStream imageOutput, int[] sampled, int[] palettes) throws IOException {
+            getAlphaEndpoints(sampled);
+            interpolateEndpoints();
+            long alphaData = encodeAlphaIndices(sampled);
+            alphaData |= alphas[0] & 0xFF;
+            alphaData |= (long) (alphas[1] & 0xFF) << 8;
+            imageOutput.writeLong(alphaData);
+            super.startEncodeBlock(imageOutput, sampled, palettes);
+        }
+
+        private long encodeAlphaIndices(int[] sampled) {
+            long alphaData = 0;
+            for (int i = 0; i < 16; i++) {
+                int a = sampled[i * 4 + 3];
+                int index = getNearest(a);
+                alphaData |= (long) (index & 0b111) << (16 + i * 3);
+            }
+            return alphaData;
+        }
+
+        private int getNearest(int a) {
+            if (alphas[0] <= alphas[1]) {
+                if (a == 0xff) return 0b111;
+                if (a == 0x00) return 0b110;
+            }
+
+            int nearestIndex = 0;
+            int nearestValue = Integer.MAX_VALUE;
+            for (int i = 0; i < 8; i++) {
+                int value = Math.abs(a - alphas[i]);
+                if (value < nearestValue) {
+                    nearestValue = value;
+                    nearestIndex = i;
+                }
+            }
+            return nearestIndex;
+        }
+
+        private void interpolateEndpoints() {
+            if (alphas[0] > alphas[1]) {
+                for (int i = 1; i < 6; i++) {
+                    alphas[i] = ((i * alphas[1]) + ((7 - i) * alphas[0])) / 7;
+                }
+            } else {
+                for (int i = 1; i < 4; i++) {
+                    alphas[i] = ((i * alphas[1]) + ((5 - i) * alphas[0])) / 5;
+                }
+                alphas[6] = 0;
+                alphas[7] = 0xFF;
+            }
+        }
+
+        private void getAlphaEndpoints(int[] sampled) {
+            int alphaMin = 0xFF, alphaMax = 0;
+            for (int i = 0; i < 16; i++) {
+                int a = sampled[i * 4 + 3];
+                alphaMin = Math.min(alphaMin, a);
+                alphaMax = Math.max(alphaMax, a);
+            }
+            if (alphaMin == 0xFF || alphaMax == 0) {
+                alphas[0] = alphaMin;
+                alphas[1] = alphaMax;
+            } else {
+                alphas[0] = alphaMax;
+                alphas[1] = alphaMin;
+            }
+        }
+
+        @Override
+        int encodeBlockIndices(boolean alphaMode, int[] sampled, int[] palettes, boolean forceOpaque) {
+            return super.encodeBlockIndices(alphaMode, sampled, palettes, true);
+        }
+
+        @Override
+        void calculateIntermediate(boolean alphaMode, int[] palettes) {
+            super.calculateIntermediate(false, palettes);
+        }
+
+        @Override
+        boolean getBlockEndpoints2(int[] sampled, int[] paletteBuffer, boolean forceOpaque) {
+            super.getBlockEndpoints2(sampled, paletteBuffer, true);
+            return false;
+        }
+    }
+
     private static final class BlockCompressor4 {
         private static void encode(ImageOutputStream imageOutput, RenderedImage image, DDSEncoderType type) throws IOException {
             int blocksXCount = (image.getWidth() + 3) / 4;
@@ -340,7 +467,7 @@ class DDSImageDataEncoder {
             if (type == DDSEncoderType.BC4_SNORM) {
                 r0 = ((int) (red0 * 127f)) & 0xff;
                 r1 = ((int) (red1 * 127f)) & 0xff;
-            } else  {
+            } else {
                 r0 = (int) (red0 * 255f);
                 r1 = (int) (red1 * 255f);
             }
@@ -360,7 +487,7 @@ class DDSImageDataEncoder {
                     float r = type == DDSEncoderType.BC4_UNORM ? rSample / 255f : ((byte) rSample / 127f);
                     index = getNearest(r, reds, type);
                 }
-                data |= ((long)index << (16 + i * 3));
+                data |= ((long) index << (16 + i * 3));
             }
             return data;
         }

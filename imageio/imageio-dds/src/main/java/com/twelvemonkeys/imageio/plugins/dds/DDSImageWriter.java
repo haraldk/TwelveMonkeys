@@ -13,9 +13,6 @@ import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * A designated class to begin writing DDS file with headers, class {@link DDSImageDataEncoder} will handle image data encoding process
@@ -92,8 +89,8 @@ class DDSImageWriter extends ImageWriterBase {
     private void writePixelFormat(DDSWriterParam param) throws IOException {
         imageOutput.writeInt(DDS.DDSPF_SIZE);
         writePixelFormatFlags(param);
-        writeFourCC(param.getEncoderType());
-        writeRGBAData(param.getEncoderType());
+        writeFourCC(param);
+        writeRGBAData(param);
     }
 
     private void writeDXT10Header(DDSWriterParam param) throws IOException {
@@ -111,12 +108,12 @@ class DDSImageWriter extends ImageWriterBase {
         }
     }
 
-    private void writeRGBAData(DDSEncoderType type) throws IOException {
-        if (!type.isFourCC()) {
+    private void writeRGBAData(DDSWriterParam param) throws IOException {
+        if (!param.isUsingDxt10() && !param.getEncoderType().isFourCC()) {
             //dwRGBBitCount
-            imageOutput.writeInt(type.getBitsOrBlockSize());
+            imageOutput.writeInt(param.getEncoderType().getBitsOrBlockSize());
 
-            int[] mask = type.getRGBAMask();
+            int[] mask = param.getEncoderType().getRGBAMask();
             //dwRBitMask
             imageOutput.writeInt(mask[0]);
             //dwGBitMask
@@ -131,9 +128,12 @@ class DDSImageWriter extends ImageWriterBase {
         }
     }
 
-    private void writeFourCC(DDSEncoderType type) throws IOException {
-        if (type.isFourCC())
-            imageOutput.writeInt(type.getFourCC());
+    private void writeFourCC(DDSWriterParam param) throws IOException {
+        if (param.isUsingDxt10()) {
+            imageOutput.writeInt(DDSType.DXT10.value());
+        } else if (param.getEncoderType().isFourCC())
+                imageOutput.writeInt(param.getEncoderType().getFourCC());
+
     }
 
     private void writePixelFormatFlags(DDSWriterParam param) throws IOException {
