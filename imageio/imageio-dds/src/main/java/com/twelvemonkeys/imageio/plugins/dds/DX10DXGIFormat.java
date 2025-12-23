@@ -2,7 +2,6 @@ package com.twelvemonkeys.imageio.plugins.dds;
 
 import java.util.Arrays;
 import java.util.function.IntPredicate;
-import java.util.stream.IntStream;
 
 /**
  * Enum that lists a certain types of DXGI Format this reader supports to read.
@@ -41,7 +40,7 @@ public enum DX10DXGIFormat {
     /**
      * @param acceptedValues values in DXGI Formats List, passed values are expected to be in ascending order
      */
-    private static IntPredicate exactly(int ... acceptedValues) {
+    private static IntPredicate exactly(int... acceptedValues) {
         return test -> Arrays.binarySearch(acceptedValues, test) >= 0;
     }
 

@@ -46,9 +46,25 @@ interface DDS {
     int FLAG_DEPTH = 0x800000;        // Required in a depth texture.
 
     // Pixel Format Flags
+    int DDSPF_SIZE = 32;
+    int PIXEL_FORMAT_FLAG_ALPHAPIXELS = 0x1;
+    int PIXEL_FORMAT_FLAG_ALPHA = 0x2;
     int PIXEL_FORMAT_FLAG_FOURCC = 0x04;
     int PIXEL_FORMAT_FLAG_RGB = 0x40;
 
     //DX10 Resource Dimensions
     int D3D10_RESOURCE_DIMENSION_TEXTURE2D = 3;
+
+    //DXGI Formats (DX10)
+    int DXGI_FORMAT_BC1_UNORM_SRGB = 72;
+    int DXGI_FORMAT_BC2_UNORM_SRGB = 75;
+    int DXGI_FORMAT_BC3_UNORM_SRGB = 78;
+    int DXGI_FORMAT_B8G8R8A8_UNORM_SRGB = 91;
+    int DXGI_FORMAT_B8G8R8X8_UNORM_SRGB = 93;
+    int DXGI_FORMAT_R8G8B8A8_UNORM_SRGB = 29;
+
+    //dwCaps
+    int DDSCAPS_COMPLEX = 0x8;
+    int DDSCAPS_MIPMAP = 0x400000;
+    int DDSCAPS_TEXTURE = 0x1000;
 }

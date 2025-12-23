@@ -70,8 +70,8 @@ import java.io.IOException;
  * <a href="http://3dtech.jp/wiki/index.php?DDSReader">Japanese document</a>
  */
 final class DDSReader {
-
-    static final Order ARGB_ORDER = new Order(16, 8, 0, 24);
+    static final Order ARGB_ORDER = new Order(16, 8, 0, 24);   //  8 alpha | 8 red | 8 green | 8 blue
+    static final Order RGB_16_ORDER = new Order(11, 5, 0, -1); // no alpha | 5 red | 6 green | 5 blue
 
     private final DDSHeader header;
     private DX10Header dxt10Header;
@@ -275,7 +275,7 @@ final class DDSReader {
                     int a0 = (buffer[index++] & 0xFF);
                     int a1 = (buffer[index++] & 0xFF);
                     // 4bit alpha to 8bit alpha
-                    alphaTable[4 * k    ] = 17 * ((a0 & 0xF0) >> 4);
+                    alphaTable[4 * k] = 17 * ((a0 & 0xF0) >> 4);
                     alphaTable[4 * k + 1] = 17 * (a0 & 0x0F);
                     alphaTable[4 * k + 2] = 17 * ((a1 & 0xF0) >> 4);
                     alphaTable[4 * k + 3] = 17 * (a1 & 0x0F);
@@ -503,7 +503,7 @@ final class DDSReader {
         return pixels;
     }
 
-    private static int getDXTColor(int c0, int c1, int a, int t) {
+    static int getDXTColor(int c0, int c1, int a, int t) {
         switch (t) {
             case 0:
                 return getDXTColor1(c0, a);
@@ -519,7 +519,7 @@ final class DDSReader {
 
     private static int getDXTColor2_1(int c0, int c1, int a) {
         // 2*c0/3 + c1/3
-        int r = (2 * BIT5[(c0 & 0xFC00) >> 11] + BIT5[(c1 & 0xFC00) >> 11]) / 3;
+        int r = (2 * BIT5[(c0 & 0xF800) >> 11] + BIT5[(c1 & 0xF800) >> 11]) / 3;
         int g = (2 * BIT6[(c0 & 0x07E0) >> 5] + BIT6[(c1 & 0x07E0) >> 5]) / 3;
         int b = (2 * BIT5[c0 & 0x001F] + BIT5[c1 & 0x001F]) / 3;
         return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
@@ -527,14 +527,14 @@ final class DDSReader {
 
     private static int getDXTColor1_1(int c0, int c1, int a) {
         // (c0+c1) / 2
-        int r = (BIT5[(c0 & 0xFC00) >> 11] + BIT5[(c1 & 0xFC00) >> 11]) / 2;
+        int r = (BIT5[(c0 & 0xF800) >> 11] + BIT5[(c1 & 0xF800) >> 11]) / 2;
         int g = (BIT6[(c0 & 0x07E0) >> 5] + BIT6[(c1 & 0x07E0) >> 5]) / 2;
         int b = (BIT5[c0 & 0x001F] + BIT5[c1 & 0x001F]) / 2;
         return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
     }
 
     private static int getDXTColor1(int c, int a) {
-        int r = BIT5[(c & 0xFC00) >> 11];
+        int r = BIT5[(c & 0xF800) >> 11];
         int g = BIT6[(c & 0x07E0) >> 5];
         int b = BIT5[(c & 0x001F)];
         return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
@@ -581,22 +581,22 @@ final class DDSReader {
     }
 
     // RGBA Masks
-    private static final int[] A1R5G5B5_MASKS = {0x7C00, 0x03E0, 0x001F, 0x8000};
-    private static final int[] X1R5G5B5_MASKS = {0x7C00, 0x03E0, 0x001F, 0x0000};
-    private static final int[] A4R4G4B4_MASKS = {0x0F00, 0x00F0, 0x000F, 0xF000};
-    private static final int[] X4R4G4B4_MASKS = {0x0F00, 0x00F0, 0x000F, 0x0000};
-    private static final int[] R5G6B5_MASKS = {0xF800, 0x07E0, 0x001F, 0x0000};
-    private static final int[] R8G8B8_MASKS = {0xFF0000, 0x00FF00, 0x0000FF, 0x000000};
-    private static final int[] A8B8G8R8_MASKS = {0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000};
-    private static final int[] X8B8G8R8_MASKS = {0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000};
-    private static final int[] A8R8G8B8_MASKS = {0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000};
-    private static final int[] X8R8G8B8_MASKS = {0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000};
+    static final int[] A1R5G5B5_MASKS = {0x7C00, 0x03E0, 0x001F, 0x8000};
+    static final int[] X1R5G5B5_MASKS = {0x7C00, 0x03E0, 0x001F, 0x0000};
+    static final int[] A4R4G4B4_MASKS = {0x0F00, 0x00F0, 0x000F, 0xF000};
+    static final int[] X4R4G4B4_MASKS = {0x0F00, 0x00F0, 0x000F, 0x0000};
+    static final int[] R5G6B5_MASKS = {0xF800, 0x07E0, 0x001F, 0x0000};
+    static final int[] R8G8B8_MASKS = {0xFF0000, 0x00FF00, 0x0000FF, 0x000000};
+    static final int[] A8B8G8R8_MASKS = {0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000};
+    static final int[] X8B8G8R8_MASKS = {0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000};
+    static final int[] A8R8G8B8_MASKS = {0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000};
+    static final int[] X8R8G8B8_MASKS = {0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000};
 
     // BIT4 = 17 * index;
-    private static final int[] BIT5 = {0, 8, 16, 25, 33, 41, 49, 58, 66, 74, 82, 90, 99, 107, 115, 123, 132, 140, 148, 156, 165, 173, 181, 189, 197, 206, 214, 222, 230, 239, 247, 255};
-    private static final int[] BIT6 = {0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89, 93, 97, 101, 105, 109, 113, 117, 121, 125, 130, 134, 138, 142, 146, 150, 154, 158, 162, 166, 170, 174, 178, 182, 186, 190, 194, 198, 202, 206, 210, 215, 219, 223, 227, 231, 235, 239, 243, 247, 251, 255};
+    static final int[] BIT5 = {0, 8, 16, 25, 33, 41, 49, 58, 66, 74, 82, 90, 99, 107, 115, 123, 132, 140, 148, 156, 165, 173, 181, 189, 197, 206, 214, 222, 230, 239, 247, 255};
+    static final int[] BIT6 = {0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89, 93, 97, 101, 105, 109, 113, 117, 121, 125, 130, 134, 138, 142, 146, 150, 154, 158, 162, 166, 170, 174, 178, 182, 186, 190, 194, 198, 202, 206, 210, 215, 219, 223, 227, 231, 235, 239, 243, 247, 251, 255};
 
-    private static final class Order {
+    static final class Order {
         Order(int redShift, int greenShift, int blueShift, int alphaShift) {
             this.redShift = redShift;
             this.greenShift = greenShift;
