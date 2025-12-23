@@ -11,31 +11,35 @@ import static java.lang.Math.abs;
 
 /**
  * A designated class to encode image data to binary.
- * <p>
- * References:
- * [1] <a href="https://www.ludicon.com/castano/blog/2009/03/gpu-dxt-decompression/">GPU DXT Decompression</a>.
- * [2] <a href="https://sv-journal.org/2014-1/06/en/index.php">TEXTURE COMPRESSION TECHNIQUES</a>.
- * [3] <a href="https://mrelusive.com/publications/papers/Real-Time-Dxt-Compression.pdf">Real-Time DXT Compression by J.M.P. van Waveren</a>
- * </p>
  */
-public class DDSImageDataEncoder {
+class DDSImageDataEncoder {
     //A cap for alpha value for BC1 where if alpha value is smaller than this, the 4x4 block will enable alpha mode.
     private static final int ALPHA_CAP = 128;
     private static final int C565_5_MASK = 0xF8;
     private static final int C565_6_MASK = 0xFC;
 
-    static void writeImageData(ImageOutputStream imageOutput, RenderedImage renderedImage, DDSType type) throws IOException {
+    static void writeImageData(ImageOutputStream imageOutput, RenderedImage renderedImage, DDSEncoderType type) throws IOException {
         switch (type) {
-            case DXT1:
+            case BC1:
                 BlockCompressor1.encode(imageOutput, renderedImage);
                 break;
+            case BC4_SNORM:
+            case BC4_UNORM:
+                BlockCompressor4.encode(imageOutput, renderedImage, type);
+                break;
             default:
-                throw new IllegalArgumentException("DDS Type is not supported for encoder yet");
+                throw new IllegalArgumentException("DDS Type is not supported for encoder yet : " + type);
         }
     }
 
     /**
      * Handles BC1 compression.
+     * <p>
+     * References:
+     * <p>[1] <a href="https://www.ludicon.com/castano/blog/2009/03/gpu-dxt-decompression/">GPU DXT Decompression</a>.</p>
+     * <p>[2] <a href="https://sv-journal.org/2014-1/06/en/index.php">TEXTURE COMPRESSION TECHNIQUES</a>.</p>
+     * <p>[3] <a href="https://mrelusive.com/publications/papers/Real-Time-Dxt-Compression.pdf">Real-Time DXT Compression by J.M.P. van Waveren</a></p>
+     * </p>
      */
     private static final class BlockCompressor1 {
         static void encode(ImageOutputStream imageOutput, RenderedImage image) throws IOException {
@@ -64,7 +68,7 @@ public class DDSImageDataEncoder {
                     //indices encoding start.
                     int indices =
                             encodeBlockIndices(alphaMode, sampled, palettes);
-                            //encodeBlockIndices2(alphaMode, sampled, palettes[0], palettes[1], colors);
+                    //encodeBlockIndices2(alphaMode, sampled, palettes[0], palettes[1], colors);
                     imageOutput.writeInt(indices);
                 }
             }
@@ -256,10 +260,11 @@ public class DDSImageDataEncoder {
             boolean alphaMode = false;
             for (int i = 0; i < 60; i += 4) {
                 for (int j = i + 4; j < 64; j += 4) {
-                    int distance = getColorDistance(sampled[i], sampled[i + 1], sampled[i + 2], sampled[j], sampled[j + 1], sampled[j + 2]);
-                    if (!alphaMode && isAlphaBelowCap(Math.min(sampled[i + 3], sampled[j + 3]))) {
+                    if (isAlphaBelowCap(Math.min(sampled[i + 3], sampled[j + 3]))) {
                         alphaMode = true;
+                        continue;
                     }
+                    int distance = getColorDistance(sampled[i], sampled[i + 1], sampled[i + 2], sampled[j], sampled[j + 1], sampled[j + 2]);
                     if (distance > maxDistance) {
                         maxDistance = distance;
                         paletteBuffer[0] = convertTo565(sampled[i], sampled[i + 1], sampled[i + 2]);
@@ -268,7 +273,7 @@ public class DDSImageDataEncoder {
                 }
             }
 
-            if ((alphaMode && paletteBuffer[0] > paletteBuffer[1]) || (!alphaMode && paletteBuffer[1] > paletteBuffer[0])){
+            if ((alphaMode && paletteBuffer[0] > paletteBuffer[1]) || (!alphaMode && paletteBuffer[1] > paletteBuffer[0])) {
                 int a = paletteBuffer[0];
                 paletteBuffer[0] = paletteBuffer[1];
                 paletteBuffer[1] = a;
@@ -284,9 +289,6 @@ public class DDSImageDataEncoder {
 
         }
 
-        private static boolean isAlphaBelowCap(int alpha) {
-            return alpha < ALPHA_CAP;
-        }
 
         //https://rgbcolorpicker.com/565
         private static int convertTo565(int r8, int g8, int b8) {
@@ -313,6 +315,128 @@ public class DDSImageDataEncoder {
         }
     }
 
+    private static final class BlockCompressor4 {
+        private static void encode(ImageOutputStream imageOutput, RenderedImage image, DDSEncoderType type) throws IOException {
+            int blocksXCount = (image.getWidth() + 3) / 4;
+            int blocksYCount = (image.getHeight() + 3) / 4;
+            Raster raster = image.getData();
+
+            int[] samples = new int[64];
+            float[] reds = new float[8];
+            for (int blockY = 0; blockY < blocksYCount; blockY++) {
+                for (int blockX = 0; blockX < blocksXCount; blockX++) {
+                    raster.getPixels(blockX * 4, blockY * 4, 4, 4, samples);
+                    getColorRange(samples, reds, type);
+                    interpolate(reds, type);
+                    long data = calculateIndices(samples, reds, type);
+                    data |= composeRange(reds[0], reds[1], type);
+                    imageOutput.writeLong(data);
+                }
+            }
+        }
+
+        private static int composeRange(float red0, float red1, DDSEncoderType type) {
+            int r0, r1;
+            if (type == DDSEncoderType.BC4_SNORM) {
+                r0 = ((int) (red0 * 127f)) & 0xff;
+                r1 = ((int) (red1 * 127f)) & 0xff;
+            } else  {
+                r0 = (int) (red0 * 255f);
+                r1 = (int) (red1 * 255f);
+            }
+            return ((r1 << 8) | r0) & 0xffff;
+        }
+
+        // 6 bytes MSB will be for indices, the LSB is for the 2 red endpoints,
+        // as we write to file in LE the bytes will be swapped back to the desired order
+        private static long calculateIndices(int[] samples, float[] reds, DDSEncoderType type) {
+            long data = 0;
+            for (int i = 0; i < 16; i++) {
+                byte index;
+                if (reds[0] <= reds[1] && isAlphaBelowCap(samples[i * 4 + 3])) {
+                    index = 0b110;
+                } else {
+                    int rSample = (byte) (samples[i * 4]);
+                    float r = type == DDSEncoderType.BC4_UNORM ? rSample / 255f : ((byte) rSample / 127f);
+                    index = getNearest(r, reds, type);
+                }
+                data |= ((long)index << (16 + i * 3));
+            }
+            return data;
+        }
+
+        private static byte getNearest(float r, float[] reds, DDSEncoderType type) {
+            int nearest = 0;
+            float nearestValue = type == DDSEncoderType.BC4_SNORM ? -1f : 0f;
+            for (int i = 0; i < 8; i++) {
+                if (nearestValue > Math.abs(r - reds[i])) {
+                    nearest = i;
+                }
+            }
+            return (byte) nearest;
+        }
+
+        private static void interpolate(float[] reds, DDSEncoderType type) {
+            float r0 = reds[0];
+            float r1 = reds[1];
+            if (r0 > r1) {
+                for (int i = 1; i <= 6; i++) {
+                    reds[i + 1] = ((7 - i) * r0 + i * r1) / 7f;
+                }
+            } else {
+                for (int i = 1; i <= 4; i++) {
+                    reds[i + 1] = ((5 - i) * r0 + i * r1) / 5f;
+                }
+                reds[6] = type == DDSEncoderType.BC4_SNORM ? -1f : 0f;
+                reds[7] = 1f;
+            }
+        }
+
+
+        //r0 >  r1 : use 6 interpolated color values
+        //r0 <= r1 : use 4
+        private static void getColorRange(int[] samples, float[] red01, DDSEncoderType type) {
+            int i = 0;
+            boolean flag = true; //use 6 interpolated color values, otherwise 4
+            int r0 = 0, r1 = 255;
+            while (i < 64) {
+                int r = samples[i += 3];
+                int a = samples[i++];
+
+                if (isAlphaBelowCap(a)) {
+                    flag = false;
+                    continue;
+                }
+                r0 = Math.max(r0, r);
+                r1 = Math.min(r1, r);
+            }
+            writeRangeData(red01, flag, r1, r0, type);
+        }
+
+        private static void writeRangeData(float[] red01, boolean flag, int r1, int r0, DDSEncoderType type) {
+            if (type == DDSEncoderType.BC4_SNORM) {
+                byte red0 = (byte) r0;
+                byte red1 = (byte) r1;
+                if ((flag && red1 > red0) || (!flag && red0 > red1)) {
+                    red01[0] = red1 / 127f;
+                    red01[1] = red0 / 127f;
+                } else {
+                    red01[0] = red0 / 127f;
+                    red01[1] = red1 / 127f;
+                }
+            } else {
+                if ((flag && r1 > r0) || (!flag && r0 > r1)) {
+                    red01[0] = r1 / 255f;
+                    red01[1] = r0 / 255f;
+                } else {
+                    red01[0] = r0 / 255f;
+                    red01[1] = r1 / 255f;
+                }
+            }
+
+        }
+    }
+
     //pack 32 bits of the colors to a single int value.
     private static int color888ToInt(int r, int g, int b, int a) {
         return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
@@ -323,6 +447,9 @@ public class DDSImageDataEncoder {
         return (r5 << RGB_16_ORDER.redShift) | (g6 << RGB_16_ORDER.greenShift) | (b5 << RGB_16_ORDER.blueShift);
     }
 
+    private static boolean isAlphaBelowCap(int alpha) {
+        return alpha < ALPHA_CAP;
+    }
 
     private static final class Color16 {
         int r;

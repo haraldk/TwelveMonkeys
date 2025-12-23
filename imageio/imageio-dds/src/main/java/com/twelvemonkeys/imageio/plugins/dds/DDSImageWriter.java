@@ -1,6 +1,5 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
-import com.sun.imageio.plugins.bmp.BMPImageWriter;
 import com.twelvemonkeys.imageio.ImageWriterBase;
 
 import javax.imageio.IIOImage;
@@ -22,8 +21,6 @@ import java.util.Objects;
  * A designated class to begin writing DDS file with headers, class {@link DDSImageDataEncoder} will handle image data encoding process
  */
 class DDSImageWriter extends ImageWriterBase {
-    //maybe we move it to the DDSType enum as an extra constructor param ?
-    private static final Map<DDSType, int[]> ARGB_MASKS;
     protected DDSImageWriter(ImageWriterSpi provider) {
         super(provider);
     }
@@ -50,7 +47,7 @@ class DDSImageWriter extends ImageWriterBase {
         writeDXT10Header(param);
 
         //image data encoding
-        DDSImageDataEncoder.writeImageData(imageOutput, renderedImage, param.getType());
+        DDSImageDataEncoder.writeImageData(imageOutput, renderedImage, param.getEncoderType());
     }
 
     /**
@@ -95,8 +92,8 @@ class DDSImageWriter extends ImageWriterBase {
     private void writePixelFormat(DDSWriterParam param) throws IOException {
         imageOutput.writeInt(DDS.DDSPF_SIZE);
         writePixelFormatFlags(param);
-        writeFourCC(param.getType());
-        writeRGBAData(param.getType());
+        writeFourCC(param.getEncoderType());
+        writeRGBAData(param.getEncoderType());
     }
 
     private void writeDXT10Header(DDSWriterParam param) throws IOException {
@@ -114,15 +111,12 @@ class DDSImageWriter extends ImageWriterBase {
         }
     }
 
-    private void writeRGBAData(DDSType type) throws IOException {
+    private void writeRGBAData(DDSEncoderType type) throws IOException {
         if (!type.isFourCC()) {
             //dwRGBBitCount
-            imageOutput.writeInt(getBitsPerPixel(type));
+            imageOutput.writeInt(type.getBitsOrBlockSize());
 
-            int[] mask = ARGB_MASKS.get(type);
-            Objects.requireNonNull(mask, "no RBGA mask found for type " + type);
-            if (mask.length != 4) throw new IllegalStateException("RBGA mask length is not 4, got " + mask.length);
-
+            int[] mask = type.getRGBAMask();
             //dwRBitMask
             imageOutput.writeInt(mask[0]);
             //dwGBitMask
@@ -132,32 +126,31 @@ class DDSImageWriter extends ImageWriterBase {
             //dwABitMask
             imageOutput.writeInt(mask[3]);
         } else {
-            //write 5 zero integers
+            //write 5 zero integers as fourCC is used
             imageOutput.write(new byte[20]);
         }
     }
 
-    private void writeFourCC(DDSType type) throws IOException {
+    private void writeFourCC(DDSEncoderType type) throws IOException {
         if (type.isFourCC())
-            imageOutput.writeInt(type.value());
+            imageOutput.writeInt(type.getFourCC());
     }
 
     private void writePixelFormatFlags(DDSWriterParam param) throws IOException {
-        if (param.isUsingDxt10() || param.getType().isFourCC()) {
+        if (param.isUsingDxt10() || param.getEncoderType().isFourCC()) {
             imageOutput.writeInt(DDS.PIXEL_FORMAT_FLAG_FOURCC);
         } else {
-            imageOutput.writeInt(DDS.PIXEL_FORMAT_FLAG_RGB | (doesFormatSupportAlpha(param.getType()) ? DDS.PIXEL_FORMAT_FLAG_ALPHAPIXELS : 0));
+            imageOutput.writeInt(DDS.PIXEL_FORMAT_FLAG_RGB | (param.getEncoderType().isAlphaMaskSupported() ? DDS.PIXEL_FORMAT_FLAG_ALPHAPIXELS : 0));
         }
     }
 
     private void writePitchOrLinearSize(int height, int width, DDSWriterParam param) throws IOException {
-        DDSType type = param.getType();
+        DDSEncoderType type = param.getEncoderType();
+        int bitsOrBlockSize = type.getBitsOrBlockSize();
         if (type.isBlockCompression()) {
-            //we don't have BC4 support yet and DXT1 and BC1 is pretty much the same so we keep it this way for now.
-            int blockSize = (type == DDSType.DXT1 ? 8 : 16);
-            imageOutput.writeInt(((width + 3) / 4) * ((height + 3) / 4) * blockSize);
+            imageOutput.writeInt(((width + 3) / 4) * ((height + 3) / 4) * bitsOrBlockSize);
         } else {
-            imageOutput.writeInt(width * getBitsPerPixel(type));
+            imageOutput.writeInt(width * bitsOrBlockSize);
         }
     }
 
@@ -202,20 +195,6 @@ class DDSImageWriter extends ImageWriterBase {
     @Override
     public IIOMetadata convertImageMetadata(IIOMetadata inData, ImageTypeSpecifier imageType, ImageWriteParam param) {
         throw new UnsupportedOperationException("Direct Draw Surface does not support metadata.");
-    }
-
-    static {
-        ARGB_MASKS = new HashMap<>();
-        ARGB_MASKS.put(DDSType.A1R5G5B5, DDSReader.A1R5G5B5_MASKS);
-        ARGB_MASKS.put(DDSType.X1R5G5B5, DDSReader.X1R5G5B5_MASKS);
-        ARGB_MASKS.put(DDSType.A4R4G4B4, DDSReader.A4R4G4B4_MASKS);
-        ARGB_MASKS.put(DDSType.X4R4G4B4, DDSReader.X4R4G4B4_MASKS);
-        ARGB_MASKS.put(DDSType.R5G6B5, DDSReader.R5G6B5_MASKS);
-        ARGB_MASKS.put(DDSType.R8G8B8, DDSReader.R8G8B8_MASKS);
-        ARGB_MASKS.put(DDSType.A8B8G8R8, DDSReader.A8B8G8R8_MASKS);
-        ARGB_MASKS.put(DDSType.X8B8G8R8, DDSReader.X8B8G8R8_MASKS);
-        ARGB_MASKS.put(DDSType.A8R8G8B8, DDSReader.A8R8G8B8_MASKS);
-        ARGB_MASKS.put(DDSType.X8R8G8B8, DDSReader.X8R8G8B8_MASKS);
     }
 
     public static void main(String[] args) throws IOException {

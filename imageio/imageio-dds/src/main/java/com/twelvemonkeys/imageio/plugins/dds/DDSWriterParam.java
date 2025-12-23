@@ -7,18 +7,16 @@ import java.util.Objects;
 import java.util.Set;
 
 public class DDSWriterParam extends ImageWriteParam {
-    static final DDSWriterParam DEFAULT_PARAM = DDSWriterParam.builder().formatBC1().build();
+    static final DDSWriterParam DEFAULT_PARAM = DDSWriterParam.builder().formatBC4_SNORM().build();
     private final int optionalBitFlags;
-    private final DDSType ddsType;
+    private final DDSEncoderType encoderType;
     private final boolean enableDxt10;
-    private final int dxgiFormat;
 
-    DDSWriterParam(int optionalBitFlags, DDSType ddsType, boolean isUsingDxt10, int dxgiFormat) {
+    DDSWriterParam(int optionalBitFlags, DDSEncoderType encoderType, boolean isUsingDxt10) {
         super();
         this.optionalBitFlags = optionalBitFlags;
-        this.ddsType = ddsType;
+        this.encoderType = encoderType;
         this.enableDxt10 = isUsingDxt10;
-        this.dxgiFormat = dxgiFormat;
     }
 
     public static Builder builder() {
@@ -29,8 +27,8 @@ public class DDSWriterParam extends ImageWriteParam {
         return this.optionalBitFlags;
     }
 
-    DDSType getType() {
-        return this.ddsType;
+    DDSEncoderType getEncoderType() {
+        return this.encoderType;
     }
 
     public boolean isUsingDxt10() {
@@ -38,19 +36,18 @@ public class DDSWriterParam extends ImageWriteParam {
     }
 
     int getDxgiFormat() {
-        return dxgiFormat;
+        return getEncoderType().getDx10Format();
     }
 
     public static final class Builder {
         //we use Set collection to prevent duplications of bitflag setter calls
         private final Set<Integer> optionalBitFlags;
-        private DDSType ddsType;
+        private DDSEncoderType encoderType;
         private boolean isUsingDxt10;
-        private int dxgiFormat;
 
         public Builder() {
             this.optionalBitFlags = new LinkedSet<>();
-            ddsType = null;
+            encoderType = null;
             isUsingDxt10 = false;
         }
 
@@ -67,8 +64,7 @@ public class DDSWriterParam extends ImageWriteParam {
          * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_BC1_UNORM_SRGB
          */
         public Builder formatBC1() {
-            ddsType = DDSType.DXT1;
-            dxgiFormat = DDS.DXGI_FORMAT_BC1_UNORM_SRGB;
+            encoderType = DDSEncoderType.BC1;
             return this;
         }
 
@@ -77,8 +73,7 @@ public class DDSWriterParam extends ImageWriteParam {
          * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_BC2_UNORM_SRGB.
          */
         public Builder formatBC2() {
-            ddsType = DDSType.DXT2;
-            dxgiFormat = DDS.DXGI_FORMAT_BC2_UNORM_SRGB;
+            encoderType = DDSEncoderType.BC2;
             return this;
         }
 
@@ -87,9 +82,25 @@ public class DDSWriterParam extends ImageWriteParam {
          * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_BC3_UNORM_SRGB.
          */
         public Builder formatBC3() {
-            ddsType = DDSType.DXT5;
-            dxgiFormat = DDS.DXGI_FORMAT_BC3_UNORM_SRGB;
+            encoderType = DDSEncoderType.BC3;
             return this;
+        }
+
+        /**
+         * Set the compression type to be BC4 (DX10). Enable DX10.
+         * This will set DXGI Format to DXGI_FORMAT_BC3_UNORM_SRGB.
+         */
+        public Builder formatBC4_UNORM() {
+            encoderType = DDSEncoderType.BC4_UNORM;
+            return formatDXT10();
+        }
+        /**
+         * Set the compression type to be BC4 (DX10). Enable DX10.
+         * This will set DXGI Format to DXGI_FORMAT_BC3_SNORM_SRGB.
+         */
+        public Builder formatBC4_SNORM() {
+            encoderType = DDSEncoderType.BC4_SNORM;
+            return formatDXT10();
         }
 
         /**
@@ -97,8 +108,7 @@ public class DDSWriterParam extends ImageWriteParam {
          * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
          */
         public Builder formatB8G8R8A8() {
-            ddsType = DDSType.A8B8G8R8;
-            dxgiFormat = DDS.DXGI_FORMAT_B8G8R8A8_UNORM_SRGB;
+            encoderType = DDSEncoderType.BRGA32;
             return this;
         }
 
@@ -107,8 +117,7 @@ public class DDSWriterParam extends ImageWriteParam {
          * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
          */
         public Builder formatB8G8R8X8() {
-            ddsType = DDSType.X8B8G8R8;
-            dxgiFormat = DDS.DXGI_FORMAT_B8G8R8X8_UNORM_SRGB;
+            encoderType = DDSEncoderType.BGRX32;
             return this;
         }
 
@@ -117,8 +126,7 @@ public class DDSWriterParam extends ImageWriteParam {
          * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
          */
         public Builder formatR8G8B8A8() {
-            ddsType = DDSType.A8R8G8B8;
-            dxgiFormat = DDS.DXGI_FORMAT_R8G8B8A8_UNORM_SRGB;
+            encoderType = DDSEncoderType.RGBA32;
             return this;
         }
 
@@ -156,8 +164,8 @@ public class DDSWriterParam extends ImageWriteParam {
         }
 
         public DDSWriterParam build() {
-            Objects.requireNonNull(ddsType, "no DDS format specified.");
-            return new DDSWriterParam(optionalBitFlags.stream().reduce((i1, i2) -> i1 | i2).orElse(0), ddsType, isUsingDxt10, dxgiFormat);
+            Objects.requireNonNull(encoderType, "no DDS format specified.");
+            return new DDSWriterParam(optionalBitFlags.stream().reduce((i1, i2) -> i1 | i2).orElse(0), encoderType, isUsingDxt10);
         }
     }
 }

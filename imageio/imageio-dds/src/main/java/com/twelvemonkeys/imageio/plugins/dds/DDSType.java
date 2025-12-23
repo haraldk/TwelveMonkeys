@@ -58,36 +58,6 @@ enum DDSType {
         return value;
     }
 
-    public boolean isBlockCompression() {
-        //int type = (value >> 24) & 0xFF;
-        //return type >= '1' && type <= '5';
-        switch (this) {
-            case DXT1:
-            case DXT2:
-            case DXT3:
-            case DXT4:
-            case DXT5:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    public boolean isFourCC() {
-        //return (value & 0x0000FFFF) == 0x5844;
-        switch (this) {
-            case DXT1:
-            case DXT2:
-            case DXT3:
-            case DXT4:
-            case DXT5:
-            case DXT10:
-                return true;
-            default:
-                return false;
-        }
-    }
-
     public static DDSType valueOf(int value) {
         for (DDSType type : DDSType.values()) {
             if (value == type.value()) {
