@@ -52,8 +52,6 @@ class DDSImageWriter extends ImageWriterBase {
         //image data encoding
         DDSImageDataEncoder.writeImageData(imageOutput, renderedImage, param.getEncoderType());
         imageOutput.flush();
-        long flushed = imageOutput.getFlushedPosition();
-        int i = 0;
     }
 
     /**
@@ -177,39 +175,6 @@ class DDSImageWriter extends ImageWriterBase {
         }
     }
 
-    private boolean doesFormatSupportAlpha(DDSType type) {
-        switch (type) {
-            case X8B8G8R8:
-                return false;
-            case A8B8G8R8:
-            case A8R8G8B8:
-                return true;
-            default:
-                throw new IllegalArgumentException("FOURCC formats are not expected.");
-        }
-    }
-
-    private int getBitsPerPixel(DDSType type) {
-        switch (type) {
-            case A1R5G5B5:
-            case X1R5G5B5:
-            case A4R4G4B4:
-            case X4R4G4B4:
-            case R5G6B5:
-                return 16;
-            case R8G8B8:
-                return 24;
-            case A8B8G8R8:
-            case X8B8G8R8:
-            case A8R8G8B8:
-            case X8R8G8B8:
-                return 32;
-
-            default:
-                throw new IllegalArgumentException("Cannot determine bits per pixel with " + type);
-        }
-    }
-
     @Override
     public IIOMetadata getDefaultImageMetadata(ImageTypeSpecifier imageType, ImageWriteParam param) {
         throw new UnsupportedOperationException("Direct Draw Surface does not support metadata.");
@@ -225,7 +190,7 @@ class DDSImageWriter extends ImageWriterBase {
         try (ImageOutputStream outputStream
                      //RandomAccessFile-based output stream seems to take a bit more time to write and output size tend to double the expected
                      //this is expected to write data in a linear way, and not depended on RAF.
-                     = new MemoryCacheImageOutputStream(Files.newOutputStream(Paths.get("test_output.dds"), StandardOpenOption.TRUNCATE_EXISTING))) {
+                     = new MemoryCacheImageOutputStream(Files.newOutputStream(Paths.get("test_output.dds"), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE))) {
             DDSImageWriter writer = new DDSImageWriter(null);
             writer.setOutput(outputStream);
             writer.write(ImageIO.read(new File(args[0])));

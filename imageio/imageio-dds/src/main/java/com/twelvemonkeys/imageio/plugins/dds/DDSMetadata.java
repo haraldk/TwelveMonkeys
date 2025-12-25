@@ -30,9 +30,9 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
-import javax.imageio.ImageTypeSpecifier;
-
 import com.twelvemonkeys.imageio.StandardImageMetadataSupport;
+
+import javax.imageio.ImageTypeSpecifier;
 
 final class DDSMetadata extends StandardImageMetadataSupport {
     DDSMetadata(ImageTypeSpecifier type, DDSHeader header) {

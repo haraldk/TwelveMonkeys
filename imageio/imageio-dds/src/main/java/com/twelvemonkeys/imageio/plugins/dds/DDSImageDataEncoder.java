@@ -1,12 +1,15 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
 import javax.imageio.stream.ImageOutputStream;
-import java.awt.*;
+import java.awt.Color;
 import java.awt.image.Raster;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
 
-import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.*;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.ARGB_ORDER;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.BIT5;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.BIT6;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.RGB_16_ORDER;
 
 /**
  * A designated class to encode image data to binary.
@@ -328,9 +331,9 @@ class DDSImageDataEncoder {
 
         private int getNearest(int r, int[] reds) {
             int nearest = 0;
-            int nearestValue = 255;
+            float nearestValue = 255;
             for (int i = 0; i < 8; i++) {
-                int v = Math.abs(reds[i] - r);
+                float v = (float) Math.sqrt((reds[i] - r) ^ 2);
                 if (nearestValue >= v) {
                     nearest = i;
                     nearestValue = v;
