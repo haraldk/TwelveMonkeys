@@ -7,7 +7,7 @@ import java.util.Objects;
 import java.util.Set;
 
 public class DDSWriterParam extends ImageWriteParam {
-    static final DDSWriterParam DEFAULT_PARAM = DDSWriterParam.builder().formatBC3().build();
+    public static final DDSWriterParam DEFAULT_PARAM = DDSWriterParam.builder().formatBC3().build();
     private final int optionalBitFlags;
     private final DDSEncoderType encoderType;
     private final boolean enableDxt10;
@@ -61,46 +61,47 @@ public class DDSWriterParam extends ImageWriteParam {
 
         /**
          * Set the compression type to be BC1 (DXT1).
-         * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_BC1_UNORM_SRGB
+         * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_BC1_UNORM.
          */
         public Builder formatBC1() {
             encoderType = DDSEncoderType.BC1;
-            return this;
+            return flagLinearSize();
         }
 
         /**
          * Set the compression type to be BC2 (DXT2/DXT3).
-         * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_BC2_UNORM_SRGB.
+         * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_BC2_UNORM.
          */
         public Builder formatBC2() {
             encoderType = DDSEncoderType.BC2;
-            return this;
+            return flagLinearSize();
         }
 
         /**
          * Set the compression type to be BC3 (DXT4/DXT5).
-         * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_BC3_UNORM_SRGB.
+         * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_BC3_UNORM.
          */
         public Builder formatBC3() {
             encoderType = DDSEncoderType.BC3;
-            return this;
+            return flagLinearSize();
         }
 
         /**
-         * Set the compression type to be BC4 (DX10). Enable DX10.
-         * This will set DXGI Format to DXGI_FORMAT_BC3_UNORM_SRGB.
+         * Set the compression type to be BC4 (BC4U).
+         * This will set DXGI Format to DXGI_FORMAT_BC4_UNORM.
          */
-        public Builder formatBC4_UNORM() {
-            encoderType = DDSEncoderType.BC4_UNORM;
-            return enableDX10();
+        public Builder formatBC4() {
+            encoderType = DDSEncoderType.BC4;
+            return flagLinearSize();
         }
+
         /**
-         * Set the compression type to be BC4 (DX10). Enable DX10.
-         * This will set DXGI Format to DXGI_FORMAT_BC3_SNORM_SRGB.
+         * Set the compression type to be BC5 (BC5U).
+         * This will set DXGI Format to DXGI_FORMAT_BC5_UNORM.
          */
-        public Builder formatBC4_SNORM() {
-            encoderType = DDSEncoderType.BC4_SNORM;
-            return enableDX10();
+        public Builder formatBC5() {
+            encoderType = DDSEncoderType.BC5;
+            return flagLinearSize();
         }
 
         /**

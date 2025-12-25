@@ -9,10 +9,15 @@ import javax.imageio.ImageWriteParam;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageOutputStream;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
+import java.awt.image.Raster;
 import java.awt.image.RenderedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 
 /**
  * A designated class to begin writing DDS file with headers, class {@link DDSImageDataEncoder} will handle image data encoding process
@@ -32,6 +37,7 @@ class DDSImageWriter extends ImageWriterBase {
         assertOutput();
         RenderedImage renderedImage = image.getRenderedImage();
         ensureTextureSize(renderedImage);
+        ensureImageChannels(renderedImage);
 
         DDSWriterParam param = !(p instanceof DDSWriterParam) ? this.getDefaultWriteParam() : ((DDSWriterParam) p);
         //throw new IllegalArgumentException("ImageWriteParam must be a DDSWriterParam, got " + p.getClass().getSimpleName());
@@ -45,6 +51,23 @@ class DDSImageWriter extends ImageWriterBase {
 
         //image data encoding
         DDSImageDataEncoder.writeImageData(imageOutput, renderedImage, param.getEncoderType());
+        imageOutput.flush();
+        long flushed = imageOutput.getFlushedPosition();
+        int i = 0;
+    }
+
+    /**
+     * Checking if the image has 3 channels (RGB) or 4 channels (RGBA) and if image has 8 bits/channel.
+     */
+
+    private void ensureImageChannels(RenderedImage renderedImage) {
+        Raster data = renderedImage.getData();
+        int numBands = data.getNumBands();
+        if (numBands < 3)
+            throw new IllegalStateException("Only image with 3 channels (RGB) or 4 channels (RGBA) is supported, got " + numBands + " channels");
+        int sampleSize = data.getSampleModel().getSampleSize(0);
+        if (sampleSize != 8)
+            throw new IllegalStateException("Only image with 8 bits/channel is supported, got " + sampleSize);
     }
 
     /**
@@ -132,7 +155,7 @@ class DDSImageWriter extends ImageWriterBase {
         if (param.isUsingDxt10()) {
             imageOutput.writeInt(DDSType.DXT10.value());
         } else if (param.getEncoderType().isFourCC())
-                imageOutput.writeInt(param.getEncoderType().getFourCC());
+            imageOutput.writeInt(param.getEncoderType().getFourCC());
 
     }
 
@@ -199,7 +222,10 @@ class DDSImageWriter extends ImageWriterBase {
 
     public static void main(String[] args) throws IOException {
         if (args.length != 1) throw new IllegalArgumentException("Use 1 input file at a time.");
-        try (ImageOutputStream outputStream = ImageIO.createImageOutputStream(new File("test_output.dds"))) {
+        try (ImageOutputStream outputStream
+                     //RandomAccessFile-based output stream seems to take a bit more time to write and output size tend to double the expected
+                     //this is expected to write data in a linear way, and not depended on RAF.
+                     = new MemoryCacheImageOutputStream(Files.newOutputStream(Paths.get("test_output.dds"), StandardOpenOption.TRUNCATE_EXISTING))) {
             DDSImageWriter writer = new DDSImageWriter(null);
             writer.setOutput(outputStream);
             writer.write(ImageIO.read(new File(args[0])));

@@ -5,14 +5,16 @@ package com.twelvemonkeys.imageio.plugins.dds;
  *
  * <a href="https://learn.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format">DXGI Format List</a>
  * <a href="https://learn.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-block-compression#compression-algorithms">Compression Algorithms</a>
+ * <a href="https://github.com/microsoft/DirectXTK12/wiki/DDSTextureLoader#remarks">An extended Non-DX10 FourCC list</a>
  */
 public enum DDSEncoderType {
-    BC1(DDSType.DXT1.value(), DDS.DXGI_FORMAT_BC1_UNORM_SRGB, 8),
-    BC2(DDSType.DXT2.value(), DDS.DXGI_FORMAT_BC2_UNORM_SRGB, 16),
-    BC3(DDSType.DXT5.value(), DDS.DXGI_FORMAT_BC3_UNORM_SRGB, 16),
+    BC1(DDSType.DXT1.value(), DDS.DXGI_FORMAT_BC1_UNORM, 8),
+    BC2(DDSType.DXT2.value(), DDS.DXGI_FORMAT_BC2_UNORM, 16),
+    BC3(DDSType.DXT5.value(), DDS.DXGI_FORMAT_BC3_UNORM, 16),
     //DXTn supports BC1-3 so BC4+ are DXT10 exclusive
-    BC4_UNORM(DDSType.DXT10.value(), DDS.DXGI_FORMAT_BC4_UNORM, 8),
-    BC4_SNORM(DDSType.DXT10.value(), DDS.DXGI_FORMAT_BC4_SNORM, 8),
+    BC4(0x31495441, DDS.DXGI_FORMAT_BC4_UNORM, 8),
+    BC5(0x32495441, DDS.DXGI_FORMAT_BC5_UNORM, 16),
+
     RGBA32(29, 32, DDSReader.A8R8G8B8_MASKS),
     BRGA32(91, 32, DDSReader.A8B8G8R8_MASKS),
     BGRX32(DDS.DXGI_FORMAT_B8G8R8X8_UNORM_SRGB, 32, DDSReader.X8B8G8R8_MASKS);
