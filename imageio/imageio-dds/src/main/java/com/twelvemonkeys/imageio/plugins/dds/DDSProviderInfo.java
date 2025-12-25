@@ -41,10 +41,12 @@ final class DDSProviderInfo extends ReaderWriterProviderInfo {
                 new String[]{"image/vnd-ms.dds"},
                 "com.twelvemonkeys.imageio.plugins.dds.DDSImageReader",
                 new String[]{"com.twelvemonkeys.imageio.plugins.dds.DDSImageReaderSpi"},
-                null,
-                null,
-                false, null, null, null, null,
-                true, null, null, null, null
+                "com.twelvemonkeys.imageio.plugins.dds.DDSImageWriter",
+                new String[]{"com.twelvemonkeys.imageio.plugins.dds.DDSImageWriterSpi"},
+                false, null, null,
+                null, null, true,
+                null, null, null,
+                null
         );
     }
 }
