@@ -276,6 +276,12 @@ public final class VP8LDecoder {
     private int decodeBwRef(WritableRaster raster, ColorCache colorCache, int width, HuffmanCodeGroup curCodeGroup, byte[] rgba, short code, int x, int y) throws IOException {
         int length = lz77decode(code - 256);
 
+        int remaining = width * raster.getHeight() - (y * width + x);
+        if (length > remaining) {
+            throw new IIOException("Corrupt WebP stream, backward reference exceeds image bounds: length=" + length +
+                                   ", remaining=" + remaining + ", x=" + x + ", y=" + y);
+        }
+
         short distancePrefix = curCodeGroup.distanceCode.readSymbol(lsbBitReader);
         int distanceCode = lz77decode(distancePrefix);
 
@@ -300,6 +306,11 @@ public final class VP8LDecoder {
         else if (xSrc >= width) {
             xSrc -= width;
             ySrc++;
+        }
+
+        if (ySrc < 0 || ySrc >= raster.getHeight()) {
+            throw new IIOException("Corrupt WebP stream, backward reference outside image: distance=" + distanceCode +
+                                   ", x=" + x + ", y=" + y + ", xSrc=" + xSrc + ", ySrc=" + ySrc);
         }
 
         for (int l = length; l > 0; x++, l--) {
