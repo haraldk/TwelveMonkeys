@@ -41,7 +41,11 @@ import javax.imageio.stream.ImageOutputStream;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
 
 import static com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry.getType;
 import static com.twelvemonkeys.imageio.metadata.tiff.TIFFEntry.getValueLength;
@@ -176,7 +180,7 @@ public final class TIFFWriter extends MetadataWriter {
                 stream.seek(dataOffset);
                 Directory subIFD = (Directory) value;
                 writeIFD(subIFD, stream, true);
-                dataOffset += computeDataSize(subIFD);
+                dataOffset += computeDataSize(subIFD) + directoryCountLength + subIFD.size() * entryLength;
                 stream.seek(streamPosition);
             }
             else {
