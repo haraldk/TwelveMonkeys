@@ -166,71 +166,79 @@ final class HuffmanTable {
         if (numPosCodeLens == 1) {
             // Length is 0 so mask to clear length bits
             Arrays.fill(level1, lengthsAndSymbols[0] & 0xffff);
+            return;
         }
 
         // Due to the layout of the elements this effectively first sorts by length and then symbol.
         Arrays.sort(lengthsAndSymbols);
 
+        int[] count = new int[16];
+        for (int lengthAndSymbol : lengthsAndSymbols) {
+            count[lengthAndSymbol >>> 16]++;
+        }
+
         // The next code, in the bit order it would appear on the input stream, i.e. it is reversed.
         // Only the lowest bits (corresponding to the bit length of the code) are considered.
         // Example: code 0..010 (length 2) would appear as 0..001.
         int code = 0;
+        int step = 2;
+        index = 0;
 
-        // Used for level2 lookup
+        for (int length = 1; length <= LEVEL1_BITS; length++, step <<= 1) {
+            for (; count[length] > 0; count[length]--) {
+                int lengthAndSymbol = lengthsAndSymbols[index++];
+
+                for (int j = code; j < level1.length; j += step) {
+                    level1[j] = lengthAndSymbol;
+                }
+
+                code = nextCode(code, length);
+            }
+        }
+
+        int rootMask = (1 << LEVEL1_BITS) - 1;
         int rootEntry = -1;
         int[] currentTable = null;
 
-        for (int i = 0; i < lengthsAndSymbols.length; i++) {
-            int lengthAndSymbol = lengthsAndSymbols[i];
+        step = 2;
+        for (int length = LEVEL1_BITS + 1; length <= 15; length++, step <<= 1) {
+            for (; count[length] > 0; count[length]--) {
+                int lengthAndSymbol = lengthsAndSymbols[index++];
 
-            int length = lengthAndSymbol >>> 16;
+                if ((code & rootMask) != rootEntry) {
+                    int level2Bits = nextTableBitSize(count, length, LEVEL1_BITS);
+                    int level2Size = 1 << level2Bits;
 
-            if (length <= LEVEL1_BITS) {
-                for (int j = code; j < level1.length; j += 1 << length) {
-                    level1[j] = lengthAndSymbol;
-                }
-            }
-            else {
-                // Existing level2 table not fitting
-                if ((code & ((1 << LEVEL1_BITS) - 1)) != rootEntry) {
-                    // Figure out needed table size.
-                    // Start at current symbol and length.
-                    // Every symbol uses 1 slot at the current bit length.
-                    // Going up 1 bit in length multiplies the slots by 2.
-                    // No more open slots indicate the table size to be big enough.
-                    int maxLength = length;
-
-                    for (int j = i, openSlots = 1 << (length - LEVEL1_BITS);
-                         j < lengthsAndSymbols.length && openSlots > 0;
-                         j++, openSlots--) {
-
-                        int innerLength = lengthsAndSymbols[j] >>> 16;
-
-                        while (innerLength != maxLength) {
-                            maxLength++;
-                            openSlots <<= 1;
-                        }
-                    }
-
-                    int level2Size = maxLength - LEVEL1_BITS;
-
-                    currentTable = new int[1 << level2Size];
-                    rootEntry = code & ((1 << LEVEL1_BITS) - 1);
+                    currentTable = new int[level2Size];
+                    rootEntry = code & rootMask;
                     level2.add(currentTable);
 
                     // Set root table indirection
-                    level1[rootEntry] = (LEVEL1_BITS + level2Size) << 16 | (level2.size() - 1);
+                    level1[rootEntry] = (LEVEL1_BITS + level2Bits) << 16 | (level2.size() - 1);
                 }
 
-                // Add to existing (or newly generated) 2nd level table
-                for (int j = (code >>> LEVEL1_BITS); j < currentTable.length; j += 1 << (length - LEVEL1_BITS)) {
-                    currentTable[j] = (length - LEVEL1_BITS) << 16 | (lengthAndSymbol & 0xffff);
+                int value = (length - LEVEL1_BITS) << 16 | (lengthAndSymbol & 0xffff);
+                for (int j = (code >>> LEVEL1_BITS); j < currentTable.length; j += step) {
+                    currentTable[j] = value;
                 }
+
+                code = nextCode(code, length);
             }
-
-            code = nextCode(code, length);
-
         }
+    }
+
+    private static int nextTableBitSize(int[] count, int length, int rootBits) {
+        int left = 1 << (length - rootBits);
+        while (length < 15) {
+            left -= count[length];
+            if (left <= 0) {
+                break;
+            }
+            length++;
+            left <<= 1;
+        }
+
+        return length - rootBits;
     }
 
     /**
