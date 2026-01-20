@@ -270,6 +270,19 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
         }
     }
 
+    /**
+     * This test compares alpha channel information that is decoded by the WebPImageReader with the known "good" alpha 
+     * channel information. To generate the known "good" alpha channel information, we use the command line and libwebp,
+     * e.g.
+     * 
+     * <pre>{@code
+     * dwebp imageio/imageio-webp/src/test/resources/webp/lossless.transparent.webp -o /tmp/lossless.transparent.png
+     * magick /tmp/lossless.transparent.png -alpha extract -depth 8 gray:/tmp/lossless.transparent-alpha.raw
+     * shasum -a 256 /tmp/lossless.transparent-alpha.raw
+     * }</pre>
+     * 
+     * @throws IOException
+     */
     @Test
     public void testReadWriteTransparentWebP() throws IOException {
         WebPImageReader reader = createReader();
@@ -285,7 +298,6 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
 
             // Read the full image and validate alpha output (exercises long LZ77 back-references).
             BufferedImage image = reader.read(0);
-            image.flush();
             assertNotNull(image, "Image should not be null");
             assertEquals(width, image.getWidth(), "Image width should match");
             assertEquals(height, image.getHeight(), "Image height should match");
