@@ -285,7 +285,6 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
 
             // Read the full image and validate alpha output (exercises long LZ77 back-references).
             BufferedImage image = reader.read(0);
-            image.flush();
             assertNotNull(image, "Image should not be null");
             assertEquals(width, image.getWidth(), "Image width should match");
             assertEquals(height, image.getHeight(), "Image height should match");
