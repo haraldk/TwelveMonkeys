@@ -13,6 +13,15 @@ import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.RGB_16_ORDER;
 
 /**
  * A designated class to encode image data to binary.
+ * <p>
+ * References:
+ * <p>
+ * [1] <a href="https://www.ludicon.com/castano/blog/2009/03/gpu-dxt-decompression/">GPU DXT Decompression</a>.
+ * [2] <a href="https://sv-journal.org/2014-1/06/en/index.php">TEXTURE COMPRESSION TECHNIQUES</a>.
+ * [3] <a href="https://mrelusive.com/publications/papers/Real-Time-Dxt-Compression.pdf">Real-Time DXT Compression by J.M.P. van Waveren</a>
+ * [4] <a href="https://registry.khronos.org/DataFormat/specs/1.4/dataformat.1.4.pdf">Khronos Data Format Specification v1.4 by Andrew Garrard</a>
+ * </p>
+ * </p>
  */
 class DDSImageDataEncoder {
     //A cap for alpha value for BC1 where if alpha value is smaller than this, the 4x4 block will enable alpha mode.
@@ -44,25 +53,21 @@ class DDSImageDataEncoder {
         }
     }
 
-    /**
-     * Handles BC1 compression.
-     * <p>
-     * References:
-     * <p>[1] <a href="https://www.ludicon.com/castano/blog/2009/03/gpu-dxt-decompression/">GPU DXT Decompression</a>.</p>
-     * <p>[2] <a href="https://sv-journal.org/2014-1/06/en/index.php">TEXTURE COMPRESSION TECHNIQUES</a>.</p>
-     * <p>[3] <a href="https://mrelusive.com/publications/papers/Real-Time-Dxt-Compression.pdf">Real-Time DXT Compression by J.M.P. van Waveren</a></p>
-     * </p>
-     */
     private static class BlockCompressor1 extends BlockCompressorBase {
         private final boolean forceOpaque;
         //color0,1 : space 565
         //color2,3 : space 888
         private final int[] palettes;
+        private final MutableColor[] color32s;
 
         private BlockCompressor1(boolean forceOpaque) {
             super();
             this.forceOpaque = forceOpaque;
             palettes = new int[4];
+            color32s = new MutableColor[16];
+            for (int i = 0; i < 16; i++) {
+                color32s[i] = new MutableColor();
+            }
         }
 
         void startEncodeBlock(ImageOutputStream imageOutput, int[] sampled) throws IOException {
@@ -70,7 +75,7 @@ class DDSImageDataEncoder {
             imageOutput.writeShort((short) palettes[0]);
             imageOutput.writeShort((short) palettes[1]);
             //simulating color2,3
-            calculateIntermediate(alphaMode, palettes);
+            interpolate(alphaMode, palettes);
             //indices encoding start.
             int indices = encodeBlockIndices(alphaMode, sampled, palettes);
             //encodeBlockIndices2(alphaMode, sampled, palettes[0], palettes[1], colors);
@@ -89,7 +94,7 @@ class DDSImageDataEncoder {
             Color c3 = color888ToObject(palettes[3]);
 
             while (i < 64) {
-                Color c = new Color(sampled[i++], sampled[i++], sampled[i++]);
+                Color c = setColorFor(colorPos, sampled[i++], sampled[i++], sampled[i++]);
                 byte index;
                 int a = sampled[i++];
                 if (alphaMode && isAlphaBelowCap(a)) {
@@ -107,11 +112,16 @@ class DDSImageDataEncoder {
             return indices;
         }
 
+        private Color setColorFor(int index, int r, int g, int b) {
+            color32s[index].setColor(r, g, b);
+            return color32s[index];
+        }
+
         //color space 888
         private static double calculateDistance(Color color1, Color color0) {
-            float r = color0.getRed() - color1.getRed();
-            float g = color0.getGreen() - color1.getGreen();
-            float b = color0.getBlue() - color1.getBlue();
+            float r = Math.abs(color0.getRed() - color1.getRed());
+            float g = Math.abs(color0.getGreen() - color1.getGreen());
+            float b = Math.abs(color0.getBlue() - color1.getBlue());
             return Math.sqrt(r * r + g * g + b * b);
         }
 
@@ -126,7 +136,7 @@ class DDSImageDataEncoder {
         //this method, we work in 888 space
         @SuppressWarnings("DuplicatedCode")
         //just in case intellij warns for 'duplication'
-        void calculateIntermediate(boolean alphaMode, int[] palettes) {
+        void interpolate(boolean alphaMode, int[] palettes) {
             Color rgb0 = convertTo888(palettes[0]);
             Color rgb1 = convertTo888(palettes[1]);
             int rgb2;
@@ -234,13 +244,6 @@ class DDSImageDataEncoder {
             return (r + g + b) / 3;
         }
 
-        //https://rgbcolorpicker.com/565
-        private static int convertTo565(int r8, int g8, int b8) {
-            int r5 = (r8 >> 3);
-            int g6 = (g8 >> 2);
-            int b5 = (b8 >> 3);
-            return color565ToInt(r5, g6, b5);
-        }
 
         private static Color convertTo888(int c565) {
             int r8 = BIT5[(c565 & 0xF800) >> 11];
@@ -333,7 +336,7 @@ class DDSImageDataEncoder {
             int nearest = 0;
             float nearestValue = 255;
             for (int i = 0; i < 8; i++) {
-                float v = (float) Math.sqrt((reds[i] - r) ^ 2);
+                float v = Math.abs(r - reds[i]);
                 if (nearestValue >= v) {
                     nearest = i;
                     nearestValue = v;
@@ -397,6 +400,15 @@ class DDSImageDataEncoder {
         }
     }
 
+    //https://rgbcolorpicker.com/565
+    //pack 32 bits color into a single 5:6:5 16bits value
+    static int convertTo565(int r8, int g8, int b8) {
+        int r5 = (r8 >> 3);
+        int g6 = (g8 >> 2);
+        int b5 = (b8 >> 3);
+        return color565ToInt(r5, g6, b5);
+    }
+
     //pack 32 bits of the colors to a single int value.
     private static int color888ToInt(int r, int g, int b, int a) {
         return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
@@ -448,17 +460,17 @@ class DDSImageDataEncoder {
         abstract void startEncodeBlock(ImageOutputStream imageOutput, int[] samples) throws IOException;
     }
 
-    private static final class Color16 {
-        int r;
-        int g;
-        int b;
+    private static final class Color16 extends Color {
+        private final int rgb16;
 
         Color16(int red, int green, int blue) {
-            this.r = red;
-            this.g = green;
-            this.b = blue;
-            if ((r + g + b) < 0 || (r + g + b) > 31 + 63 + 31)
-                throw new IllegalArgumentException("Invalid 5:6:5 color : " + red + ", " + green + ", " + blue);
+            super(red, green, blue);
+            rgb16 = convertTo565(red, green, blue);
+        }
+
+        @Override
+        public int getRGB() {
+            return rgb16;
         }
 
         Color16(int c565) {
@@ -467,6 +479,27 @@ class DDSImageDataEncoder {
                     (c565 & 0b111111_00000) >> RGB_16_ORDER.greenShift,
                     (c565 & 0b11111) >> RGB_16_ORDER.blueShift
             );
+        }
+    }
+
+    private static final class MutableColor extends Color {
+
+        int value;
+
+        public MutableColor() {
+            super(0, 0, 0);
+            this.value = 0;
+        }
+
+        void setColor(int red, int green, int blue) {
+            value = red << ARGB_ORDER.redShift;
+            value |= green << ARGB_ORDER.greenShift;
+            value |= blue << ARGB_ORDER.blueShift;
+        }
+
+        @Override
+        public int getRGB() {
+            return this.value;
         }
     }
 }

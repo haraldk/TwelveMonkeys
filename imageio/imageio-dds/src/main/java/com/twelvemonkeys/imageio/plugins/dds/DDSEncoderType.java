@@ -2,7 +2,6 @@ package com.twelvemonkeys.imageio.plugins.dds;
 
 /**
  * Lists a number of supported encoders for block compressors and uncompressed types.
- *
  * <a href="https://learn.microsoft.com/en-us/windows/win32/api/dxgiformat/ne-dxgiformat-dxgi_format">DXGI Format List</a>
  * <a href="https://learn.microsoft.com/en-us/windows/win32/direct3d10/d3d10-graphics-programming-guide-resources-block-compression#compression-algorithms">Compression Algorithms</a>
  * <a href="https://github.com/microsoft/DirectXTK12/wiki/DDSTextureLoader#remarks">An extended Non-DX10 FourCC list</a>

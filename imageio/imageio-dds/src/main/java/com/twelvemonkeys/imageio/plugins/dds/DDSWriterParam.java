@@ -69,7 +69,7 @@ public class DDSWriterParam extends ImageWriteParam {
         }
 
         /**
-         * Set the compression type to be BC2 (DXT2/DXT3).
+         * Set the compression type to be BC2 (DXT3).
          * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_BC2_UNORM.
          */
         public Builder formatBC2() {
@@ -78,7 +78,7 @@ public class DDSWriterParam extends ImageWriteParam {
         }
 
         /**
-         * Set the compression type to be BC3 (DXT4/DXT5).
+         * Set the compression type to be BC3 (DXT5).
          * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_BC3_UNORM.
          */
         public Builder formatBC3() {
