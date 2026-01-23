@@ -1,3 +1,4 @@
+
 package com.twelvemonkeys.imageio.plugins.webp;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
@@ -11,6 +12,8 @@ import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.*;
 import java.awt.image.*;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -265,5 +268,77 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
         finally {
             reader.dispose();
         }
+    }
+
+    /**
+     * This test compares alpha channel information that is decoded by the WebPImageReader with the known "good" alpha 
+     * channel information. To generate the known "good" alpha channel information, we use the command line and libwebp,
+     * e.g.
+     * 
+     * <pre>{@code
+     * dwebp imageio/imageio-webp/src/test/resources/webp/lossless.transparent.webp -o /tmp/lossless.transparent.png
+     * magick /tmp/lossless.transparent.png -alpha extract -depth 8 gray:/tmp/lossless.transparent-alpha.raw
+     * shasum -a 256 /tmp/lossless.transparent-alpha.raw
+     * }</pre>
+     * 
+     * @throws IOException
+     */
+    @Test
+    public void testReadWriteTransparentWebP() throws IOException {
+        WebPImageReader reader = createReader();
+  
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/lossless.transparent.webp"))) {
+            reader.setInput(stream);
+
+            // Read dimensions
+            int width = reader.getWidth(0);
+            int height = reader.getHeight(0);
+            assertEquals(1920, width, "Expected width of 1920");
+            assertEquals(1477, height, "Expected height of 1477");
+
+            // Read the full image and validate alpha output (exercises long LZ77 back-references).
+            BufferedImage image = reader.read(0);
+            assertNotNull(image, "Image should not be null");
+            assertEquals(width, image.getWidth(), "Image width should match");
+            assertEquals(height, image.getHeight(), "Image height should match");
+            assertTrue(image.getColorModel().hasAlpha(), "Image should have alpha channel");
+            assertEquals("79ffff20392a9cef308b317cbac9d3e57f78e26a4f49fb38b3f3b4dbc4e63c50",
+                    sha256Alpha(image), "Alpha plane hash mismatch");
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static String sha256Alpha(BufferedImage image) {
+        WritableRaster alphaRaster = image.getAlphaRaster();
+        assertNotNull(alphaRaster, "Image should have alpha raster");
+
+        int width = alphaRaster.getWidth();
+        int height = alphaRaster.getHeight();
+        int[] samples = alphaRaster.getSamples(0, 0, width, height, 0, (int[]) null);
+
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new AssertionError("SHA-256 not available", e);
+        }
+
+        for (int sample : samples) {
+            digest.update((byte) sample);
+        }
+
+        return toHex(digest.digest());
+    }
+
+    private static String toHex(byte[] bytes) {
+        StringBuilder builder = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            builder.append(Character.forDigit((b >>> 4) & 0x0f, 16));
+            builder.append(Character.forDigit(b & 0x0f, 16));
+        }
+        return builder.toString();
     }
 }

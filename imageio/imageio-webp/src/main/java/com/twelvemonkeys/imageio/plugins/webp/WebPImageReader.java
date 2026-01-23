@@ -565,7 +565,7 @@ final class WebPImageReader extends ImageReaderBase {
                 readVP8Lossless(tempRaster, null, width, height);
 
                 // Copy from green (band 1) in temp to alpha in destination
-                WritableRaster alphaChannel = tempRaster.createWritableChild(0, 0, tempRaster.getWidth(), tempRaster.getHeight(), 0, 0, new int[]{1});
+                WritableRaster alphaChannel = tempRaster.createWritableChild(0, 0, width, height, 0, 0, new int[]{1});
                 alphaFilter(alphaChannel, filtering);
                 copyIntoRasterWithParams(alphaChannel, alphaRaster, param);
                 break;
