@@ -540,7 +540,7 @@ final class DDSReader {
         return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
     }
 
-    private static int getDXT5Alpha(int a0, int a1, int t) {
+    static int getDXT5Alpha(int a0, int a1, int t) {
         if (a0 > a1) switch (t) {
             case 0:
                 return a0;

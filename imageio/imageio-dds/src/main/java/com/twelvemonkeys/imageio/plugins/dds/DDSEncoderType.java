@@ -10,7 +10,6 @@ public enum DDSEncoderType {
     BC1(DDSType.DXT1.value(), DDS.DXGI_FORMAT_BC1_UNORM, 8),
     BC2(DDSType.DXT2.value(), DDS.DXGI_FORMAT_BC2_UNORM, 16),
     BC3(DDSType.DXT5.value(), DDS.DXGI_FORMAT_BC3_UNORM, 16),
-    //DXTn supports BC1-3 so BC4+ are DXT10 exclusive
     BC4(0x31495441, DDS.DXGI_FORMAT_BC4_UNORM, 8),
     BC5(0x32495441, DDS.DXGI_FORMAT_BC5_UNORM, 16),
 

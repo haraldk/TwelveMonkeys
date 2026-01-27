@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.image.Raster;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
+import java.util.Arrays;
 
 import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.ARGB_ORDER;
 import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.BIT5;
@@ -311,7 +312,7 @@ class DDSImageDataEncoder {
             getColorRange(samples, reds);
             interpolate(reds);
             long data = calculateIndices(samples, reds);
-            data |= (((long) reds[1] << 8) | reds[0]);
+            data |= (((long) (reds[1] & 0xff) << 8) | (reds[0] & 0xff));
             imageOutput.writeLong(data);
         }
 
@@ -321,12 +322,8 @@ class DDSImageDataEncoder {
             long data = 0;
             for (int i = 0; i < 16; i++) {
                 int index;
-                if (isAlphaBelowCap(samples[i * 4 + channelIndex])) {
-                    index = 0b110;
-                } else {
-                    int rSample = samples[i * 4 + channelIndex];
-                    index = getNearest(rSample, reds);
-                }
+                int rSample = samples[i * 4 + channelIndex];
+                index = getNearest(rSample, reds);
                 data |= ((long) index << (16 + i * 3));
             }
             return data;
@@ -334,10 +331,10 @@ class DDSImageDataEncoder {
 
         private int getNearest(int r, int[] reds) {
             int nearest = 0;
-            float nearestValue = 255;
+            int nearestValue = 255;
             for (int i = 0; i < 8; i++) {
-                float v = Math.abs(r - reds[i]);
-                if (nearestValue >= v) {
+                int v = Math.abs(r - reds[i]);
+                if (nearestValue > v) {
                     nearest = i;
                     nearestValue = v;
                 }
@@ -348,16 +345,8 @@ class DDSImageDataEncoder {
         private void interpolate(int[] reds) {
             int r0 = reds[0];
             int r1 = reds[1];
-            if (r0 > r1) {
-                for (int i = 1; i <= 6; i++) {
-                    reds[i + 1] = ((7 - i) * r0 + i * r1) / 7;
-                }
-            } else {
-                for (int i = 1; i <= 4; i++) {
-                    reds[i + 1] = ((5 - i) * r0 + i * r1) / 5;
-                }
-                reds[6] = 0;
-                reds[7] = 255;
+            for (int i = 0; i < 8; i++) {
+                reds[i] = DDSReader.getDXT5Alpha(r0, r1, i);
             }
         }
 
@@ -365,23 +354,13 @@ class DDSImageDataEncoder {
         //r0 <= r1 : use 4
         private void getColorRange(int[] samples, int[] red01) {
             int r0 = 0, r1 = 255;
-            boolean flag = false;
             for (int i = 0; i < 16; i++) {
                 int r = samples[i * 4 + channelIndex];
-
-                if (r == 0 || r == 255) {
-                    flag = true;
-                }
                 r0 = Math.max(r0, r);
                 r1 = Math.min(r1, r);
             }
-            if (flag) {
-                red01[0] = r1;
-                red01[1] = r0;
-            } else {
-                red01[0] = r0;
-                red01[1] = r1;
-            }
+            red01[0] = r0;
+            red01[1] = r1;
         }
     }
 
