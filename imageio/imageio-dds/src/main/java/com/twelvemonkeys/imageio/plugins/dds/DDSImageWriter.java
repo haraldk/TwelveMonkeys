@@ -8,7 +8,6 @@ import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
-import javax.imageio.stream.ImageOutputStream;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.awt.image.Raster;
 import java.awt.image.RenderedImage;
@@ -17,7 +16,6 @@ import java.io.IOException;
 import java.nio.ByteOrder;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 
 /**
  * A designated class to begin writing DDS file with headers, class {@link DDSImageDataEncoder} will handle image data encoding process
@@ -33,25 +31,29 @@ class DDSImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void write(IIOMetadata streamMetadata, IIOImage image, ImageWriteParam p) throws IOException {
+    public void write(IIOMetadata streamMetadata, IIOImage image, ImageWriteParam param) throws IOException {
         assertOutput();
         RenderedImage renderedImage = image.getRenderedImage();
         ensureTextureSize(renderedImage);
         ensureImageChannels(renderedImage);
 
-        DDSWriterParam param = !(p instanceof DDSWriterParam) ? this.getDefaultWriteParam() : ((DDSWriterParam) p);
-        //throw new IllegalArgumentException("ImageWriteParam must be a DDSWriterParam, got " + p.getClass().getSimpleName());
+        DDSWriterParam ddsParam = param instanceof DDSWriterParam ? ((DDSWriterParam) param) : this.getDefaultWriteParam();
 
+        processImageStarted(0);
         imageOutput.setByteOrder(ByteOrder.BIG_ENDIAN);
         imageOutput.writeInt(DDS.MAGIC);
         imageOutput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
 
-        writeHeader(image, param);
-        writeDXT10Header(param);
+        writeHeader(image, ddsParam);
+        writeDXT10Header(ddsParam);
 
         //image data encoding
-        DDSImageDataEncoder.writeImageData(imageOutput, renderedImage, param.getEncoderType());
+        processImageProgress(0f);
+        DDSImageDataEncoder.writeImageData(imageOutput, renderedImage, ddsParam.getEncoderType());
+        processImageProgress(100f);
+
         imageOutput.flush();
+        processImageComplete();
     }
 
     /**
@@ -187,13 +189,6 @@ class DDSImageWriter extends ImageWriterBase {
 
     public static void main(String[] args) throws IOException {
         if (args.length != 1) throw new IllegalArgumentException("Use 1 input file at a time.");
-        try (ImageOutputStream outputStream
-                     //RandomAccessFile-based output stream seems to take a bit more time to write and output size tend to double the expected
-                     //this is expected to write data in a linear way, and not depended on RAF.
-                     = new MemoryCacheImageOutputStream(Files.newOutputStream(Paths.get("test_output.dds"), StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE))) {
-            DDSImageWriter writer = new DDSImageWriter(null);
-            writer.setOutput(outputStream);
-            writer.write(ImageIO.read(new File(args[0])));
-        }
+        ImageIO.write(ImageIO.read(new File(args[0])), "dds", new MemoryCacheImageOutputStream(Files.newOutputStream(Paths.get("output.dds"))));
     }
 }

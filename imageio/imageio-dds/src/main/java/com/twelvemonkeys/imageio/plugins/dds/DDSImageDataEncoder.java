@@ -5,7 +5,6 @@ import java.awt.Color;
 import java.awt.image.Raster;
 import java.awt.image.RenderedImage;
 import java.io.IOException;
-import java.util.Arrays;
 
 import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.ARGB_ORDER;
 import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.BIT5;
@@ -28,9 +27,8 @@ class DDSImageDataEncoder {
     //A cap for alpha value for BC1 where if alpha value is smaller than this, the 4x4 block will enable alpha mode.
     private static final int BC1_ALPHA_CAP = 124;
     private static final int BC4_CHANNEL_RED = 0; //default for BC4.
-    private static final int BC4_CHANNEL_GREEN = 1;
-    private static final int BC4_CHANNEL_ALPHA = 3; //BC3 reuse algorithm from BC4 but use alpha channelIndex for sampling.
-
+    private static final int BC4_CHANNEL_ALPHA = 3; //BC3 reuses algorithm from BC4 but uses alpha channelIndex for sampling.
+    private static final int BC4_CHANNEL_GREEN = 1; //same re-usage as BC3 but for green channel BC5 uses
 
     static void writeImageData(ImageOutputStream imageOutput, RenderedImage renderedImage, DDSEncoderType type) throws IOException {
         switch (type) {
@@ -79,7 +77,6 @@ class DDSImageDataEncoder {
             interpolate(alphaMode, palettes);
             //indices encoding start.
             int indices = encodeBlockIndices(alphaMode, sampled, palettes);
-            //encodeBlockIndices2(alphaMode, sampled, palettes[0], palettes[1], colors);
             imageOutput.writeInt(indices);
         }
 
