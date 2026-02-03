@@ -410,9 +410,9 @@ public final class PSDMetadata extends AbstractMetadata {
             if ((psdLayerInfo.blendMode.flags & 0x01) != 0) {
                 node.setAttribute("transparencyProtected", "true");
             }
-            if ((psdLayerInfo.blendMode.flags & 0x02) != 0) {
-                node.setAttribute("visible", "true");
-            }
+            // Include always, to avoid ambiguity, as the flag is really "hidden", not "visible"...   
+            boolean hidden = (psdLayerInfo.blendMode.flags & 0x02) != 0;
+            node.setAttribute("visible", hidden ? "false" : "true");
             if ((psdLayerInfo.blendMode.flags & 0x04) != 0) {
                 node.setAttribute("obsolete", "true");
             }
