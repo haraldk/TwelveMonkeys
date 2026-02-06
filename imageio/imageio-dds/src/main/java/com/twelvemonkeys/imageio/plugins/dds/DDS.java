@@ -30,6 +30,8 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
+import java.util.Arrays;
+
 @SuppressWarnings("unused")
 interface DDS {
     int MAGIC = ('D' << 24) + ('D' << 16) + ('S' << 8) + ' '; //Big-Endian

@@ -4,7 +4,7 @@ import javax.imageio.ImageWriteParam;
 import java.util.Objects;
 
 public class DDSWriterParam extends ImageWriteParam {
-    public static final DDSWriterParam DEFAULT_PARAM = DDSWriterParam.builder().formatBC3().build();
+    public static final DDSWriterParam DEFAULT_PARAM = DDSWriterParam.builder().formatBC5().build();
     private final int optionalBitFlags;
     private final DDSEncoderType encoderType;
     private final boolean enableDxt10;
@@ -84,8 +84,8 @@ public class DDSWriterParam extends ImageWriteParam {
         }
 
         /**
-         * Set the compression type to be BC4 (BC4U).
-         * This will set DXGI Format to DXGI_FORMAT_BC4_UNORM.
+         * Set the compression type to be BC4 (ATI1).
+         * If DXT10 is enabled, This will set DXGI Format to DXGI_FORMAT_BC4_UNORM.
          */
         public Builder formatBC4() {
             encoderType = DDSEncoderType.BC4;
@@ -93,7 +93,7 @@ public class DDSWriterParam extends ImageWriteParam {
         }
 
         /**
-         * Set the compression type to be BC5 (BC5U).
+         * Set the compression type to be BC5 (ATI2).
          * This will set DXGI Format to DXGI_FORMAT_BC5_UNORM.
          */
         public Builder formatBC5() {
@@ -105,30 +105,36 @@ public class DDSWriterParam extends ImageWriteParam {
          * Set the encoding type to be B8G8R8A8.
          * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
          */
-        public Builder formatB8G8R8A8() {
+        //TODO
+        /*public Builder formatB8G8R8A8() {
             encoderType = DDSEncoderType.BRGA32;
             return this;
-        }
+        } */
 
         /**
          * Set the encoding type to be B8G8R8X8.
          * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
          */
-        public Builder formatB8G8R8X8() {
+        //TODO
+        /*public Builder formatB8G8R8X8() {
             encoderType = DDSEncoderType.BGRX32;
             return this;
         }
+         */
 
         /**
          * Set the encoding type to be R8G8B8A8.
          * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
          */
+        //TODO
+        /*
         public Builder formatR8G8B8A8() {
             encoderType = DDSEncoderType.RGBA32;
             return this;
         }
+         */
 
-        private Builder setFlag(DDSFlags flag) {
+        public Builder setFlag(DDSFlags flag) {
             optionalBitFlag |= flag.getValue();
             return this;
         }
