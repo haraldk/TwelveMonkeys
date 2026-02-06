@@ -1,10 +1,7 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
-import com.twelvemonkeys.util.LinkedSet;
-
 import javax.imageio.ImageWriteParam;
 import java.util.Objects;
-import java.util.Set;
 
 public class DDSWriterParam extends ImageWriteParam {
     public static final DDSWriterParam DEFAULT_PARAM = DDSWriterParam.builder().formatBC3().build();
@@ -41,12 +38,12 @@ public class DDSWriterParam extends ImageWriteParam {
 
     public static final class Builder {
         //we use Set collection to prevent duplications of bitflag setter calls
-        private final Set<Integer> optionalBitFlags;
+        private int optionalBitFlag;
         private DDSEncoderType encoderType;
         private boolean isUsingDxt10;
 
         public Builder() {
-            this.optionalBitFlags = new LinkedSet<>();
+            this.optionalBitFlag = 0;
             encoderType = null;
             isUsingDxt10 = false;
         }
@@ -65,7 +62,7 @@ public class DDSWriterParam extends ImageWriteParam {
          */
         public Builder formatBC1() {
             encoderType = DDSEncoderType.BC1;
-            return flagLinearSize();
+            return setFlag(DDSFlags.DDSD_LINEARSIZE);
         }
 
         /**
@@ -74,7 +71,7 @@ public class DDSWriterParam extends ImageWriteParam {
          */
         public Builder formatBC2() {
             encoderType = DDSEncoderType.BC2;
-            return flagLinearSize();
+            return setFlag(DDSFlags.DDSD_LINEARSIZE);
         }
 
         /**
@@ -83,7 +80,7 @@ public class DDSWriterParam extends ImageWriteParam {
          */
         public Builder formatBC3() {
             encoderType = DDSEncoderType.BC3;
-            return flagLinearSize();
+            return setFlag(DDSFlags.DDSD_LINEARSIZE);
         }
 
         /**
@@ -92,7 +89,7 @@ public class DDSWriterParam extends ImageWriteParam {
          */
         public Builder formatBC4() {
             encoderType = DDSEncoderType.BC4;
-            return flagLinearSize();
+            return setFlag(DDSFlags.DDSD_LINEARSIZE);
         }
 
         /**
@@ -101,7 +98,7 @@ public class DDSWriterParam extends ImageWriteParam {
          */
         public Builder formatBC5() {
             encoderType = DDSEncoderType.BC5;
-            return flagLinearSize();
+            return setFlag(DDSFlags.DDSD_LINEARSIZE);
         }
 
         /**
@@ -131,42 +128,39 @@ public class DDSWriterParam extends ImageWriteParam {
             return this;
         }
 
-        /**
-         * Set bitflag DDSD_PITCH. Required when pitch is provided for an <b><i>uncompressed</i></b> texture.
-         */
-        public Builder flagPitch() {
-            optionalBitFlags.add(DDS.FLAG_PITCH);
+        private Builder setFlag(DDSFlags flag) {
+            optionalBitFlag |= flag.getValue();
             return this;
         }
 
         /**
-         * Set bitflag DDSD_MIPMAPCOUNT. Required in a mipmapped texture.
+         * Set other optional flags for the DDS Header.
          */
-        public Builder flagMipmapCount() {
-            optionalBitFlags.add(DDS.FLAG_MIPMAPCOUNT);
-            return this;
-        }
-
-        /**
-         *
-         * Set bitflag DDSD_LINEARSIZE. Required when pitch is provided for a <b><i>compressed</i></b> texture.
-         */
-        public Builder flagLinearSize() {
-            optionalBitFlags.add(DDS.FLAG_LINEARSIZE);
-            return this;
-        }
-
-        /**
-         * Set bitflag DDSD_DEPTH. Required in a depth texture.
-         */
-        public Builder flagDepth() {
-            optionalBitFlags.add(DDS.FLAG_DEPTH);
+        public Builder setFlags(DDSFlags... flags) {
+            for (DDSFlags flag : flags)
+                setFlag(flag);
             return this;
         }
 
         public DDSWriterParam build() {
             Objects.requireNonNull(encoderType, "no DDS format specified.");
-            return new DDSWriterParam(optionalBitFlags.stream().reduce((i1, i2) -> i1 | i2).orElse(0), encoderType, isUsingDxt10);
+            return new DDSWriterParam(optionalBitFlag, encoderType, isUsingDxt10);
+        }
+
+        public enum DDSFlags {
+            DDSD_PITCH(DDS.FLAG_PITCH),// Required when pitch is provided for an uncompressed texture.
+            DDSD_MIPMAPCOUNT(DDS.FLAG_MIPMAPCOUNT),// Required in a mipmapped texture.
+            DDSD_LINEARSIZE(DDS.FLAG_LINEARSIZE),// Required when pitch is provided for a compressed texture.
+            DDSD_DEPTH(DDS.FLAG_DEPTH);// Required in a depth texture.
+
+            private final int flag;
+            DDSFlags(int flag) {
+                this.flag = flag;
+            }
+
+            public int getValue() {
+                return flag;
+            }
         }
     }
 }

@@ -36,14 +36,14 @@ interface DDS {
     int HEADER_SIZE = 124;
 
     // Header Flags
-    int FLAG_CAPS = 0x1;              // Required in every .dds file.
-    int FLAG_HEIGHT = 0x2;            // Required in every .dds file.
-    int FLAG_WIDTH = 0x4;             // Required in every .dds file.
-    int FLAG_PITCH = 0x8;             // Required when pitch is provided for an uncompressed texture.
-    int FLAG_PIXELFORMAT = 0x1000;    // Required in every .dds file.
-    int FLAG_MIPMAPCOUNT = 0x20000;   // Required in a mipmapped texture.
-    int FLAG_LINEARSIZE = 0x80000;    // Required when pitch is provided for a compressed texture.
-    int FLAG_DEPTH = 0x800000;        // Required in a depth texture.
+    int FLAG_CAPS = 1;              // Required in every .dds file.
+    int FLAG_HEIGHT = 1 << 1;            // Required in every .dds file.
+    int FLAG_WIDTH = 1 << 2;             // Required in every .dds file.
+    int FLAG_PIXELFORMAT = 1 << 12;    // Required in every .dds file.
+    int FLAG_PITCH = 1 << 3;             // Required when pitch is provided for an uncompressed texture.
+    int FLAG_MIPMAPCOUNT = 1 << 17;   // Required in a mipmapped texture.
+    int FLAG_LINEARSIZE = 1 << 19;    // Required when pitch is provided for a compressed texture.
+    int FLAG_DEPTH = 1 << 23;        // Required in a depth texture.
 
     // Pixel Format Flags
     int DDSPF_SIZE = 32;
