@@ -101,39 +101,6 @@ public class DDSWriterParam extends ImageWriteParam {
             return setFlag(DDSFlags.DDSD_LINEARSIZE);
         }
 
-        /**
-         * Set the encoding type to be B8G8R8A8.
-         * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_B8G8R8A8_UNORM_SRGB
-         */
-        //TODO
-        /*public Builder formatB8G8R8A8() {
-            encoderType = DDSEncoderType.BRGA32;
-            return this;
-        } */
-
-        /**
-         * Set the encoding type to be B8G8R8X8.
-         * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_B8G8R8X8_UNORM_SRGB
-         */
-        //TODO
-        /*public Builder formatB8G8R8X8() {
-            encoderType = DDSEncoderType.BGRX32;
-            return this;
-        }
-         */
-
-        /**
-         * Set the encoding type to be R8G8B8A8.
-         * If DXT10 is enabled, this will set DXGI Format to DXGI_FORMAT_R8G8B8A8_UNORM_SRGB
-         */
-        //TODO
-        /*
-        public Builder formatR8G8B8A8() {
-            encoderType = DDSEncoderType.RGBA32;
-            return this;
-        }
-         */
-
         public Builder setFlag(DDSFlags flag) {
             optionalBitFlag |= flag.getValue();
             return this;

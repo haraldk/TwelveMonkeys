@@ -30,7 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
-import java.util.Arrays;
 
 @SuppressWarnings("unused")
 interface DDS {

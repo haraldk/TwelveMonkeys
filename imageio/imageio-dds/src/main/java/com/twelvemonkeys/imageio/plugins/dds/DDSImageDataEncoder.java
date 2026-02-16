@@ -24,6 +24,7 @@ import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.RGB_16_ORDER;
  * </p>
  */
 class DDSImageDataEncoder {
+    private DDSImageDataEncoder() {}
     //A cap for alpha value for BC1 where if alpha value is smaller than this, the 4x4 block will enable alpha mode.
     private static final int BC1_ALPHA_CAP = 124;
     private static final int BC4_CHANNEL_RED = 0; //default for BC4.
@@ -67,6 +68,11 @@ class DDSImageDataEncoder {
             for (int i = 0; i < 16; i++) {
                 color32s[i] = new MutableColor();
             }
+        }
+
+        //pack 32 bits of the colors to a single int value.
+        private static int color888ToInt(int r, int g, int b, int a) {
+            return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
         }
 
         void startEncodeBlock(ImageOutputStream imageOutput, int[] sampled) throws IOException {
@@ -167,8 +173,8 @@ class DDSImageDataEncoder {
         boolean getBlockEndpoints(int[] sampledColors, int[] paletteBuffer) {
             if (sampledColors.length != 64)
                 throw new IllegalStateException("Unintended behaviour, expecting sampled colors of block to be 64, got " + sampledColors.length);
-            int minR = 0xff, minG = 0xff, minB = 0xff;
-            int maxR = 0, maxG = 0, maxB = 0;
+            int minR = 0xff; int minG = 0xff; int minB = 0xff;
+            int maxR = 0; int maxG = 0; int maxB = 0;
             boolean alphaMode = false;
             int i = 0;
             while (i < 64) {
@@ -236,10 +242,6 @@ class DDSImageDataEncoder {
             int g3 = g1 - g2;
             int b3 = b1 - b2;
             return r3 * r3 + g3 * g3 + b3 * b3;
-        }
-
-        private static int getScore(int r, int g, int b) {
-            return (r + g + b) / 3;
         }
 
 
@@ -350,7 +352,8 @@ class DDSImageDataEncoder {
         //r0 >  r1 : use 6 interpolated color values
         //r0 <= r1 : use 4
         private void getColorRange(int[] samples, int[] red01) {
-            int r0 = 0, r1 = 255;
+            int r0 = 0;
+            int r1 = 255;
             for (int i = 0; i < 16; i++) {
                 int r = samples[i * 4 + channelIndex];
                 r0 = Math.max(r0, r);
@@ -362,7 +365,8 @@ class DDSImageDataEncoder {
     }
 
     private static final class BlockCompressor5 extends BlockCompressorBase {
-        private final BlockCompressor4 bc4r, bc4g;
+        private final BlockCompressor4 bc4r;
+        private final BlockCompressor4 bc4g;
 
         public BlockCompressor5() {
             bc4r = new BlockCompressor4(BC4_CHANNEL_RED);
@@ -385,35 +389,30 @@ class DDSImageDataEncoder {
         return color565ToInt(r5, g6, b5);
     }
 
-    //pack 32 bits of the colors to a single int value.
-    private static int color888ToInt(int r, int g, int b, int a) {
-        return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
-    }
-
     //pack 16 bits of the colors to a single int value.
     private static int color565ToInt(int r5, int g6, int b5) {
         return (r5 << RGB_16_ORDER.redShift) | (g6 << RGB_16_ORDER.greenShift) | (b5 << RGB_16_ORDER.blueShift);
     }
 
-    //workaround for 24 dpi (no alpha) -> 32dpi (with alpha default to 0xff)
-    //as this mess the color0 & color1 up spectacularly bc alpha is not present in 24dpi
-    private static void adjustSampledBands(Raster raster, int[] samples) {
-        if (raster.getNumBands() == 4) return;
-        for (int i = 15; i >= 0; i--) {
-            int r24Index = i * 3;
-            int r32Index = i * 4;
-            samples[r32Index + 3] = 0xFF;
-            samples[r32Index + 2] = samples[r24Index + 2];  //b24 -> b32
-            samples[r32Index + 1] = samples[r24Index + 1];  //g24 -> g32
-            samples[r32Index] = samples[r24Index];      //r24 -> r32
-        }
-    }
-
-    private static abstract class BlockCompressorBase {
+    private abstract static class BlockCompressorBase {
         final int[] samples;
 
         BlockCompressorBase() {
             this.samples = new int[64];
+        }
+
+        //workaround for 24 dpi (no alpha) -> 32dpi (with alpha default to 0xff)
+        //as this mess the color0 & color1 up spectacularly bc alpha is not present in 24dpi
+        private static void adjustSampledBands(Raster raster, int[] samples) {
+            if (raster.getNumBands() == 4) return;
+            for (int i = 15; i >= 0; i--) {
+                int r24Index = i * 3;
+                int r32Index = i * 4;
+                samples[r32Index + 3] = 0xFF;
+                samples[r32Index + 2] = samples[r24Index + 2];  //b24 -> b32
+                samples[r32Index + 1] = samples[r24Index + 1];  //g24 -> g32
+                samples[r32Index] = samples[r24Index];      //r24 -> r32
+            }
         }
 
         void encode(ImageOutputStream imageOutput, RenderedImage image) throws IOException {
@@ -436,46 +435,41 @@ class DDSImageDataEncoder {
         abstract void startEncodeBlock(ImageOutputStream imageOutput, int[] samples) throws IOException;
     }
 
-    private static final class Color16 extends Color {
-        private final int rgb16;
-
-        Color16(int red, int green, int blue) {
-            super(red, green, blue);
-            rgb16 = convertTo565(red, green, blue);
-        }
-
-        @Override
-        public int getRGB() {
-            return rgb16;
-        }
-
-        Color16(int c565) {
-            this(
-                    (c565) >> RGB_16_ORDER.redShift,
-                    (c565 & 0b111111_00000) >> RGB_16_ORDER.greenShift,
-                    (c565 & 0b11111) >> RGB_16_ORDER.blueShift
-            );
-        }
-    }
-
     private static final class MutableColor extends Color {
 
-        int value;
+        int mutableValue;
 
         public MutableColor() {
             super(0, 0, 0);
-            this.value = 0;
+            this.mutableValue = 0;
         }
 
         void setColor(int red, int green, int blue) {
-            value = red << ARGB_ORDER.redShift;
-            value |= green << ARGB_ORDER.greenShift;
-            value |= blue << ARGB_ORDER.blueShift;
+            mutableValue = red << ARGB_ORDER.redShift;
+            mutableValue |= green << ARGB_ORDER.greenShift;
+            mutableValue |= blue << ARGB_ORDER.blueShift;
         }
 
         @Override
         public int getRGB() {
-            return this.value;
+            return this.mutableValue;
+        }
+
+        //intellij generated
+        @Override
+        public boolean equals(Object object) {
+            if (!(object instanceof MutableColor)) return false;
+            if (!super.equals(object)) return false;
+
+            MutableColor that = (MutableColor) object;
+            return mutableValue == that.mutableValue;
+        }
+
+        @Override
+        public int hashCode() {
+            int result = super.hashCode();
+            result = 31 * result + mutableValue;
+            return result;
         }
     }
 }
