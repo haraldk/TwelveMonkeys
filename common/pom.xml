@@ -21,7 +21,7 @@
     </modules>
 
     <properties>
-        <junit.jupiter.version>5.14.2</junit.jupiter.version>
+        <junit.jupiter.version>5.14.3</junit.jupiter.version>
     </properties>
 
     <dependencyManagement>
