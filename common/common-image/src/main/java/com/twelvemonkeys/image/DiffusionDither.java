@@ -47,10 +47,10 @@ import java.util.Random;
  *  |3|5|1|
  *   - - -->
  * </p>
- * <table border="1" cellpadding="4" cellspacing="0">
+ * <table border="1">
  *     <caption>Floyd-Steinberg error-diffusion weights</caption>
- *     <tr><td bgcolor="#000000">&nbsp;</td><td class="TableHeadingColor"
- *          align="center">x</td><td>7/16</td></tr>
+ *     <tr><td style="background:#000000">&nbsp;</td><td class="TableHeadingColor"
+ *          style="text-align:center">x</td><td>7/16</td></tr>
  *     <tr><td>3/16</td><td>5/16</td><td>1/16</td></tr>
  * </table>
  * <p>
