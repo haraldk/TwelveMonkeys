@@ -99,7 +99,6 @@ jobs:
 
   javadoc:
     name: Build JavaDoc on OpenJDK ${{ matrix.java }}
-    needs: [ test ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
