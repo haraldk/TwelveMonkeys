@@ -162,7 +162,7 @@ public final class ImageUtil {
 
     /**
      * The sharpen kernel. Uses the following 3 by 3 matrix:
-     * <table border="1" cellspacing="0">
+     * <table border="1">
      *     <caption>Sharpen Kernel Matrix</caption>
      *     <tr><td>0.0</td><td>-0.3</td><td>0.0</td></tr>
      *     <tr><td>-0.3</td><td>2.2</td><td>-0.3</td></tr>
@@ -1078,7 +1078,7 @@ public final class ImageUtil {
     /**
      * Sharpens an image using a convolution matrix.
      * The sharpen kernel used, is defined by the following 3 by 3 matrix:
-     * <table border="1" cellspacing="0">
+     * <table border="1">
      *     <caption>Sharpen Kernel Matrix</caption>
      *     <tr><td>0.0</td><td>-0.3</td><td>0.0</td></tr>
      *     <tr><td>-0.3</td><td>2.2</td><td>-0.3</td></tr>
@@ -1100,7 +1100,7 @@ public final class ImageUtil {
     /**
      * Sharpens an image using a convolution matrix.
      * The sharpen kernel used, is defined by the following 3 by 3 matrix:
-     * <table border="1" cellspacing="0">
+     * <table border="1">
      *     <caption>Sharpen Kernel Matrix</caption>
      *     <tr><td>0.0</td><td>-{@code pAmount}</td><td>0.0</td></tr>
      *     <tr><td>-{@code pAmount}</td>
