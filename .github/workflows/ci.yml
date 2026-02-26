@@ -20,7 +20,7 @@ jobs:
         java: [ 8, 11, 17, 21, 25 ]
         exclude:
           - os: macos-latest
-            version: 8
+            java: 8
     runs-on: ${{ matrix.os }}
     permissions:
       checks: write
