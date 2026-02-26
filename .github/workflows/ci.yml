@@ -17,7 +17,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
-        java: [ 11, 17, 21, 25 ]
+        java: [ 8, 11, 17, 21, 25 ]
+        exclude:
+          - os: macos-latest
+            version: 8
     runs-on: ${{ matrix.os }}
     permissions:
       checks: write
@@ -38,13 +41,9 @@ jobs:
           report_paths: "**/target/surefire-reports/TEST*.xml"
           check_name: Unit Test Results for OpenJDK ${{ matrix.java }} on ${{ matrix.os }}
 
-  test-jdk8:
-    name: Test OpenJDK 8 on ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-14 ]
-    runs-on: ${{ matrix.os }}
+  test-jdk8-macos:
+    name: Test OpenJDK 8 on macos-14
+    runs-on: macos-14
     permissions:
       checks: write
     steps:
@@ -99,13 +98,12 @@ jobs:
           check_name: Unit Test Results for Oracle JDK 8 with KCMS=${{ matrix.kcms }}
 
   javadoc:
-    name: Build JavaDoc
+    name: Build JavaDoc on OpenJDK ${{ matrix.java }}
     needs: [ test ]
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        os: [ ubuntu-latest ]
-        java: [ 11, 17, 21, 25 ]
+        java: [8, 11, 25 ] # We only need a few versions here
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
       - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654 # v5.2.0
@@ -119,7 +117,7 @@ jobs:
 
   release:
     name: Deploy
-    needs: [ test, test-jdk8, test-oracle, javadoc ]
+    needs: [ test, test-jdk8-macos, test-oracle, javadoc ]
     if: github.ref == 'refs/heads/master' # only perform on latest master
     runs-on: ubuntu-latest
     steps:
