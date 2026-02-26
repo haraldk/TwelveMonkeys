@@ -30,8 +30,6 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
-import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
-
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
@@ -40,14 +38,15 @@ import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
-
-import java.awt.*;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.Iterator;
+
+import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
 
 public final class DDSImageReader extends ImageReaderBase {
 

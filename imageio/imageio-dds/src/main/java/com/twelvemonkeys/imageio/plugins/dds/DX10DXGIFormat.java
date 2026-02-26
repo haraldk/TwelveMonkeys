@@ -40,7 +40,7 @@ public enum DX10DXGIFormat {
     /**
      * @param acceptedValues values in DXGI Formats List, passed values are expected to be in ascending order
      */
-    private static IntPredicate exactly(int ... acceptedValues) {
+    private static IntPredicate exactly(int... acceptedValues) {
         return test -> Arrays.binarySearch(acceptedValues, test) >= 0;
     }
 

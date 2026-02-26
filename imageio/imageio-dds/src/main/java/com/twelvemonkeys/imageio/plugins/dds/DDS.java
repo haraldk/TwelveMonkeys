@@ -30,25 +30,44 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
+
 @SuppressWarnings("unused")
 interface DDS {
     int MAGIC = ('D' << 24) + ('D' << 16) + ('S' << 8) + ' '; //Big-Endian
     int HEADER_SIZE = 124;
 
     // Header Flags
-    int FLAG_CAPS = 0x1;              // Required in every .dds file.
-    int FLAG_HEIGHT = 0x2;            // Required in every .dds file.
-    int FLAG_WIDTH = 0x4;             // Required in every .dds file.
-    int FLAG_PITCH = 0x8;             // Required when pitch is provided for an uncompressed texture.
-    int FLAG_PIXELFORMAT = 0x1000;    // Required in every .dds file.
-    int FLAG_MIPMAPCOUNT = 0x20000;   // Required in a mipmapped texture.
-    int FLAG_LINEARSIZE = 0x80000;    // Required when pitch is provided for a compressed texture.
-    int FLAG_DEPTH = 0x800000;        // Required in a depth texture.
+    int FLAG_CAPS = 1;              // Required in every .dds file.
+    int FLAG_HEIGHT = 1 << 1;            // Required in every .dds file.
+    int FLAG_WIDTH = 1 << 2;             // Required in every .dds file.
+    int FLAG_PIXELFORMAT = 1 << 12;    // Required in every .dds file.
+    int FLAG_PITCH = 1 << 3;             // Required when pitch is provided for an uncompressed texture.
+    int FLAG_MIPMAPCOUNT = 1 << 17;   // Required in a mipmapped texture.
+    int FLAG_LINEARSIZE = 1 << 19;    // Required when pitch is provided for a compressed texture.
+    int FLAG_DEPTH = 1 << 23;        // Required in a depth texture.
 
     // Pixel Format Flags
+    int DDSPF_SIZE = 32;
+    int PIXEL_FORMAT_FLAG_ALPHAPIXELS = 0x1;
+    int PIXEL_FORMAT_FLAG_ALPHA = 0x2;
     int PIXEL_FORMAT_FLAG_FOURCC = 0x04;
     int PIXEL_FORMAT_FLAG_RGB = 0x40;
 
     //DX10 Resource Dimensions
     int D3D10_RESOURCE_DIMENSION_TEXTURE2D = 3;
+
+    //DXGI Formats (DX10)
+    int DXGI_FORMAT_BC1_UNORM = 71;
+    int DXGI_FORMAT_BC2_UNORM = 72;
+    int DXGI_FORMAT_BC3_UNORM = 77;
+    int DXGI_FORMAT_BC4_UNORM = 80;
+    int DXGI_FORMAT_BC5_UNORM = 83;
+    int DXGI_FORMAT_B8G8R8A8_UNORM_SRGB = 91;
+    int DXGI_FORMAT_B8G8R8X8_UNORM_SRGB = 93;
+    int DXGI_FORMAT_R8G8B8A8_UNORM_SRGB = 29;
+
+    //dwCaps
+    int DDSCAPS_COMPLEX = 0x8;
+    int DDSCAPS_MIPMAP = 0x400000;
+    int DDSCAPS_TEXTURE = 0x1000;
 }
