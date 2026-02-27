@@ -1,0 +1,21 @@
+module com.twelvemonkeys.imageio.core {
+    requires com.twelvemonkeys.common.image;
+    requires com.twelvemonkeys.common.io;
+    requires com.twelvemonkeys.common.lang;
+    requires java.datatransfer;
+
+    requires transitive java.desktop;
+    requires transitive java.xml;
+
+    exports com.twelvemonkeys.imageio;
+    exports com.twelvemonkeys.imageio.color;
+    exports com.twelvemonkeys.imageio.spi;
+    exports com.twelvemonkeys.imageio.stream;
+    exports com.twelvemonkeys.imageio.util;
+
+    provides javax.imageio.spi.ImageInputStreamSpi with
+        com.twelvemonkeys.imageio.stream.BufferedFileImageInputStreamSpi,
+        com.twelvemonkeys.imageio.stream.BufferedRAFImageInputStreamSpi,
+        com.twelvemonkeys.imageio.color.ProfileDeferralActivator.Spi;
+
+}
