@@ -71,7 +71,7 @@ final class DDSHeader {
             throw new IIOException(String.format("Invalid DDS header size (expected %d): %d", DDS.HEADER_SIZE, dwSize));
         }
 
-        // Verify flags
+        // Verify setFlags
         header.flags = imageInput.readInt(); // [8,11]
         if (!header.getFlag(DDS.FLAG_CAPS
                 | DDS.FLAG_HEIGHT
