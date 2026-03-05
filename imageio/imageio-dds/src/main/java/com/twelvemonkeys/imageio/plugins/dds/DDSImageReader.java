@@ -146,7 +146,7 @@ public final class DDSImageReader extends ImageReaderBase {
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
         ImageTypeSpecifier imageType = getRawImageType(imageIndex);
 
-        return new DDSMetadata(imageType, header);
+        return new DDSImageMetadata(imageType, header);
     }
 
     private void readHeader() throws IOException {

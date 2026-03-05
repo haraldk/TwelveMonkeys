@@ -18,7 +18,8 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 /**
- * A designated class to begin writing DDS file with headers, class {@link DDSImageDataEncoder} will handle image data encoding process
+ * A designated class to begin writing DDS file with headers,
+ * {@link DDSImageDataEncoder} will handle image data encoding process
  */
 class DDSImageWriter extends ImageWriterBase {
     protected DDSImageWriter(ImageWriterSpi provider) {
@@ -26,8 +27,8 @@ class DDSImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public DDSWriterParam getDefaultWriteParam() {
-        return DDSWriterParam.DEFAULT_PARAM;
+    public DDSImageWriterParam getDefaultWriteParam() {
+        return DDSImageWriterParam.builder().formatBC5().build();
     }
 
     @Override
@@ -37,7 +38,8 @@ class DDSImageWriter extends ImageWriterBase {
         ensureTextureSize(renderedImage);
         ensureImageChannels(renderedImage);
 
-        DDSWriterParam ddsParam = param instanceof DDSWriterParam ? ((DDSWriterParam) param) : this.getDefaultWriteParam();
+        // TODO: Need to copy params from 'param' here in case of non-DDS param...
+        DDSImageWriterParam ddsParam = param instanceof DDSImageWriterParam ? ((DDSImageWriterParam) param) : getDefaultWriteParam();
 
         processImageStarted(0);
         imageOutput.setByteOrder(ByteOrder.BIG_ENDIAN);
@@ -59,7 +61,6 @@ class DDSImageWriter extends ImageWriterBase {
     /**
      * Checking if the image has 3 channels (RGB) or 4 channels (RGBA) and if image has 8 bits/channel.
      */
-
     private void ensureImageChannels(RenderedImage renderedImage) {
         Raster data = renderedImage.getData();
         int numBands = data.getNumBands();
@@ -82,7 +83,7 @@ class DDSImageWriter extends ImageWriterBase {
     }
 
 
-    private void writeHeader(IIOImage image, DDSWriterParam param) throws IOException {
+    private void writeHeader(IIOImage image, DDSImageWriterParam param) throws IOException {
         imageOutput.writeInt(DDS.HEADER_SIZE);
         imageOutput.writeInt(DDS.FLAG_CAPS | DDS.FLAG_HEIGHT | DDS.FLAG_WIDTH | DDS.FLAG_PIXELFORMAT | param.getOptionalBitFlags());
         RenderedImage renderedImage = image.getRenderedImage();
@@ -109,14 +110,14 @@ class DDSImageWriter extends ImageWriterBase {
     }
 
     //https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-pixelformat
-    private void writePixelFormat(DDSWriterParam param) throws IOException {
+    private void writePixelFormat(DDSImageWriterParam param) throws IOException {
         imageOutput.writeInt(DDS.DDSPF_SIZE);
         writePixelFormatFlags(param);
         writeFourCC(param);
         writeRGBAData(param);
     }
 
-    private void writeDXT10Header(DDSWriterParam param) throws IOException {
+    private void writeDXT10Header(DDSImageWriterParam param) throws IOException {
         if (param.isUsingDxt10()) {
             //dxgiFormat
             imageOutput.writeInt(param.getDxgiFormat());
@@ -131,7 +132,7 @@ class DDSImageWriter extends ImageWriterBase {
         }
     }
 
-    private void writeRGBAData(DDSWriterParam param) throws IOException {
+    private void writeRGBAData(DDSImageWriterParam param) throws IOException {
         if (!param.isUsingDxt10() && !param.getEncoderType().isFourCC()) {
             //dwRGBBitCount
             imageOutput.writeInt(param.getEncoderType().getBitsOrBlockSize());
@@ -151,7 +152,7 @@ class DDSImageWriter extends ImageWriterBase {
         }
     }
 
-    private void writeFourCC(DDSWriterParam param) throws IOException {
+    private void writeFourCC(DDSImageWriterParam param) throws IOException {
         if (param.isUsingDxt10()) {
             imageOutput.writeInt(DDSType.DXT10.value());
         } else if (param.getEncoderType().isFourCC())
@@ -159,7 +160,7 @@ class DDSImageWriter extends ImageWriterBase {
 
     }
 
-    private void writePixelFormatFlags(DDSWriterParam param) throws IOException {
+    private void writePixelFormatFlags(DDSImageWriterParam param) throws IOException {
         if (param.isUsingDxt10() || param.getEncoderType().isFourCC()) {
             imageOutput.writeInt(DDS.PIXEL_FORMAT_FLAG_FOURCC);
         } else {
@@ -167,7 +168,7 @@ class DDSImageWriter extends ImageWriterBase {
         }
     }
 
-    private void writePitchOrLinearSize(int height, int width, DDSWriterParam param) throws IOException {
+    private void writePitchOrLinearSize(int height, int width, DDSImageWriterParam param) throws IOException {
         DDSEncoderType type = param.getEncoderType();
         int bitsOrBlockSize = type.getBitsOrBlockSize();
         if (type.isBlockCompression()) {

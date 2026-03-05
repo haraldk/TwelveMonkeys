@@ -4,7 +4,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 
 //https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header-dxt10
-public final class DX10Header {
+final class DX10Header {
     final DX10DXGIFormat dxgiFormat;
     final int resourceDimension, miscFlag, arraySize, miscFlags2;
 

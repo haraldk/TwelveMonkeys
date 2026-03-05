@@ -173,8 +173,14 @@ class DDSImageDataEncoder {
         boolean getBlockEndpoints(int[] sampledColors, int[] paletteBuffer) {
             if (sampledColors.length != 64)
                 throw new IllegalStateException("Unintended behaviour, expecting sampled colors of block to be 64, got " + sampledColors.length);
-            int minR = 0xff; int minG = 0xff; int minB = 0xff;
-            int maxR = 0; int maxG = 0; int maxB = 0;
+            int minR = 0xff;
+            int minG = 0xff;
+            int minB = 0xff;
+
+            int maxR = 0;
+            int maxG = 0;
+            int maxB = 0;
+
             boolean alphaMode = false;
             int i = 0;
             while (i < 64) {
@@ -208,7 +214,6 @@ class DDSImageDataEncoder {
 
             return alphaMode;
         }
-
 
         //Reference [3] Page 7
         boolean getBlockEndpoints2(int[] sampled, int[] paletteBuffer) {

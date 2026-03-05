@@ -3,14 +3,21 @@ package com.twelvemonkeys.imageio.plugins.dds;
 import javax.imageio.ImageWriteParam;
 import java.util.Objects;
 
-public class DDSWriterParam extends ImageWriteParam {
-    public static final DDSWriterParam DEFAULT_PARAM = DDSWriterParam.builder().formatBC5().build();
+public final class DDSImageWriterParam extends ImageWriteParam {
+
+    // TODO: Rewrite to use more standard "compressionType":
+    //  See metadata format for how to create compression name based on fourCC, we probably need to change that as well (?)
+    //  At least they need to agree on what the compression names are... BC1, BC2, etc? DXT1, DXT2, etc?
+    //  Extra bit flags etc, may be set using custom methods
+
     private final int optionalBitFlags;
     private final DDSEncoderType encoderType;
     private final boolean enableDxt10;
 
-    DDSWriterParam(int optionalBitFlags, DDSEncoderType encoderType, boolean isUsingDxt10) {
+    DDSImageWriterParam(int optionalBitFlags, DDSEncoderType encoderType, boolean isUsingDxt10) {
         super();
+        canWriteCompressed = true; // always compressed
+
         this.optionalBitFlags = optionalBitFlags;
         this.encoderType = encoderType;
         this.enableDxt10 = isUsingDxt10;
@@ -43,7 +50,7 @@ public class DDSWriterParam extends ImageWriteParam {
         private boolean isUsingDxt10;
 
         public Builder() {
-            this.optionalBitFlag = 0;
+            optionalBitFlag = 0;
             encoderType = null;
             isUsingDxt10 = false;
         }
@@ -115,9 +122,9 @@ public class DDSWriterParam extends ImageWriteParam {
             return this;
         }
 
-        public DDSWriterParam build() {
+        public DDSImageWriterParam build() {
             Objects.requireNonNull(encoderType, "no DDS format specified.");
-            return new DDSWriterParam(optionalBitFlag, encoderType, isUsingDxt10);
+            return new DDSImageWriterParam(optionalBitFlag, encoderType, isUsingDxt10);
         }
 
         public enum DDSFlags {

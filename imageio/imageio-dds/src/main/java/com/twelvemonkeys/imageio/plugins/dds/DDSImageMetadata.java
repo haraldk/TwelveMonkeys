@@ -34,8 +34,8 @@ import com.twelvemonkeys.imageio.StandardImageMetadataSupport;
 
 import javax.imageio.ImageTypeSpecifier;
 
-final class DDSMetadata extends StandardImageMetadataSupport {
-    DDSMetadata(ImageTypeSpecifier type, DDSHeader header) {
+final class DDSImageMetadata extends StandardImageMetadataSupport {
+    DDSImageMetadata(ImageTypeSpecifier type, DDSHeader header) {
         super(builder(type)
                       .withCompressionTypeName(compressionName(header))
                       .withFormatVersion("1.0")

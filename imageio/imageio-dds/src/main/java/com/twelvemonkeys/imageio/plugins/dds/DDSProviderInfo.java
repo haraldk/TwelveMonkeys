@@ -35,18 +35,16 @@ import com.twelvemonkeys.imageio.spi.ReaderWriterProviderInfo;
 final class DDSProviderInfo extends ReaderWriterProviderInfo {
     DDSProviderInfo() {
         super(
-                DDSProviderInfo.class,
-                new String[]{"DDS", "dds"},
-                new String[]{"dds"},
-                new String[]{"image/vnd-ms.dds"},
-                "com.twelvemonkeys.imageio.plugins.dds.DDSImageReader",
-                new String[]{"com.twelvemonkeys.imageio.plugins.dds.DDSImageReaderSpi"},
-                "com.twelvemonkeys.imageio.plugins.dds.DDSImageWriter",
-                new String[]{"com.twelvemonkeys.imageio.plugins.dds.DDSImageWriterSpi"},
-                false, null, null,
-                null, null, true,
-                null, null, null,
-                null
+            DDSProviderInfo.class,
+            new String[] { "DDS", "dds" },
+            new String[] { "dds" },
+            new String[] { "image/vnd-ms.dds" },
+            "com.twelvemonkeys.imageio.plugins.dds.DDSImageReader",
+            new String[] { "com.twelvemonkeys.imageio.plugins.dds.DDSImageReaderSpi" },
+            "com.twelvemonkeys.imageio.plugins.dds.DDSImageWriter",
+            new String[] { "com.twelvemonkeys.imageio.plugins.dds.DDSImageWriterSpi" },
+            false, null, null, null, null,
+            true, null, null, null, null
         );
     }
 }

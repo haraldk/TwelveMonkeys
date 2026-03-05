@@ -59,7 +59,9 @@ import com.twelvemonkeys.io.FileUtil;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 import com.twelvemonkeys.lang.StringUtil;
+import com.twelvemonkeys.xml.XMLSerializer;
 
+import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.IIOException;
@@ -69,6 +71,7 @@ import javax.imageio.ImageReader;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
 import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.plugins.jpeg.JPEGImageReadParam;
 import javax.imageio.spi.ImageReaderSpi;
@@ -2897,18 +2900,19 @@ public final class TIFFImageReader extends ImageReaderBase {
                         BufferedImage image = reader.read(imageNo, param);
                         System.err.println("Read time: " + (System.currentTimeMillis() - start) + " ms");
 
-//                        IIOMetadata metadata = reader.getImageMetadata(imageNo);
-//                        if (metadata != null) {
-//                            if (metadata.getNativeMetadataFormatName() != null) {
-//                                Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
-//                                replaceBytesWithUndefined((IIOMetadataNode) tree);
-//                                new XMLSerializer(System.out, "UTF-8").serialize(tree, false);
-//                            }
-//                        /*else*/
-//                            if (metadata.isStandardMetadataFormatSupported()) {
-//                                new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName), false);
-//                            }
-//                        }
+                        IIOMetadata metadata = reader.getImageMetadata(imageNo);
+                        if (metadata != null) {
+                            if (metadata.getNativeMetadataFormatName() != null) {
+                                Node tree = metadata.getAsTree(metadata.getNativeMetadataFormatName());
+                                replaceBytesWithUndefined((IIOMetadataNode) tree);
+                                new XMLSerializer(System.out, "UTF-8").serialize(tree, false);
+                            }
+                        /*else*/
+                            if (metadata.isStandardMetadataFormatSupported()) {
+                                new XMLSerializer(System.out, "UTF-8").serialize(metadata.getAsTree(
+                                    IIOMetadataFormatImpl.standardMetadataFormatName), false);
+                            }
+                        }
 
                         System.err.println("image: " + image);
 
