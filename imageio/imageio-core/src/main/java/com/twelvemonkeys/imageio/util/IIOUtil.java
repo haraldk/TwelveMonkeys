@@ -368,13 +368,15 @@ public final class IIOUtil {
      * Copies all the standard param values from source to destination.
      * <p>
      * Typical use (in some imaginary {@code FooImageWriter} class):
+     * </p>
+     *
      * <pre>
      * ImageWriteParam param = ...
      * FooImageWriteparam fooParam = param instanceof FooImageWriteParam
      *      ? (FooImageWriteParam) param
      *      : copyStandardParams(param, getDefaultWriteParam());
      * </pre>
-     * </p>
+     *
      * May also be useful for {@code ImageReader}s that delegate reading to other plugins
      * (like a TIFF plugin delegating JPEG format decoding to a {@code JPEGImageReader}).
      *
