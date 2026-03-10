@@ -110,4 +110,6 @@ public class DDSImageReaderTest extends ImageReaderAbstractTest<DDSImageReader> 
     protected List<String> getMIMETypes() {
         return Collections.singletonList("image/vnd-ms.dds");
     }
+
+
 }

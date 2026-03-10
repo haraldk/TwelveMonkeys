@@ -48,6 +48,12 @@ import java.util.Iterator;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
 
+/**
+ * ImageReader implementation for Microsoft DirectDraw Surface (DDS) format.
+ *
+ * @author Paul Allen
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ */
 public final class DDSImageReader extends ImageReaderBase {
 
     private DDSHeader header;
@@ -90,7 +96,11 @@ public final class DDSImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
         readHeader();
 
-        // TODO: Implement for the specific formats...
+        DDSType type = header.getType();
+        if (!type.isBlockCompression() && type.rgbaMasks[3] == 0) {
+            return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
+        }
+
         return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB);
     }
 
@@ -146,14 +156,13 @@ public final class DDSImageReader extends ImageReaderBase {
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
         ImageTypeSpecifier imageType = getRawImageType(imageIndex);
 
-        return new DDSImageMetadata(imageType, header);
+        return new DDSImageMetadata(imageType, header.getType());
     }
 
     private void readHeader() throws IOException {
         if (header == null) {
             imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
             header = DDSHeader.read(imageInput);
-
             imageInput.flushBefore(imageInput.getStreamPosition());
         }
 

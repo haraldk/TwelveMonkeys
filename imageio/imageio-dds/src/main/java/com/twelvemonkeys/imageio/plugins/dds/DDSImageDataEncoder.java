@@ -31,8 +31,10 @@ class DDSImageDataEncoder {
     private static final int BC4_CHANNEL_ALPHA = 3; //BC3 reuses algorithm from BC4 but uses alpha channelIndex for sampling.
     private static final int BC4_CHANNEL_GREEN = 1; //same re-usage as BC3 but for green channel BC5 uses
 
-    static void writeImageData(ImageOutputStream imageOutput, RenderedImage renderedImage, DDSEncoderType type) throws IOException {
-        switch (type) {
+    static void writeImageData(ImageOutputStream imageOutput, RenderedImage renderedImage, BlockCompression compression) throws IOException {
+        // TODO: compression == null for custom RGB data?
+
+        switch (compression) {
             case BC1:
                 new BlockCompressor1(false).encode(imageOutput, renderedImage);
                 break;
@@ -49,7 +51,7 @@ class DDSImageDataEncoder {
                 new BlockCompressor5().encode(imageOutput, renderedImage);
                 break;
             default:
-                throw new IllegalArgumentException("DDS Type is not supported for encoder yet : " + type);
+                throw new IllegalArgumentException("DDS block compression is not supported yet: " + compression);
         }
     }
 
@@ -423,7 +425,12 @@ class DDSImageDataEncoder {
         void encode(ImageOutputStream imageOutput, RenderedImage image) throws IOException {
             int blocksXCount = (image.getWidth() + 3) / 4;
             int blocksYCount = (image.getHeight() + 3) / 4;
-            Raster raster = image.getData();
+
+            if (image.getNumXTiles() != 1 || image.getNumYTiles() != 1) {
+                throw new IllegalArgumentException("Only single tile images supported");
+            }
+            Raster raster = image.getTile(0, 0);
+
             for (int blockY = 0; blockY < blocksYCount; blockY++) {
                 for (int blockX = 0; blockX < blocksXCount; blockX++) {
                     raster.getPixels(blockX * 4, blockY * 4, 4, 4, samples);

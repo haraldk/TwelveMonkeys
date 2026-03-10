@@ -35,24 +35,46 @@ import com.twelvemonkeys.imageio.StandardImageMetadataSupport;
 import javax.imageio.ImageTypeSpecifier;
 
 final class DDSImageMetadata extends StandardImageMetadataSupport {
-    DDSImageMetadata(ImageTypeSpecifier type, DDSHeader header) {
-        super(builder(type)
-                      .withCompressionTypeName(compressionName(header))
-                      .withFormatVersion("1.0")
+
+    DDSImageMetadata(ImageTypeSpecifier specifier, DDSType type) {
+        super(builder(specifier)
+            .withCompressionTypeName(compressionName(type))
+            .withBitsPerSample(bitsPerSample(type))
+            .withFormatVersion("1.0")
         );
     }
 
-    private static String compressionName(DDSHeader header) {
-        // If the fourCC is valid, compression is one of the DXTn versions, otherwise None
-        int flags = header.getPixelFormatFlags();
-
-        if ((flags & DDS.PIXEL_FORMAT_FLAG_FOURCC) != 0) {
-            // DXTn
-            DDSType type = DDSType.valueOf(header.getFourCC());
-
+    private static String compressionName(DDSType type) {
+        if (type != null && type.isFourCC()) {
             return type.name();
         }
 
         return "None";
     }
+
+    private static int[] bitsPerSample(DDSType type) {
+        if (type.isBlockCompression()) {
+            return null; // Use defaults
+        }
+
+        int[] bitsPerSample = new int[4];
+
+        for (int i = 0; i < bitsPerSample.length; i++) {
+            bitsPerSample[i] = countMaskBits(type.rgbaMasks[i]);
+        }
+
+        return bitsPerSample;
+    }
+
+    private static int countMaskBits(int mask) {
+        // See https://graphics.stanford.edu/~seander/bithacks.html#CountBitsSetKernighan
+        int count;
+
+        for (count = 0; mask != 0; count++) {
+            mask &= mask - 1; // clear the least significant bit set
+        }
+
+        return count;
+    }
+
 }

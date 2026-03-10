@@ -23,6 +23,6 @@ public final class DDSImageWriterSpi extends ImageWriterSpiBase {
 
     @Override
     public String getDescription(Locale locale) {
-        return "Direct Draw Surface (DDS) Image Writer";
+        return "DirectDraw Surface (DDS) Image Writer";
     }
 }

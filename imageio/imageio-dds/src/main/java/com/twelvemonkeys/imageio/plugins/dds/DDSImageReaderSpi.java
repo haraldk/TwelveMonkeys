@@ -55,7 +55,8 @@ public final class DDSImageReaderSpi extends ImageReaderSpiBase {
 
         try {
             return stream.readInt() == DDS.MAGIC;
-        } finally {
+        }
+        finally {
             stream.reset();
         }
     }
@@ -67,6 +68,6 @@ public final class DDSImageReaderSpi extends ImageReaderSpiBase {
 
     @Override
     public String getDescription(Locale locale) {
-        return "Direct DrawSurface (DDS) Image Reader";
+        return "DirectDraw Surface (DDS) Image Reader";
     }
 }
