@@ -1,7 +1,6 @@
 package com.twelvemonkeys.imageio.util;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.function.Executable;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -219,8 +218,10 @@ public class IIOUtilTest {
 
     @Test
     void copyStandardParamsDestinationNull() {
+        ImageReadParam param = new ImageReadParam();
+
         assertThrows(NullPointerException.class, () -> IIOUtil.copyStandardParams(null, null));
-        assertThrows(NullPointerException.class, () -> IIOUtil.copyStandardParams(new ImageReadParam(), null));
+        assertThrows(NullPointerException.class, () -> IIOUtil.copyStandardParams(param, null));
     }
 
     @Test

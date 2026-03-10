@@ -177,8 +177,9 @@ enum DDSType {
 
             case DXGI.DXGI_FORMAT_BC5_SNORM:
                 return BC5S;
-        }
 
-        throw new IllegalArgumentException("Unsupported DXGI_FORMAT: " + dxgiFormat);
+            default:
+                throw new IllegalArgumentException("Unsupported DXGI_FORMAT: " + dxgiFormat);
+        }
     }
 }

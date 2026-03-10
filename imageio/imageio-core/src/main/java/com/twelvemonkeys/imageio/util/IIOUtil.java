@@ -393,81 +393,85 @@ public final class IIOUtil {
         Validate.isTrue(source != destination, "source must be different from destination");
 
         if (source != null) {
-            destination.setController(source.getController());
-            destination.setSourceSubsampling(
-                source.getSourceXSubsampling(), source.getSourceYSubsampling(),
-                source.getSubsamplingXOffset(), source.getSubsamplingYOffset()
-            );
-            destination.setSourceRegion(source.getSourceRegion());
-            destination.setSourceBands(source.getSourceBands());
-            destination.setDestinationOffset(source.getDestinationOffset());
-            destination.setDestinationType(source.getDestinationType());
+            copyIIOParams(source, destination);
 
             // TODO: API & usage... Is it ever useful to copy from a read to a write param or vice versa?
             //  If not, maybe throw an IllegalArgumentException instead
 
             if (source instanceof ImageReadParam && destination instanceof ImageReadParam) {
-                ImageReadParam sourceReadParam = (ImageReadParam) source;
-                ImageReadParam destinationReadParam = (ImageReadParam) destination;
-
-                destinationReadParam.setDestination(sourceReadParam.getDestination());
-                destinationReadParam.setDestinationBands(sourceReadParam.getDestinationBands());
-
-                if (destinationReadParam.canSetSourceRenderSize()) {
-                    destinationReadParam.setSourceRenderSize(sourceReadParam.getSourceRenderSize());
-                }
-
-                destinationReadParam.setSourceProgressivePasses(
-                    sourceReadParam.getSourceMinProgressivePass(),
-                    sourceReadParam.getSourceMaxProgressivePass()
-                );
+                copyImageReadParams((ImageReadParam) source, (ImageReadParam) destination);
             }
 
             if (source instanceof ImageWriteParam && destination instanceof ImageWriteParam) {
-                ImageWriteParam sourceWriteParam = (ImageWriteParam) source;
-                ImageWriteParam destinationWriteParam = (ImageWriteParam) destination;
-
-                // TODO: Usage... It's very unlikely that compression settings of one plugin is compatible with another...
-                //  Is the the below useful?
-                //  Also, is it okay to just silently ignore settings from one format that isn't compatible with another?
-
-                // Quirky API, we can't query for compression mode, unless source.canWriteCompressed is true...
-                if (sourceWriteParam.canWriteCompressed() && destinationWriteParam.canWriteCompressed()) {
-                    int compressionMode = sourceWriteParam.getCompressionMode();
-                    destinationWriteParam.setCompressionMode(compressionMode);
-
-                    if (compressionMode == ImageWriteParam.MODE_EXPLICIT
-                        && sourceWriteParam.getCompressionType() != null) {
-                        if (Arrays.asList(destinationWriteParam.getCompressionTypes())
-                            .contains(sourceWriteParam.getCompressionType())) {
-                            destinationWriteParam.setCompressionType(sourceWriteParam.getCompressionType());
-                            destinationWriteParam.setCompressionQuality(sourceWriteParam.getCompressionQuality());
-                        }
-                    }
-                }
-
-                if (sourceWriteParam.canWriteProgressive() && destinationWriteParam.canWriteProgressive()) {
-                    destinationWriteParam.setProgressiveMode(sourceWriteParam.getProgressiveMode());
-                }
-                if (sourceWriteParam.canWriteTiles() && destinationWriteParam.canWriteTiles()) {
-                    int tilingMode = sourceWriteParam.getTilingMode();
-                    destinationWriteParam.setTilingMode(tilingMode);
-
-                    if (tilingMode == ImageWriteParam.MODE_EXPLICIT) {
-                        // TODO: What if source can offset (and has offsets) and dest can't? Is it ok to just ignore the setting?
-                        boolean canWriteOffsetTiles =
-                            sourceWriteParam.canOffsetTiles() && destinationWriteParam.canOffsetTiles();
-
-                        destinationWriteParam.setTiling(
-                            sourceWriteParam.getTileWidth(), sourceWriteParam.getTileHeight(),
-                            canWriteOffsetTiles ? sourceWriteParam.getTileGridXOffset() : 0,
-                            canWriteOffsetTiles ? sourceWriteParam.getTileGridYOffset() : 0
-                        );
-                    }
-                }
+                copyImageWriteParams((ImageWriteParam) source, (ImageWriteParam) destination);
             }
         }
 
         return destination;
+    }
+
+    private static void copyImageWriteParams(ImageWriteParam source, ImageWriteParam destination) {
+        // TODO: Usage... It's very unlikely that compression settings of one plugin is compatible with another...
+        //  Is the the below useful?
+        //  Also, is it okay to just silently ignore settings from one format that isn't compatible with another?
+
+        // Quirky API, we can't query for compression mode, unless source.canWriteCompressed is true...
+        if (source.canWriteCompressed() && destination.canWriteCompressed()) {
+            int compressionMode = source.getCompressionMode();
+            destination.setCompressionMode(compressionMode);
+
+            if (compressionMode == ImageWriteParam.MODE_EXPLICIT
+                && source.getCompressionType() != null
+                && Arrays.asList(destination.getCompressionTypes()).contains(source.getCompressionType())) {
+                    destination.setCompressionType(source.getCompressionType());
+                    destination.setCompressionQuality(source.getCompressionQuality());
+            }
+        }
+
+        if (source.canWriteProgressive() && destination.canWriteProgressive()) {
+            destination.setProgressiveMode(source.getProgressiveMode());
+        }
+
+        if (source.canWriteTiles() && destination.canWriteTiles()) {
+            int tilingMode = source.getTilingMode();
+            destination.setTilingMode(tilingMode);
+
+            if (tilingMode == ImageWriteParam.MODE_EXPLICIT) {
+                // TODO: What if source can offset (and has offsets) and dest can't? Is it ok to just ignore the setting?
+                boolean canWriteOffsetTiles = source.canOffsetTiles() && destination.canOffsetTiles();
+
+                destination.setTiling(
+                    source.getTileWidth(), source.getTileHeight(),
+                    canWriteOffsetTiles ? source.getTileGridXOffset() : 0,
+                    canWriteOffsetTiles ? source.getTileGridYOffset() : 0
+                );
+            }
+        }
+    }
+
+    private static void copyImageReadParams(ImageReadParam source, ImageReadParam destination) {
+        destination.setDestination(source.getDestination());
+        destination.setDestinationBands(source.getDestinationBands());
+
+        if (destination.canSetSourceRenderSize()) {
+            destination.setSourceRenderSize(source.getSourceRenderSize());
+        }
+
+        destination.setSourceProgressivePasses(
+            source.getSourceMinProgressivePass(),
+            source.getSourceMaxProgressivePass()
+        );
+    }
+
+    private static void copyIIOParams(IIOParam source, IIOParam destination) {
+        destination.setController(source.getController());
+        destination.setSourceSubsampling(
+            source.getSourceXSubsampling(), source.getSourceYSubsampling(),
+            source.getSubsamplingXOffset(), source.getSubsamplingYOffset()
+        );
+        destination.setSourceRegion(source.getSourceRegion());
+        destination.setSourceBands(source.getSourceBands());
+        destination.setDestinationOffset(source.getDestinationOffset());
+        destination.setDestinationType(source.getDestinationType());
     }
 }
