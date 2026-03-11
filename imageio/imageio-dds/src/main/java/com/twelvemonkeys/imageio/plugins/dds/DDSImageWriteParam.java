@@ -42,16 +42,6 @@ public final class DDSImageWriteParam extends ImageWriteParam {
         return writeDXT10;
     }
 
-    BlockCompression compression() {
-        DDSType type = type();
-
-        if (type != null) {
-            return type.compression;
-        }
-
-        return null;
-    }
-
     DDSType type() {
         if (compressionType == null || compressionType.equals("None")) {
             return null;
@@ -68,6 +58,5 @@ public final class DDSImageWriteParam extends ImageWriteParam {
         }
 
         return DXGI.DXGI_FORMAT_UNKNOWN;
-
     }
 }

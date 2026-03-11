@@ -49,7 +49,6 @@ class DDSImageWriteParamTest {
                 DDSType type = DDSType.valueOf(compressionType);
 
                 assertEquals(type, param.type());
-                assertEquals(type.compression, param.compression());
             }
         }
     }

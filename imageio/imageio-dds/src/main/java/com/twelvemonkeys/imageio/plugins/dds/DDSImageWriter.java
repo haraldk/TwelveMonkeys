@@ -12,6 +12,7 @@ import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 
+import java.awt.Dimension;
 import java.awt.image.Raster;
 import java.awt.image.RenderedImage;
 import java.io.File;
@@ -27,6 +28,13 @@ import java.nio.file.Paths;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
 class DDSImageWriter extends ImageWriterBase {
+
+    private long startPos;
+    // TODO: Create a SequenceSupport class that handles sequence prepare/write/end
+    private int mipmapIndex = -1;
+    private DDSType mipmapType;
+    private Dimension mipmapDimension;
+
     protected DDSImageWriter(ImageWriterSpi provider) {
         super(provider);
     }
@@ -36,9 +44,12 @@ class DDSImageWriter extends ImageWriterBase {
         return new DDSImageWriteParam();
     }
 
-    // TODO: Suppport MipMaps using sequence methods
-    //  This involves seeking backwards, updating the mipmap flag and mipmapcount in the header... :-/
-    //   + ensuring that each level is half the size of the previous, but still a multiple of 4...
+    @Override
+    protected void resetMembers() {
+        mipmapIndex = -1;
+        mipmapType = null;
+        mipmapDimension = null;
+    }
 
     @Override
     public boolean canWriteRasters() {
@@ -46,36 +57,92 @@ class DDSImageWriter extends ImageWriterBase {
     }
 
     @Override
-    public void write(IIOMetadata streamMetadata, IIOImage image, ImageWriteParam param) throws IOException {
+    public boolean canWriteSequence() {
+        return true;
+    }
+
+    @Override
+    public void prepareWriteSequence(IIOMetadata streamMetadata) throws IOException {
         assertOutput();
 
+        if (mipmapIndex >= 0) {
+            throw new IllegalStateException("writeSequence already started");
+        }
+        mipmapIndex = 0;
+
+        startPos = imageOutput.getStreamPosition();
+        imageOutput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+        imageOutput.writeInt(DDS.MAGIC);
+        imageOutput.flush();
+    }
+
+    @Override
+    public void endWriteSequence() throws IOException {
+        assertOutput();
+
+        if (mipmapIndex < 0) {
+            throw new IllegalStateException("prepareWriteSequence not called");
+        }
+
+        // Go back and update hader
+        updateHeader(mipmapIndex);
+
+        mipmapIndex = -1;
+        mipmapType = null;
+        mipmapDimension = null;
+
+        imageOutput.flush();
+    }
+
+    @Override
+    public void write(IIOMetadata streamMetadata, IIOImage image, ImageWriteParam param) throws IOException {
+        prepareWriteSequence(streamMetadata);
+        writeToSequence(image, param);
+        endWriteSequence();
+    }
+
+    @Override
+    public void writeToSequence(IIOImage image, ImageWriteParam param) throws IOException {
+        if (mipmapIndex < 0) {
+            throw new IllegalStateException("prepareWriteSequence not called");
+        }
+
         Raster raster = getRaster(image);
-        ensureTextureSize(raster);
         ensureImageChannels(raster);
+        ensureTextureDimension(raster);
 
         DDSImageWriteParam ddsParam = param instanceof DDSImageWriteParam
             ? ((DDSImageWriteParam) param)
             : IIOUtil.copyStandardParams(param, getDefaultWriteParam());
 
-        if (ddsParam.compression() == null) {
+        DDSType type = ddsParam.type();
+        if (mipmapType == null) {
+            mipmapType = type;
+        }
+        else if (type != mipmapType) {
+            processWarningOccurred(mipmapIndex, "All images in DDS MipMap must use same pixel format and compression");
+        }
+        if (mipmapType == null) {
             throw new IIOException("Only compressed DDS using DXT1-5 or DXT10 with block compression is currently supported");
         }
 
-        imageOutput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
-        imageOutput.writeInt(DDS.MAGIC);
-
-        writeHeader(raster.getWidth(), raster.getHeight(), ddsParam.type(), ddsParam.isWriteDXT10());
-        if (ddsParam.isWriteDXT10()) {
-            writeDXT10Header(ddsParam.getDxgiFormat());
+        if (mipmapIndex == 0) {
+            writeHeader(raster.getWidth(), raster.getHeight(), mipmapType, ddsParam.isWriteDXT10());
+            if (ddsParam.isWriteDXT10()) {
+                writeDXT10Header(ddsParam.getDxgiFormat());
+            }
         }
 
-        processImageStarted(0);
+        processImageStarted(mipmapIndex);
         processImageProgress(0f);
-        DDSImageDataEncoder.writeImageData(imageOutput, raster, ddsParam.compression());
-        processImageProgress(100f);
 
-        imageOutput.flush();
+        DDSImageDataEncoder.writeImageData(imageOutput, raster, mipmapType.compression);
+
+        processImageProgress(100f);
         processImageComplete();
+
+        mipmapDimension = new Dimension(raster.getWidth(), raster.getHeight());
+        mipmapIndex++;
     }
 
     private static Raster getRaster(IIOImage image) throws IIOException {
@@ -113,15 +180,22 @@ class DDSImageWriter extends ImageWriterBase {
 
     /**
      * Checking if an image can be evenly divided into blocks of 4x4, ideally a power of 2.
-     * e.g. 16x16, 32x32, 512x128, 512x512, 1024x512, 1024x1024, 2048x1024, ...
+     * e.g. 16x16, 32x32, 512x128, 512x512, 1024x512, 1024x1024, 2048x1024...
      */
-    private void ensureTextureSize(Raster raster) throws IIOException {
+    private void ensureTextureDimension(Raster raster) throws IIOException {
         int width = raster.getWidth();
         int height = raster.getHeight();
 
         // Should also allow mipmaps 2x2 and 1x1?
         if (width % 4 != 0 || height % 4 != 0) {
             throw new IIOException(String.format("Image dimensions must be dividable by 4, ideally a power of 2; got %dx%d", width, height));
+        }
+
+        if (mipmapDimension != null && (mipmapDimension.width != width * 2|| mipmapDimension.height != height * 2)) {
+            throw new IIOException(
+                String.format("For mipmap, image dimensions must be exactly half of previous (%dx%d); got %dx%d",
+                mipmapDimension.width, mipmapDimension.height, width, height)
+            );
         }
     }
 
@@ -147,6 +221,25 @@ class DDSImageWriter extends ImageWriterBase {
         imageOutput.writeInt(0);
         //dwCaps3, dwCaps4, dwReserved2 : 3 unused integers
         imageOutput.write(new byte[12]);
+    }
+
+    private void updateHeader(int mipmapCount) throws IOException {
+        if (mipmapCount == 1) {
+            // Fast case, nothing to do
+            return;
+        }
+
+        long streamPosition = imageOutput.getStreamPosition();
+        imageOutput.seek(startPos + 8); // Seek back to start + 4 magic + 4 header size
+
+        int flags = imageOutput.readInt();
+        imageOutput.seek(imageOutput.getStreamPosition() - 4);
+        imageOutput.writeInt(flags | DDS.FLAG_MIPMAPCOUNT);
+
+        imageOutput.seek(imageOutput.getStreamPosition() + 16);
+        imageOutput.writeInt(mipmapCount);
+
+        imageOutput.seek(streamPosition); // Restore pos
     }
 
     //https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-pixelformat
