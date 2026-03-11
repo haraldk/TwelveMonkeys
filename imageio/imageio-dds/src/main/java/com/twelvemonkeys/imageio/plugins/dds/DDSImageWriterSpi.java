@@ -5,7 +5,6 @@ import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
 
-import java.awt.image.Raster;
 import java.util.Locale;
 
 public final class DDSImageWriterSpi extends ImageWriterSpiBase {

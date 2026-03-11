@@ -45,7 +45,6 @@ import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.Dimension;
 import java.io.IOException;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 
 final class DDSHeader {

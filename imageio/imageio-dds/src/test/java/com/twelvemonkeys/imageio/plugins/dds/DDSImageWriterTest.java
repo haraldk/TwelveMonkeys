@@ -23,7 +23,6 @@ import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 
-import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -33,7 +32,7 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-public class DDSImageWriterTest extends ImageWriterAbstractTest<DDSImageWriter> {
+class DDSImageWriterTest extends ImageWriterAbstractTest<DDSImageWriter> {
     @Override
     protected ImageWriterSpi createProvider() {
         return new DDSImageWriterSpi();

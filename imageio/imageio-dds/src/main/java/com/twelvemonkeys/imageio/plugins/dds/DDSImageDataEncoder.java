@@ -1,10 +1,8 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
-import javax.imageio.IIOException;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.Color;
 import java.awt.image.Raster;
-import java.awt.image.RenderedImage;
 import java.io.IOException;
 
 import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.ARGB_ORDER;
