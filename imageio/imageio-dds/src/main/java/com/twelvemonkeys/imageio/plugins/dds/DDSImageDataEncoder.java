@@ -1,5 +1,6 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
+import javax.imageio.IIOException;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.Color;
 import java.awt.image.Raster;
@@ -27,24 +28,24 @@ class DDSImageDataEncoder {
     private static final int BC4_CHANNEL_ALPHA = 3; //BC3 reuses algorithm from BC4 but uses alpha channelIndex for sampling.
     private static final int BC4_CHANNEL_GREEN = 1; //same re-usage as BC3 but for green channel BC5 uses
 
-    static void writeImageData(ImageOutputStream imageOutput, RenderedImage renderedImage, BlockCompression compression) throws IOException {
+    static void writeImageData(ImageOutputStream imageOutput, Raster raster, BlockCompression compression) throws IOException {
         // TODO: Support compression == null for uncompressed RGB(A/X) data?
 
         switch (compression) {
             case BC1:
-                new BlockCompressor1(false).encode(imageOutput, renderedImage);
+                new BlockCompressor1(false).encode(imageOutput, raster);
                 break;
             case BC2:
-                new BlockCompressor2().encode(imageOutput, renderedImage);
+                new BlockCompressor2().encode(imageOutput, raster);
                 break;
             case BC3:
-                new BlockCompressor3().encode(imageOutput, renderedImage);
+                new BlockCompressor3().encode(imageOutput, raster);
                 break;
             case BC4:
-                new BlockCompressor4(BC4_CHANNEL_RED).encode(imageOutput, renderedImage);
+                new BlockCompressor4(BC4_CHANNEL_RED).encode(imageOutput, raster);
                 break;
             case BC5:
-                new BlockCompressor5().encode(imageOutput, renderedImage);
+                new BlockCompressor5().encode(imageOutput, raster);
                 break;
             default:
                 throw new IllegalArgumentException("DDS block compression is not supported yet: " + compression);
@@ -418,14 +419,9 @@ class DDSImageDataEncoder {
             }
         }
 
-        void encode(ImageOutputStream imageOutput, RenderedImage image) throws IOException {
-            int blocksXCount = (image.getWidth() + 3) / 4;
-            int blocksYCount = (image.getHeight() + 3) / 4;
-
-            if (image.getNumXTiles() != 1 || image.getNumYTiles() != 1) {
-                throw new IllegalArgumentException("Only single tile images supported");
-            }
-            Raster raster = image.getTile(0, 0);
+        void encode(ImageOutputStream imageOutput, Raster raster) throws IOException {
+            int blocksXCount = (raster.getWidth() + 3) / 4;
+            int blocksYCount = (raster.getHeight() + 3) / 4;
 
             for (int blockY = 0; blockY < blocksYCount; blockY++) {
                 for (int blockX = 0; blockX < blocksXCount; blockX++) {

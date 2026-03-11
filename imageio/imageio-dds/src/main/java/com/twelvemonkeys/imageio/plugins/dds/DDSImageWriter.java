@@ -3,6 +3,7 @@ package com.twelvemonkeys.imageio.plugins.dds;
 import com.twelvemonkeys.imageio.ImageWriterBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 
+import javax.imageio.IIOException;
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageTypeSpecifier;
@@ -40,50 +41,73 @@ class DDSImageWriter extends ImageWriterBase {
     //   + ensuring that each level is half the size of the previous, but still a multiple of 4...
 
     @Override
+    public boolean canWriteRasters() {
+        return true;
+    }
+
+    @Override
     public void write(IIOMetadata streamMetadata, IIOImage image, ImageWriteParam param) throws IOException {
         assertOutput();
 
-        RenderedImage renderedImage = image.getRenderedImage(); // TODO: Support raster?
-        ensureTextureSize(renderedImage);
-        ensureImageChannels(renderedImage);
+        Raster raster = getRaster(image);
+        ensureTextureSize(raster);
+        ensureImageChannels(raster);
 
         DDSImageWriteParam ddsParam = param instanceof DDSImageWriteParam
             ? ((DDSImageWriteParam) param)
             : IIOUtil.copyStandardParams(param, getDefaultWriteParam());
 
-        processImageStarted(0);
-        imageOutput.setByteOrder(ByteOrder.BIG_ENDIAN);
-        imageOutput.writeInt(DDS.MAGIC);
-        imageOutput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+        if (ddsParam.compression() == null) {
+            throw new IIOException("Only compressed DDS using DXT1-5 or DXT10 with block compression is currently supported");
+        }
 
-        writeHeader(image, ddsParam.type(), ddsParam.isWriteDXT10());
+        imageOutput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+        imageOutput.writeInt(DDS.MAGIC);
+
+        writeHeader(raster.getWidth(), raster.getHeight(), ddsParam.type(), ddsParam.isWriteDXT10());
         if (ddsParam.isWriteDXT10()) {
             writeDXT10Header(ddsParam.getDxgiFormat());
         }
 
+        processImageStarted(0);
         processImageProgress(0f);
-        DDSImageDataEncoder.writeImageData(imageOutput, renderedImage, ddsParam.compression());
+        DDSImageDataEncoder.writeImageData(imageOutput, raster, ddsParam.compression());
         processImageProgress(100f);
 
         imageOutput.flush();
         processImageComplete();
     }
 
+    private static Raster getRaster(IIOImage image) throws IIOException {
+        if (image.hasRaster()) {
+            return image.getRaster();
+        }
+        else {
+            RenderedImage renderedImage = image.getRenderedImage();
+
+            if (renderedImage.getNumXTiles() != 1 || renderedImage.getNumYTiles() != 1) {
+                throw new IIOException("Only single tile images supported");
+            }
+
+            return renderedImage.getTile(0, 0);
+        }
+    }
+
     /**
      * Checking if the image has 3 channels (RGB) or 4 channels (RGBA) and if image has 8 bits/channel.
+     *
+     * @see DDSImageWriterSpi#canEncodeImage(ImageTypeSpecifier)
      */
-    private void ensureImageChannels(RenderedImage renderedImage) {
-        Raster data = renderedImage.getTile(0, 0);
-
+    private void ensureImageChannels(Raster data) throws IIOException {
         int numBands = data.getNumBands();
-        if (numBands < 3) {
-            throw new IllegalStateException(
+        if (numBands < 3 || numBands > 4) {
+            throw new IIOException(
                 "Only image with 3 channels (RGB) or 4 channels (RGBA) is supported, got " + numBands + " channels");
         }
 
         int sampleSize = data.getSampleModel().getSampleSize(0);
         if (sampleSize != 8) {
-            throw new IllegalStateException("Only image with 8 bits/channel is supported, got " + sampleSize);
+            throw new IIOException("Only image with 8 bits/channel is supported, got " + sampleSize);
         }
     }
 
@@ -91,23 +115,20 @@ class DDSImageWriter extends ImageWriterBase {
      * Checking if an image can be evenly divided into blocks of 4x4, ideally a power of 2.
      * e.g. 16x16, 32x32, 512x128, 512x512, 1024x512, 1024x1024, 2048x1024, ...
      */
-    private void ensureTextureSize(RenderedImage renderedImage) {
-        int w = renderedImage.getWidth();
-        int h = renderedImage.getHeight();
+    private void ensureTextureSize(Raster raster) throws IIOException {
+        int width = raster.getWidth();
+        int height = raster.getHeight();
 
-        if (w % 4 != 0 || h % 4 != 0) {
-            throw new IllegalStateException(String.format("Image size must be dividable by 4, ideally a power of 2; got (%d x %d)", w, h));
+        // Should also allow mipmaps 2x2 and 1x1?
+        if (width % 4 != 0 || height % 4 != 0) {
+            throw new IIOException(String.format("Image dimensions must be dividable by 4, ideally a power of 2; got %dx%d", width, height));
         }
     }
 
-    private void writeHeader(IIOImage image, DDSType type, boolean writeDXT10) throws IOException {
+    private void writeHeader(int width, int height, DDSType type, boolean writeDXT10) throws IOException {
         imageOutput.writeInt(DDS.HEADER_SIZE);
         int linearSizeOrPitch = type.isBlockCompression() ? DDS.FLAG_LINEARSIZE : DDS.FLAG_PITCH;
         imageOutput.writeInt(DDS.FLAG_CAPS | DDS.FLAG_HEIGHT | DDS.FLAG_WIDTH | DDS.FLAG_PIXELFORMAT | linearSizeOrPitch);
-
-        RenderedImage renderedImage = image.getRenderedImage();
-        int height = renderedImage.getHeight();
-        int width = renderedImage.getWidth();
 
         imageOutput.writeInt(height);
         imageOutput.writeInt(width);
@@ -126,12 +147,11 @@ class DDSImageWriter extends ImageWriterBase {
         imageOutput.writeInt(0);
         //dwCaps3, dwCaps4, dwReserved2 : 3 unused integers
         imageOutput.write(new byte[12]);
-
     }
 
     //https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-pixelformat
     private void writePixelFormat(DDSType type, boolean writeDXT10) throws IOException {
-        imageOutput.writeInt(DDS.DDSPF_SIZE);
+        imageOutput.writeInt(DDS.PIXELFORMAT_SIZE);
         writePixelFormatFlags(type, writeDXT10);
         writeFourCC(type, writeDXT10);
         writeRGBAData(type, writeDXT10);

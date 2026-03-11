@@ -33,7 +33,8 @@ package com.twelvemonkeys.imageio.plugins.dds;
 
 @SuppressWarnings("unused")
 interface DDS {
-    int MAGIC = ('D' << 24) + ('D' << 16) + ('S' << 8) + ' '; // Big-Endian
+    int MAGIC = 'D' + ('D' << 8) + ('S' << 16) + (' ' << 24); // Little-Endian
+
     int HEADER_SIZE = 124;
     int PIXELFORMAT_SIZE = 32;
 
@@ -48,7 +49,6 @@ interface DDS {
     int FLAG_DEPTH = 1 << 23;        // Required in a depth texture.
 
     // Pixel Format Flags
-    int DDSPF_SIZE = 32;
     int PIXEL_FORMAT_FLAG_ALPHAPIXELS = 0x1;
     int PIXEL_FORMAT_FLAG_ALPHA = 0x2;
     int PIXEL_FORMAT_FLAG_FOURCC = 0x04;

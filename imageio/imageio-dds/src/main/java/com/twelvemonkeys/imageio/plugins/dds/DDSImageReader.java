@@ -166,11 +166,9 @@ public final class DDSImageReader extends ImageReaderBase {
 
     private void readHeader() throws IOException {
         if (header == null) {
-            imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN); // TODO: Move to setInput?
+            imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
             header = DDSHeader.read(imageInput);
             imageInput.flushBefore(imageInput.getStreamPosition());
-
-            System.out.println("header = " + header);
         }
 
         imageInput.seek(imageInput.getFlushedPosition());

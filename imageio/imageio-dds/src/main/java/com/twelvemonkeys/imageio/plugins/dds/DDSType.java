@@ -166,14 +166,14 @@ enum DDSType {
 
             case DXGI.DXGI_FORMAT_BC4_TYPELESS:
             case DXGI.DXGI_FORMAT_BC4_UNORM:
-                return ATI1;
+                return BC4U;
 
             case DXGI.DXGI_FORMAT_BC4_SNORM:
                 return BC4S;
 
             case DXGI.DXGI_FORMAT_BC5_TYPELESS:
             case DXGI.DXGI_FORMAT_BC5_UNORM:
-                return ATI2;
+                return BC5U;
 
             case DXGI.DXGI_FORMAT_BC5_SNORM:
                 return BC5S;

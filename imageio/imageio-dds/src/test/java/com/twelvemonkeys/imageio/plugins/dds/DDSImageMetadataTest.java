@@ -27,6 +27,11 @@ class DDSImageMetadataTest {
         IIOMetadataNode lossless = (IIOMetadataNode) losslesses.item(0);
         assertEquals("FALSE", lossless.getAttribute("value"));
 
+        NodeList bitsPerSamples = tree.getElementsByTagName("BitsPerSample");
+        assertEquals(1, bitsPerSamples.getLength());
+        IIOMetadataNode bitsPerSample = (IIOMetadataNode) bitsPerSamples.item(0);
+        assertEquals("8 8 8 8", bitsPerSample.getAttribute("value"));
+
         NodeList alphas = tree.getElementsByTagName("Alpha");
         assertEquals(1, alphas.getLength());
         IIOMetadataNode alpha = (IIOMetadataNode) alphas.item(0);

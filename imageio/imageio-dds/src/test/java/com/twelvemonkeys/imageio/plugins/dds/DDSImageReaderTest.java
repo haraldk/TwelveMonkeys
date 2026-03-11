@@ -30,13 +30,26 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import javax.imageio.ImageIO;
+import javax.imageio.ImageReader;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
+
 import java.awt.Dimension;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import org.junit.jupiter.api.Test;
+import org.w3c.dom.NodeList;
 
 public class DDSImageReaderTest extends ImageReaderAbstractTest<DDSImageReader> {
     @Override
@@ -111,5 +124,66 @@ public class DDSImageReaderTest extends ImageReaderAbstractTest<DDSImageReader> 
         return Collections.singletonList("image/vnd-ms.dds");
     }
 
+    @Test
+    void metadataDXT5() throws IOException {
+        ImageReader reader = createReader();
 
+        try (ImageInputStream inputStream = ImageIO.createImageInputStream(getClassLoaderResource("/dds/dds_DXT5.dds"))) {
+            reader.setInput(inputStream);
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+
+            NodeList compressionTypeNames = tree.getElementsByTagName("CompressionTypeName");
+            assertEquals(1, compressionTypeNames.getLength());
+            IIOMetadataNode compressionTypeName = (IIOMetadataNode) compressionTypeNames.item(0);
+            assertEquals("DXT5", compressionTypeName.getAttribute("value"));
+
+            NodeList losslesses = tree.getElementsByTagName("Lossless");
+            assertEquals(1, losslesses.getLength());
+            IIOMetadataNode lossless = (IIOMetadataNode) losslesses.item(0);
+            assertEquals("FALSE", lossless.getAttribute("value"));
+
+            NodeList bitsPerSamples = tree.getElementsByTagName("BitsPerSample");
+            assertEquals(1, bitsPerSamples.getLength());
+            IIOMetadataNode bitsPerSample = (IIOMetadataNode) bitsPerSamples.item(0);
+            assertEquals("8 8 8 8", bitsPerSample.getAttribute("value"));
+
+            NodeList alphas = tree.getElementsByTagName("Alpha");
+            assertEquals(1, alphas.getLength());
+            IIOMetadataNode alpha = (IIOMetadataNode) alphas.item(0);
+            assertEquals("nonpremultiplied", alpha.getAttribute("value"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    void metadataRGB565() throws IOException {
+        ImageReader reader = createReader();
+
+        try (ImageInputStream inputStream = ImageIO.createImageInputStream(getClassLoaderResource("/dds/dds_R5G6B5.dds"))) {
+            reader.setInput(inputStream);
+
+            IIOMetadata metadata = reader.getImageMetadata(0);
+            IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+
+            NodeList compressions = tree.getElementsByTagName("Compression");
+            assertEquals(0, compressions.getLength());
+
+            NodeList bitsPerSamples = tree.getElementsByTagName("BitsPerSample");
+            assertEquals(1, bitsPerSamples.getLength());
+            IIOMetadataNode bitsPerSample = (IIOMetadataNode) bitsPerSamples.item(0);
+            assertEquals("5 6 5 0", bitsPerSample.getAttribute("value")); // or "5 6 5"
+
+            NodeList alphas = tree.getElementsByTagName("Alpha");
+            assertEquals(1, alphas.getLength());
+            IIOMetadataNode alpha = (IIOMetadataNode) alphas.item(0);
+            assertEquals("none", alpha.getAttribute("value"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
 }

@@ -71,12 +71,10 @@ final class DDSHeader {
         DDSHeader header = new DDSHeader();
 
         // Read MAGIC bytes [0,3]
-        imageInput.setByteOrder(ByteOrder.BIG_ENDIAN);
         int magic = imageInput.readInt();
         if (magic != DDS.MAGIC) {
             throw new IIOException(String.format("Not a DDS file. Expected DDS magic 0x%8x', read 0x%8x", DDS.MAGIC, magic));
         }
-        imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
 
         // DDS_HEADER structure
         // https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header
