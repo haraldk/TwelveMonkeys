@@ -51,10 +51,21 @@ public class DDSImageWriterTest extends ImageWriterAbstractTest<DDSImageWriter> 
     }
 
     @Test
+    void writeRasters() throws IOException {
+        ImageWriter writer = createWriter();
+
+        assertTrue(writer.canWriteRasters());
+
+        // Full tests in super class
+    }
+
+    @Test
     void writeMipmap() throws IOException {
         ImageWriter writer = createWriter();
 
         try {
+            assertTrue(writer.canWriteSequence());
+
             List<BufferedImage> testData = getTestData();
             ByteArrayOutputStream buffer = new ByteArrayOutputStream();
             int previousSize = 0;
