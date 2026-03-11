@@ -101,6 +101,11 @@ public final class DDSImageReader extends ImageReaderBase {
             return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
         }
 
+        // TODO: DXT1 can have 1 bit alpha, usually don't...
+        //  DXT3/5 have alpha
+        //  DXT2/4 ...?
+
+
         return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB);
     }
 
@@ -161,9 +166,11 @@ public final class DDSImageReader extends ImageReaderBase {
 
     private void readHeader() throws IOException {
         if (header == null) {
-            imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+            imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN); // TODO: Move to setInput?
             header = DDSHeader.read(imageInput);
             imageInput.flushBefore(imageInput.getStreamPosition());
+
+            System.out.println("header = " + header);
         }
 
         imageInput.seek(imageInput.getFlushedPosition());

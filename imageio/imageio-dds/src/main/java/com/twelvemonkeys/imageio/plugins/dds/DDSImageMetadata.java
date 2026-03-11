@@ -39,6 +39,7 @@ final class DDSImageMetadata extends StandardImageMetadataSupport {
     DDSImageMetadata(ImageTypeSpecifier specifier, DDSType type) {
         super(builder(specifier)
             .withCompressionTypeName(compressionName(type))
+            .withCompressionLossless(!type.isBlockCompression())
             .withBitsPerSample(bitsPerSample(type))
             .withFormatVersion("1.0")
         );

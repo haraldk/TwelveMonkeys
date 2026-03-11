@@ -35,6 +35,7 @@ package com.twelvemonkeys.imageio.plugins.dds;
 interface DDS {
     int MAGIC = ('D' << 24) + ('D' << 16) + ('S' << 8) + ' '; // Big-Endian
     int HEADER_SIZE = 124;
+    int PIXELFORMAT_SIZE = 32;
 
     // Header Flags
     int FLAG_CAPS = 1;              // Required in every .dds file.

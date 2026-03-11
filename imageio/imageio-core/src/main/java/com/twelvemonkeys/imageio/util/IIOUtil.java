@@ -72,7 +72,7 @@ public final class IIOUtil {
      */
     public static InputStream createStreamAdapter(final ImageInputStream pStream) {
         // TODO: Include stream start pos?
-        // TODO: Skip buffering for known in-memory implementations?
+        // TODO: Skip buffering for known in-memory implementations? pStream.isCachedMemory
         return new BufferedInputStream(new IIOInputStreamAdapter(pStream));
     }
 
@@ -86,7 +86,7 @@ public final class IIOUtil {
      */
     public static InputStream createStreamAdapter(final ImageInputStream pStream, final long pLength) {
         // TODO: Include stream start pos?
-        // TODO: Skip buffering for known in-memory implementations?
+        // TODO: Skip buffering for known in-memory implementations? pStream.isCachedMemory
         return new BufferedInputStream(new IIOInputStreamAdapter(pStream, pLength));
     }
 

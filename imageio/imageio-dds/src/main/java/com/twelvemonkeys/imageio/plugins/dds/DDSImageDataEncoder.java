@@ -13,15 +13,11 @@ import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.RGB_16_ORDER;
 
 /**
  * A designated class to encode image data to binary.
- * <p>
- * References:
- * <p>
- * [1] <a href="https://www.ludicon.com/castano/blog/2009/03/gpu-dxt-decompression/">GPU DXT Decompression</a>.
- * [2] <a href="https://sv-journal.org/2014-1/06/en/index.php">TEXTURE COMPRESSION TECHNIQUES</a>.
- * [3] <a href="https://mrelusive.com/publications/papers/Real-Time-Dxt-Compression.pdf">Real-Time DXT Compression by J.M.P. van Waveren</a>
- * [4] <a href="https://registry.khronos.org/DataFormat/specs/1.4/dataformat.1.4.pdf">Khronos Data Format Specification v1.4 by Andrew Garrard</a>
- * </p>
- * </p>
+ *
+ * @see <a href="https://www.ludicon.com/castano/blog/2009/03/gpu-dxt-decompression/">GPU DXT Decompression</a>.
+ * @see <a href="https://sv-journal.org/2014-1/06/en/index.php">TEXTURE COMPRESSION TECHNIQUES</a>.
+ * @see <a href="https://mrelusive.com/publications/papers/Real-Time-Dxt-Compression.pdf">Real-Time DXT Compression by J.M.P. van Waveren</a>
+ * @see <a href="https://registry.khronos.org/DataFormat/specs/1.4/dataformat.1.4.pdf">Khronos Data Format Specification v1.4 by Andrew Garrard</a>
  */
 class DDSImageDataEncoder {
     private DDSImageDataEncoder() {}
@@ -32,7 +28,7 @@ class DDSImageDataEncoder {
     private static final int BC4_CHANNEL_GREEN = 1; //same re-usage as BC3 but for green channel BC5 uses
 
     static void writeImageData(ImageOutputStream imageOutput, RenderedImage renderedImage, BlockCompression compression) throws IOException {
-        // TODO: compression == null for custom RGB data?
+        // TODO: Support compression == null for uncompressed RGB(A/X) data?
 
         switch (compression) {
             case BC1:

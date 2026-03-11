@@ -17,13 +17,16 @@ class DDSImageMetadataTest {
         DDSImageMetadata metadata = createDDSImageMetadata(BufferedImage.TYPE_INT_ARGB, DDSType.DXT1);
         IIOMetadataNode tree = (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
 
-        NodeList compressions = tree.getElementsByTagName("CompressionTypeName");
-        assertEquals(1, compressions.getLength());
+        NodeList compressionTypeNames = tree.getElementsByTagName("CompressionTypeName");
+        assertEquals(1, compressionTypeNames.getLength());
+        IIOMetadataNode compressionTypeName = (IIOMetadataNode) compressionTypeNames.item(0);
+        assertEquals("DXT1", compressionTypeName.getAttribute("value"));
 
-        IIOMetadataNode compression = (IIOMetadataNode) compressions.item(0);
-        assertEquals("DXT1", compression.getAttribute("value"));
+        NodeList losslesses = tree.getElementsByTagName("Lossless");
+        assertEquals(1, losslesses.getLength());
+        IIOMetadataNode lossless = (IIOMetadataNode) losslesses.item(0);
+        assertEquals("FALSE", lossless.getAttribute("value"));
 
-        // TODO: This should probably not have alpha...
         NodeList alphas = tree.getElementsByTagName("Alpha");
         assertEquals(1, alphas.getLength());
         IIOMetadataNode alpha = (IIOMetadataNode) alphas.item(0);

@@ -35,6 +35,10 @@ class DDSImageWriter extends ImageWriterBase {
         return new DDSImageWriteParam();
     }
 
+    // TODO: Suppport MipMaps using sequence methods
+    //  This involves seeking backwards, updating the mipmap flag and mipmapcount in the header... :-/
+    //   + ensuring that each level is half the size of the previous, but still a multiple of 4...
+
     @Override
     public void write(IIOMetadata streamMetadata, IIOImage image, ImageWriteParam param) throws IOException {
         assertOutput();
@@ -52,7 +56,7 @@ class DDSImageWriter extends ImageWriterBase {
         imageOutput.writeInt(DDS.MAGIC);
         imageOutput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
 
-        writeHeader(image, ddsParam.type(), ddsParam.isWriteDXT10(), ddsParam.optionalBitFlags());
+        writeHeader(image, ddsParam.type(), ddsParam.isWriteDXT10());
         if (ddsParam.isWriteDXT10()) {
             writeDXT10Header(ddsParam.getDxgiFormat());
         }
@@ -96,9 +100,10 @@ class DDSImageWriter extends ImageWriterBase {
         }
     }
 
-    private void writeHeader(IIOImage image, DDSType type, boolean writeDXT10, int optionalBitFlags) throws IOException {
+    private void writeHeader(IIOImage image, DDSType type, boolean writeDXT10) throws IOException {
         imageOutput.writeInt(DDS.HEADER_SIZE);
-        imageOutput.writeInt(DDS.FLAG_CAPS | DDS.FLAG_HEIGHT | DDS.FLAG_WIDTH | DDS.FLAG_PIXELFORMAT | optionalBitFlags);
+        int linearSizeOrPitch = type.isBlockCompression() ? DDS.FLAG_LINEARSIZE : DDS.FLAG_PITCH;
+        imageOutput.writeInt(DDS.FLAG_CAPS | DDS.FLAG_HEIGHT | DDS.FLAG_WIDTH | DDS.FLAG_PIXELFORMAT | linearSizeOrPitch);
 
         RenderedImage renderedImage = image.getRenderedImage();
         int height = renderedImage.getHeight();
@@ -182,7 +187,8 @@ class DDSImageWriter extends ImageWriterBase {
     private void writePixelFormatFlags(DDSType type, boolean writeDXT10) throws IOException {
         if (writeDXT10 || type.isFourCC()) {
             imageOutput.writeInt(DDS.PIXEL_FORMAT_FLAG_FOURCC);
-        } else {
+        }
+        else {
             imageOutput.writeInt(DDS.PIXEL_FORMAT_FLAG_RGB | (type.rgbaMasks != null ? DDS.PIXEL_FORMAT_FLAG_ALPHAPIXELS : 0));
         }
     }
@@ -190,7 +196,8 @@ class DDSImageWriter extends ImageWriterBase {
     private void writePitchOrLinearSize(int height, int width, DDSType type) throws IOException {
         if (type.isBlockCompression()) {
             imageOutput.writeInt(((width + 3) / 4) * ((height + 3) / 4) * type.blockSize());
-        } else {
+        }
+        else {
             imageOutput.writeInt(width * type.blockSize());
         }
     }

@@ -22,38 +22,12 @@ public final class DDSImageWriteParam extends ImageWriteParam {
         return compressionTypes.toArray(new String[0]);
     }
 
-    private int optionalBitFlags;
     private boolean writeDXT10;
 
     DDSImageWriteParam() {
         canWriteCompressed = true;
         compressionTypes = COMPRESSION_TYPES;
         compressionType = DEFAULT_TYPE.name();
-        setLinearSize();
-    }
-
-    // TODO: Set this always for compressed images?
-    public void setLinearSize() {
-        optionalBitFlags |= DDS.FLAG_LINEARSIZE;
-    }
-
-    public void clearLinearSize() {
-        optionalBitFlags &= ~DDS.FLAG_LINEARSIZE;
-    }
-
-    // TODO: Set this always for uncompressed images?
-    public void setPitch() {
-        optionalBitFlags |= DDS.FLAG_PITCH;
-    }
-
-    public void clearPitch() {
-        optionalBitFlags &= ~DDS.FLAG_PITCH;
-    }
-
-    // TODO: Other flags?
-
-    public int optionalBitFlags() {
-        return optionalBitFlags;
     }
 
     public void setWriteDX10() {

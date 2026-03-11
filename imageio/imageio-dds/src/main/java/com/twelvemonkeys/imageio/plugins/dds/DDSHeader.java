@@ -111,6 +111,9 @@ final class DDSHeader {
 
         // DDS_PIXELFORMAT structure
         int px_dwSize = imageInput.readInt(); // [76,79]
+        if (px_dwSize != DDS.PIXELFORMAT_SIZE) {
+            throw new IIOException(String.format("Invalid DDS PIXELFORMAT size (expected %d): %d", DDS.PIXELFORMAT_SIZE, dwSize));
+        }
 
         header.pixelFormatFlags = imageInput.readInt(); // [80,83]
         header.fourCC = imageInput.readInt(); // [84,87]
@@ -243,10 +246,12 @@ final class DDSHeader {
     @Override
     public String toString() {
         return "DDSHeader{" +
-            "flags=" + flags +
+            "flags=" + Integer.toBinaryString(flags) +
             ", mipMapCount=" + mipMapCount +
-            ", dimensions=" + Arrays.toString(dimensions) +
-            ", pixelFormatFlags=" + pixelFormatFlags +
+            ", dimensions=" + Arrays.toString(Arrays.stream(dimensions)
+                                                    .map(DDSHeader::dimensionToString)
+                                                    .toArray(String[]::new)) +
+            ", pixelFormatFlags=" + Integer.toBinaryString(pixelFormatFlags) +
             ", fourCC=" + fourCC +
             ", bitCount=" + bitCount +
             ", redMask=" + redMask +
@@ -254,5 +259,9 @@ final class DDSHeader {
             ", blueMask=" + blueMask +
             ", alphaMask=" + alphaMask +
             '}';
+    }
+
+    private static String dimensionToString(Dimension dimension) {
+        return String.format("%dx%d", dimension.width, dimension.height);
     }
 }
