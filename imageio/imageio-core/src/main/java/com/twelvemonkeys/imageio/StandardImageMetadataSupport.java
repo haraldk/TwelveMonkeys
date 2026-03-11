@@ -23,6 +23,7 @@ import static com.twelvemonkeys.lang.Validate.notNull;
  * {@link ImageTypeSpecifier}.
  * Other values or overrides may be specified using the builder.
  *
+ * @see <a href="https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html">Standard (Plug-in Neutral) Metadata Format Specification</a>
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
 public class StandardImageMetadataSupport extends AbstractMetadata {
@@ -79,11 +80,11 @@ public class StandardImageMetadataSupport extends AbstractMetadata {
         textEntries = builder.textEntries;
     }
 
-    public static Builder builder(ImageTypeSpecifier type) {
+    protected static Builder builder(ImageTypeSpecifier type) {
         return new Builder(type);
     }
 
-    public static class Builder {
+    protected static class Builder {
         private final ImageTypeSpecifier type;
         private ColorSpaceType colorSpaceType;
         private boolean blackIsZero = true;

@@ -74,7 +74,6 @@ final class DDSReader {
     static final Order RGB_16_ORDER = new Order(11, 5, 0, -1); // no alpha | 5 red | 6 green | 5 blue
 
     private final DDSHeader header;
-    private DX10Header dxt10Header;
 
     DDSReader(DDSHeader header) {
         this.header = header;
@@ -82,18 +81,20 @@ final class DDSReader {
 
     int[] read(ImageInputStream imageInput, int imageIndex) throws IOException {
         // type
-        DDSType type = getType();
-        if (type == DDSType.DXT10) {
-            dxt10Header = DX10Header.read(imageInput);
-            type = dxt10Header.getDDSType();
-        }
+        DDSType type = header.getType();
 
         // offset buffer to index mipmap image
         byte[] buffer = null;
         for (int i = 0; i <= imageIndex; i++) {
-            int len = getLength(type, i);
-            buffer = new byte[len];
-            imageInput.readFully(buffer);
+            int len = getBufferLength(type, i);
+
+            if (i == imageIndex) {
+                buffer = new byte[len];
+                imageInput.readFully(buffer);
+            }
+            else {
+                imageInput.seek(imageInput.getStreamPosition() + len);
+            }
         }
 
         int width = header.getWidth(imageIndex);
@@ -135,82 +136,17 @@ final class DDSReader {
         }
     }
 
-    private DDSType getType() throws IIOException {
-        int flags = header.getPixelFormatFlags();
-
-        if ((flags & DDS.PIXEL_FORMAT_FLAG_FOURCC) != 0) {
-            // DXT
-            int type = header.getFourCC();
-            return DDSType.valueOf(type);
-        } else if ((flags & DDS.PIXEL_FORMAT_FLAG_RGB) != 0) {
-            // RGB
-            int bitCount = header.getBitCount();
-            int redMask = header.getRedMask();
-            int greenMask = header.getGreenMask();
-            int blueMask = header.getBlueMask();
-            int alphaMask = ((flags & 0x01) != 0) ? header.getAlphaMask() : 0; // 0x01 alpha
-            if (bitCount == 16) {
-                if (redMask == A1R5G5B5_MASKS[0] && greenMask == A1R5G5B5_MASKS[1] && blueMask == A1R5G5B5_MASKS[2] && alphaMask == A1R5G5B5_MASKS[3]) {
-                    // A1R5G5B5
-                    return DDSType.A1R5G5B5;
-                } else if (redMask == X1R5G5B5_MASKS[0] && greenMask == X1R5G5B5_MASKS[1] && blueMask == X1R5G5B5_MASKS[2] && alphaMask == X1R5G5B5_MASKS[3]) {
-                    // X1R5G5B5
-                    return DDSType.X1R5G5B5;
-                } else if (redMask == A4R4G4B4_MASKS[0] && greenMask == A4R4G4B4_MASKS[1] && blueMask == A4R4G4B4_MASKS[2] && alphaMask == A4R4G4B4_MASKS[3]) {
-                    // A4R4G4B4
-                    return DDSType.A4R4G4B4;
-                } else if (redMask == X4R4G4B4_MASKS[0] && greenMask == X4R4G4B4_MASKS[1] && blueMask == X4R4G4B4_MASKS[2] && alphaMask == X4R4G4B4_MASKS[3]) {
-                    // X4R4G4B4
-                    return DDSType.X4R4G4B4;
-                } else if (redMask == R5G6B5_MASKS[0] && greenMask == R5G6B5_MASKS[1] && blueMask == R5G6B5_MASKS[2] && alphaMask == R5G6B5_MASKS[3]) {
-                    // R5G6B5
-                    return DDSType.R5G6B5;
-                } else {
-                    throw new IIOException("Unsupported 16bit RGB image.");
-                }
-            } else if (bitCount == 24) {
-                if (redMask == R8G8B8_MASKS[0] && greenMask == R8G8B8_MASKS[1] && blueMask == R8G8B8_MASKS[2] && alphaMask == R8G8B8_MASKS[3]) {
-                    // R8G8B8
-                    return DDSType.R8G8B8;
-                } else {
-                    throw new IIOException("Unsupported 24bit RGB image.");
-                }
-            } else if (bitCount == 32) {
-                if (redMask == A8B8G8R8_MASKS[0] && greenMask == A8B8G8R8_MASKS[1] && blueMask == A8B8G8R8_MASKS[2] && alphaMask == A8B8G8R8_MASKS[3]) {
-                    // A8B8G8R8
-                    return DDSType.A8B8G8R8;
-                } else if (redMask == X8B8G8R8_MASKS[0] && greenMask == X8B8G8R8_MASKS[1] && blueMask == X8B8G8R8_MASKS[2] && alphaMask == X8B8G8R8_MASKS[3]) {
-                    // X8B8G8R8
-                    return DDSType.X8B8G8R8;
-                } else if (redMask == A8R8G8B8_MASKS[0] && greenMask == A8R8G8B8_MASKS[1] && blueMask == A8R8G8B8_MASKS[2] && alphaMask == A8R8G8B8_MASKS[3]) {
-                    // A8R8G8B8
-                    return DDSType.A8R8G8B8;
-                } else if (redMask == X8R8G8B8_MASKS[0] && greenMask == X8R8G8B8_MASKS[1] && blueMask == X8R8G8B8_MASKS[2] && alphaMask == X8R8G8B8_MASKS[3]) {
-                    // X8R8G8B8
-                    return DDSType.X8R8G8B8;
-                } else {
-                    throw new IIOException("Unsupported 32bit RGB image.");
-                }
-            } else {
-                throw new IIOException("Unsupported bit count: " + bitCount);
-            }
-        } else {
-            throw new IIOException("Unsupported YUV or LUMINANCE image.");
-        }
-    }
-
-    private int getLength(DDSType type, int imageIndex) throws IIOException {
+    private int getBufferLength(DDSType type, int imageIndex) throws IIOException {
         int width = header.getWidth(imageIndex);
         int height = header.getHeight(imageIndex);
 
         switch (type) {
             case DXT1:
-                return 8 * ((width + 3) / 4) * ((height + 3) / 4);
             case DXT2:
             case DXT3:
             case DXT4:
             case DXT5:
-                return 16 * ((width + 3) / 4) * ((height + 3) / 4);
+                return type.blockSize() * ((width + 3) / 4) * ((height + 3) / 4);
             case A1R5G5B5:
             case X1R5G5B5:
             case A4R4G4B4:
@@ -221,9 +157,9 @@ final class DDSReader {
             case X8B8G8R8:
             case A8R8G8B8:
             case X8R8G8B8:
-                return (type.value() & 0xFF) * width * height;
+                return type.blockSize() * width * height;
             default:
-                throw new IIOException("Unknown type: " + Integer.toHexString(type.value()));
+                throw new IIOException("Unknown type: " + type);
         }
     }
 

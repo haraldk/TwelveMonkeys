@@ -34,6 +34,7 @@ import com.twelvemonkeys.imageio.stream.URLImageInputStreamSpi;
 
 import org.mockito.InOrder;
 
+import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.ImageWriter;
@@ -84,6 +85,7 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
 
     protected static BufferedImage drawSomething(final BufferedImage image) {
         Graphics2D g = image.createGraphics();
+
         try {
             int width = image.getWidth();
             int height = image.getHeight();
@@ -131,18 +133,54 @@ public abstract class ImageWriterAbstractTest<T extends ImageWriter> {
     public void testWrite() throws IOException {
         ImageWriter writer = createWriter();
 
-        for (RenderedImage testData : getTestData()) {
-            ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+        try {
+            for (RenderedImage testData : getTestData()) {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
 
-            try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
-                writer.setOutput(stream);
-                writer.write(drawSomething((BufferedImage) testData));
+                try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
+                    writer.setOutput(stream);
+                    writer.write(drawSomething((BufferedImage) testData));
+                }
+                catch (IOException e) {
+                    throw new AssertionError(e.getMessage(), e);
+                }
+
+                assertTrue(buffer.size() > 0, "No image data written");
             }
-            catch (IOException e) {
-                throw new AssertionError(e.getMessage(), e);
+        }
+        finally {
+            writer.dispose();
+        }
+    }
+
+    @Test
+    public void testWriteRaster() throws IOException {
+        ImageWriter writer = createWriter();
+
+        try {
+            if (!writer.canWriteRasters()) {
+                return;
             }
 
-            assertTrue(buffer.size() > 0, "No image data written");
+            ImageWriteParam param = writer.getDefaultWriteParam();
+
+            for (RenderedImage testData : getTestData()) {
+                ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+                try (ImageOutputStream stream = ImageIO.createImageOutputStream(buffer)) {
+                    writer.setOutput(stream);
+
+                    writer.write(null, new IIOImage(testData.getTile(0, 0), null, null), param);
+                }
+                catch (IOException e) {
+                    throw new AssertionError(e.getMessage(), e);
+                }
+
+                assertTrue(buffer.size() > 0, "No image data written");
+            }
+        }
+        finally {
+            writer.dispose();
         }
     }
 

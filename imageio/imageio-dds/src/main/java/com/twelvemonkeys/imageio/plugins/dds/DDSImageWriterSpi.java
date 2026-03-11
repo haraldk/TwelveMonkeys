@@ -4,6 +4,7 @@ import com.twelvemonkeys.imageio.spi.ImageWriterSpiBase;
 
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriter;
+
 import java.util.Locale;
 
 public final class DDSImageWriterSpi extends ImageWriterSpiBase {
@@ -13,7 +14,12 @@ public final class DDSImageWriterSpi extends ImageWriterSpiBase {
 
     @Override
     public boolean canEncodeImage(ImageTypeSpecifier type) {
-        return true;
+        int numBands = type.getNumBands();
+        if (numBands < 3 || numBands > 4) {
+            return false;
+        }
+
+        return type.getSampleModel().getSampleSize(0) == 8;
     }
 
     @Override
@@ -23,6 +29,6 @@ public final class DDSImageWriterSpi extends ImageWriterSpiBase {
 
     @Override
     public String getDescription(Locale locale) {
-        return "Direct Draw Surface (DDS) Image Writer";
+        return "DirectDraw Surface (DDS) Image Writer";
     }
 }

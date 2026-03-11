@@ -30,11 +30,22 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.A1R5G5B5_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.A4R4G4B4_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.A8B8G8R8_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.A8R8G8B8_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.R5G6B5_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.R8G8B8_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.X1R5G5B5_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.X4R4G4B4_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.X8B8G8R8_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.X8R8G8B8_MASKS;
+
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.Dimension;
 import java.io.IOException;
-import java.nio.ByteOrder;
+import java.util.Arrays;
 
 final class DDSHeader {
 
@@ -52,17 +63,17 @@ final class DDSHeader {
     private int blueMask;
     private int alphaMask;
 
+    DXT10Header dxt10Header;
+
     @SuppressWarnings("unused")
     static DDSHeader read(final ImageInputStream imageInput) throws IOException {
         DDSHeader header = new DDSHeader();
 
         // Read MAGIC bytes [0,3]
-        imageInput.setByteOrder(ByteOrder.BIG_ENDIAN);
         int magic = imageInput.readInt();
         if (magic != DDS.MAGIC) {
             throw new IIOException(String.format("Not a DDS file. Expected DDS magic 0x%8x', read 0x%8x", DDS.MAGIC, magic));
         }
-        imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
 
         // DDS_HEADER structure
         // https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header
@@ -97,6 +108,9 @@ final class DDSHeader {
 
         // DDS_PIXELFORMAT structure
         int px_dwSize = imageInput.readInt(); // [76,79]
+        if (px_dwSize != DDS.PIXELFORMAT_SIZE) {
+            throw new IIOException(String.format("Invalid DDS PIXELFORMAT size (expected %d): %d", DDS.PIXELFORMAT_SIZE, dwSize));
+        }
 
         header.pixelFormatFlags = imageInput.readInt(); // [80,83]
         header.fourCC = imageInput.readInt(); // [84,87]
@@ -112,6 +126,10 @@ final class DDSHeader {
         int dwCaps4 = imageInput.readInt(); // [120,123]
 
         int dwReserved2 = imageInput.readInt(); // [124,127]
+
+        if (header.fourCC == DDSType.DXT10.fourCC()) {
+            header.dxt10Header = DXT10Header.read(imageInput);
+        }
 
         return header;
     }
@@ -146,31 +164,101 @@ final class DDSHeader {
         return mipMapCount;
     }
 
-    int getBitCount() {
-        return bitCount;
+    DDSType getType() throws IIOException {
+        if (dxt10Header != null) {
+            return dxt10Header.getType();
+        }
+
+        return getRawType();
     }
 
-    int getFourCC() {
-        return fourCC;
+    DDSType getRawType() throws IIOException {
+        if ((pixelFormatFlags & DDS.PIXEL_FORMAT_FLAG_FOURCC) != 0) {
+            // DXT
+            return DDSType.fromFourCC(fourCC);
+        }
+        else if ((pixelFormatFlags & DDS.PIXEL_FORMAT_FLAG_RGB) != 0) {
+            // RGB
+            int alphaMask = ((pixelFormatFlags & 0x01) != 0) ? this.alphaMask : 0; // 0x01 alpha
+
+            if (bitCount == 16) {
+                if (redMask == A1R5G5B5_MASKS[0] && greenMask == A1R5G5B5_MASKS[1] && blueMask == A1R5G5B5_MASKS[2] && alphaMask == A1R5G5B5_MASKS[3]) {
+                    // A1R5G5B5
+                    return DDSType.A1R5G5B5;
+                }
+                else if (redMask == X1R5G5B5_MASKS[0] && greenMask == X1R5G5B5_MASKS[1] && blueMask == X1R5G5B5_MASKS[2] && alphaMask == X1R5G5B5_MASKS[3]) {
+                    // X1R5G5B5
+                    return DDSType.X1R5G5B5;
+                }
+                else if (redMask == A4R4G4B4_MASKS[0] && greenMask == A4R4G4B4_MASKS[1] && blueMask == A4R4G4B4_MASKS[2] && alphaMask == A4R4G4B4_MASKS[3]) {
+                    // A4R4G4B4
+                    return DDSType.A4R4G4B4;
+                }
+                else if (redMask == X4R4G4B4_MASKS[0] && greenMask == X4R4G4B4_MASKS[1] && blueMask == X4R4G4B4_MASKS[2] && alphaMask == X4R4G4B4_MASKS[3]) {
+                    // X4R4G4B4
+                    return DDSType.X4R4G4B4;
+                }
+                else if (redMask == R5G6B5_MASKS[0] && greenMask == R5G6B5_MASKS[1] && blueMask == R5G6B5_MASKS[2] && alphaMask == R5G6B5_MASKS[3]) {
+                    // R5G6B5
+                    return DDSType.R5G6B5;
+                }
+
+                throw new IIOException("Unsupported 16bit RGB image.");
+            }
+            else if (bitCount == 24) {
+                if (redMask == R8G8B8_MASKS[0] && greenMask == R8G8B8_MASKS[1] && blueMask == R8G8B8_MASKS[2] && alphaMask == R8G8B8_MASKS[3]) {
+                    // R8G8B8
+                    return DDSType.R8G8B8;
+                }
+
+                throw new IIOException("Unsupported 24bit RGB image.");
+            }
+            else if (bitCount == 32) {
+                if (redMask == A8B8G8R8_MASKS[0] && greenMask == A8B8G8R8_MASKS[1] && blueMask == A8B8G8R8_MASKS[2] && alphaMask == A8B8G8R8_MASKS[3]) {
+                    // A8B8G8R8
+                    return DDSType.A8B8G8R8;
+                }
+                else if (redMask == X8B8G8R8_MASKS[0] && greenMask == X8B8G8R8_MASKS[1] && blueMask == X8B8G8R8_MASKS[2] && alphaMask == X8B8G8R8_MASKS[3]) {
+                    // X8B8G8R8
+                    return DDSType.X8B8G8R8;
+                }
+                else if (redMask == A8R8G8B8_MASKS[0] && greenMask == A8R8G8B8_MASKS[1] && blueMask == A8R8G8B8_MASKS[2] && alphaMask == A8R8G8B8_MASKS[3]) {
+                    // A8R8G8B8
+                    return DDSType.A8R8G8B8;
+                }
+                else if (redMask == X8R8G8B8_MASKS[0] && greenMask == X8R8G8B8_MASKS[1] && blueMask == X8R8G8B8_MASKS[2] && alphaMask == X8R8G8B8_MASKS[3]) {
+                    // X8R8G8B8
+                    return DDSType.X8R8G8B8;
+                }
+
+                throw new IIOException("Unsupported 32bit RGB image.");
+            }
+
+            throw new IIOException("Unsupported bit count: " + bitCount);
+        }
+
+        throw new IIOException("Unsupported YUV or LUMINANCE image.");
     }
 
-    int getPixelFormatFlags() {
-        return pixelFormatFlags;
+    @Override
+    public String toString() {
+        return "DDSHeader{" +
+            "flags=" + Integer.toBinaryString(flags) +
+            ", mipMapCount=" + mipMapCount +
+            ", dimensions=" + Arrays.toString(Arrays.stream(dimensions)
+                                                    .map(DDSHeader::dimensionToString)
+                                                    .toArray(String[]::new)) +
+            ", pixelFormatFlags=" + Integer.toBinaryString(pixelFormatFlags) +
+            ", fourCC=" + fourCC +
+            ", bitCount=" + bitCount +
+            ", redMask=" + redMask +
+            ", greenMask=" + greenMask +
+            ", blueMask=" + blueMask +
+            ", alphaMask=" + alphaMask +
+            '}';
     }
 
-    int getRedMask() {
-        return redMask;
-    }
-
-    int getGreenMask() {
-        return greenMask;
-    }
-
-    int getBlueMask() {
-        return blueMask;
-    }
-
-    int getAlphaMask() {
-        return alphaMask;
+    private static String dimensionToString(Dimension dimension) {
+        return String.format("%dx%d", dimension.width, dimension.height);
     }
 }

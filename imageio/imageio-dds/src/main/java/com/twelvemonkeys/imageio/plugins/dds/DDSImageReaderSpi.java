@@ -35,6 +35,7 @@ import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
 import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
+import java.nio.ByteOrder;
 import java.util.Locale;
 
 public final class DDSImageReaderSpi extends ImageReaderSpiBase {
@@ -52,10 +53,15 @@ public final class DDSImageReaderSpi extends ImageReaderSpiBase {
         ImageInputStream stream = (ImageInputStream) source;
 
         stream.mark();
+        ByteOrder byteOrder = stream.getByteOrder();
 
         try {
+            stream.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+
             return stream.readInt() == DDS.MAGIC;
-        } finally {
+        }
+        finally {
+            stream.setByteOrder(byteOrder);
             stream.reset();
         }
     }
@@ -67,6 +73,6 @@ public final class DDSImageReaderSpi extends ImageReaderSpiBase {
 
     @Override
     public String getDescription(Locale locale) {
-        return "Direct DrawSurface (DDS) Image Reader";
+        return "DirectDraw Surface (DDS) Image Reader";
     }
 }

@@ -3,7 +3,6 @@ package com.twelvemonkeys.imageio.plugins.dds;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.Color;
 import java.awt.image.Raster;
-import java.awt.image.RenderedImage;
 import java.io.IOException;
 
 import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.ARGB_ORDER;
@@ -13,15 +12,11 @@ import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.RGB_16_ORDER;
 
 /**
  * A designated class to encode image data to binary.
- * <p>
- * References:
- * <p>
- * [1] <a href="https://www.ludicon.com/castano/blog/2009/03/gpu-dxt-decompression/">GPU DXT Decompression</a>.
- * [2] <a href="https://sv-journal.org/2014-1/06/en/index.php">TEXTURE COMPRESSION TECHNIQUES</a>.
- * [3] <a href="https://mrelusive.com/publications/papers/Real-Time-Dxt-Compression.pdf">Real-Time DXT Compression by J.M.P. van Waveren</a>
- * [4] <a href="https://registry.khronos.org/DataFormat/specs/1.4/dataformat.1.4.pdf">Khronos Data Format Specification v1.4 by Andrew Garrard</a>
- * </p>
- * </p>
+ *
+ * @see <a href="https://www.ludicon.com/castano/blog/2009/03/gpu-dxt-decompression/">GPU DXT Decompression</a>.
+ * @see <a href="https://sv-journal.org/2014-1/06/en/index.php">TEXTURE COMPRESSION TECHNIQUES</a>.
+ * @see <a href="https://mrelusive.com/publications/papers/Real-Time-Dxt-Compression.pdf">Real-Time DXT Compression by J.M.P. van Waveren</a>
+ * @see <a href="https://registry.khronos.org/DataFormat/specs/1.4/dataformat.1.4.pdf">Khronos Data Format Specification v1.4 by Andrew Garrard</a>
  */
 class DDSImageDataEncoder {
     private DDSImageDataEncoder() {}
@@ -31,25 +26,27 @@ class DDSImageDataEncoder {
     private static final int BC4_CHANNEL_ALPHA = 3; //BC3 reuses algorithm from BC4 but uses alpha channelIndex for sampling.
     private static final int BC4_CHANNEL_GREEN = 1; //same re-usage as BC3 but for green channel BC5 uses
 
-    static void writeImageData(ImageOutputStream imageOutput, RenderedImage renderedImage, DDSEncoderType type) throws IOException {
-        switch (type) {
+    static void writeImageData(ImageOutputStream imageOutput, Raster raster, BlockCompression compression) throws IOException {
+        // TODO: Support compression == null for uncompressed RGB(A/X) data?
+
+        switch (compression) {
             case BC1:
-                new BlockCompressor1(false).encode(imageOutput, renderedImage);
+                new BlockCompressor1(false).encode(imageOutput, raster);
                 break;
             case BC2:
-                new BlockCompressor2().encode(imageOutput, renderedImage);
+                new BlockCompressor2().encode(imageOutput, raster);
                 break;
             case BC3:
-                new BlockCompressor3().encode(imageOutput, renderedImage);
+                new BlockCompressor3().encode(imageOutput, raster);
                 break;
             case BC4:
-                new BlockCompressor4(BC4_CHANNEL_RED).encode(imageOutput, renderedImage);
+                new BlockCompressor4(BC4_CHANNEL_RED).encode(imageOutput, raster);
                 break;
             case BC5:
-                new BlockCompressor5().encode(imageOutput, renderedImage);
+                new BlockCompressor5().encode(imageOutput, raster);
                 break;
             default:
-                throw new IllegalArgumentException("DDS Type is not supported for encoder yet : " + type);
+                throw new IllegalArgumentException("DDS block compression is not supported yet: " + compression);
         }
     }
 
@@ -173,8 +170,14 @@ class DDSImageDataEncoder {
         boolean getBlockEndpoints(int[] sampledColors, int[] paletteBuffer) {
             if (sampledColors.length != 64)
                 throw new IllegalStateException("Unintended behaviour, expecting sampled colors of block to be 64, got " + sampledColors.length);
-            int minR = 0xff; int minG = 0xff; int minB = 0xff;
-            int maxR = 0; int maxG = 0; int maxB = 0;
+            int minR = 0xff;
+            int minG = 0xff;
+            int minB = 0xff;
+
+            int maxR = 0;
+            int maxG = 0;
+            int maxB = 0;
+
             boolean alphaMode = false;
             int i = 0;
             while (i < 64) {
@@ -208,7 +211,6 @@ class DDSImageDataEncoder {
 
             return alphaMode;
         }
-
 
         //Reference [3] Page 7
         boolean getBlockEndpoints2(int[] sampled, int[] paletteBuffer) {
@@ -415,10 +417,10 @@ class DDSImageDataEncoder {
             }
         }
 
-        void encode(ImageOutputStream imageOutput, RenderedImage image) throws IOException {
-            int blocksXCount = (image.getWidth() + 3) / 4;
-            int blocksYCount = (image.getHeight() + 3) / 4;
-            Raster raster = image.getData();
+        void encode(ImageOutputStream imageOutput, Raster raster) throws IOException {
+            int blocksXCount = (raster.getWidth() + 3) / 4;
+            int blocksYCount = (raster.getHeight() + 3) / 4;
+
             for (int blockY = 0; blockY < blocksYCount; blockY++) {
                 for (int blockX = 0; blockX < blocksXCount; blockX++) {
                     raster.getPixels(blockX * 4, blockY * 4, 4, 4, samples);

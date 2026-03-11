@@ -1,7 +1,18 @@
 package com.twelvemonkeys.imageio.util;
 
 import org.junit.jupiter.api.Test;
+
 import static org.junit.jupiter.api.Assertions.*;
+
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
+
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.ImageWriteParam;
+import javax.imageio.plugins.bmp.BMPImageWriteParam;
+import javax.imageio.plugins.jpeg.JPEGImageReadParam;
 
 /**
  * IIOUtilTest
@@ -203,5 +214,223 @@ public class IIOUtilTest {
 
     private int divCeil(int numerator, int denominator) {
         return (numerator + denominator - 1) / denominator;
+    }
+
+    @Test
+    void copyStandardParamsDestinationNull() {
+        ImageReadParam param = new ImageReadParam();
+
+        assertThrows(NullPointerException.class, () -> IIOUtil.copyStandardParams(null, null));
+        assertThrows(NullPointerException.class, () -> IIOUtil.copyStandardParams(param, null));
+    }
+
+    @Test
+    void copyStandardParamsSame() {
+        ImageReadParam param = new ImageReadParam();
+        assertThrows(IllegalArgumentException.class, () -> IIOUtil.copyStandardParams(param, param));
+    }
+
+    @Test
+    void copyStandardParamsSourceNull() {
+        ImageReadParam param = new ImageReadParam() {
+            @Override
+            public void setSourceRegion(Rectangle sourceRegion) {
+                fail("Should not be invoked");
+            }
+        };
+
+        assertSame(param, IIOUtil.copyStandardParams(null, param));
+    }
+
+    @Test
+    void copyStandardParamsImageReadParam() {
+        int sourceXSubsampling = 3;
+        int sourceYSubsampling = 4;
+        int subsamplingXOffset = 1;
+        int subsamplingYOffset = 2;
+        Rectangle sourceRegion = new Rectangle(1, 2, 42, 43);
+        int[] sourceBands = { 0, 1, 2 };
+
+        Point destinationOffset = new Point(7, 9);
+        int[] destinationBands = { 2, 1, 0 };
+
+        ImageReadParam sourceParam = new ImageReadParam();
+        sourceParam.setSourceRegion(sourceRegion);
+        sourceParam.setSourceSubsampling(sourceXSubsampling, sourceYSubsampling, subsamplingXOffset, subsamplingYOffset);
+        sourceParam.setSourceBands(sourceBands);
+
+        sourceParam.setDestinationOffset(destinationOffset);
+        sourceParam.setDestinationBands(destinationBands);
+
+        JPEGImageReadParam jpegParam = IIOUtil.copyStandardParams(sourceParam, new JPEGImageReadParam());
+
+        assertEquals(sourceRegion, jpegParam.getSourceRegion());
+        assertEquals(sourceXSubsampling, jpegParam.getSourceXSubsampling());
+        assertEquals(sourceYSubsampling, jpegParam.getSourceYSubsampling());
+        assertEquals(subsamplingXOffset, jpegParam.getSubsamplingXOffset());
+        assertEquals(subsamplingYOffset, jpegParam.getSubsamplingYOffset());
+        assertArrayEquals(sourceBands, jpegParam.getSourceBands());
+
+        assertEquals(destinationOffset, jpegParam.getDestinationOffset());
+        assertArrayEquals(destinationBands, jpegParam.getDestinationBands());
+    }
+
+    @Test
+    void copyStandardParamsImageReadParamDestination() {
+        // Destination and destination type is mutually exclusive
+        BufferedImage destination = new BufferedImage(2, 2, BufferedImage.TYPE_INT_ARGB);
+
+        ImageReadParam sourceParam = new ImageReadParam();
+        sourceParam.setDestination(destination);
+
+        assertEquals(destination, IIOUtil.copyStandardParams(sourceParam, new JPEGImageReadParam()).getDestination());
+    }
+
+    @Test
+    void copyStandardParamsImageReadParamDestinationType() {
+        // Destination and destination type is mutually exclusive
+        ImageTypeSpecifier destinationType = ImageTypeSpecifier.createFromBufferedImageType(BufferedImage.TYPE_BYTE_GRAY);
+
+        ImageReadParam sourceParam = new ImageReadParam();
+        sourceParam.setDestinationType(destinationType);
+
+        assertEquals(destinationType, IIOUtil.copyStandardParams(sourceParam, new JPEGImageReadParam()).getDestinationType());
+    }
+
+    @Test
+    void copyStandardParamsReadToWrite() {
+        int sourceXSubsampling = 3;
+        int sourceYSubsampling = 4;
+        int subsamplingXOffset = 1;
+        int subsamplingYOffset = 2;
+        Rectangle sourceRegion = new Rectangle(1, 2, 42, 43);
+        int[] sourceBands = { 0, 1, 2 };
+
+        Point destinationOffset = new Point(7, 9);
+
+        ImageWriteParam sourceParam = new ImageWriteParam(null);
+        sourceParam.setSourceRegion(sourceRegion);
+        sourceParam.setSourceSubsampling(sourceXSubsampling, sourceYSubsampling, subsamplingXOffset, subsamplingYOffset);
+        sourceParam.setSourceBands(sourceBands);
+
+        sourceParam.setDestinationOffset(destinationOffset);
+
+        JPEGImageReadParam jpegParam = IIOUtil.copyStandardParams(sourceParam, new JPEGImageReadParam());
+
+        assertEquals(sourceRegion, jpegParam.getSourceRegion());
+        assertEquals(sourceXSubsampling, jpegParam.getSourceXSubsampling());
+        assertEquals(sourceYSubsampling, jpegParam.getSourceYSubsampling());
+        assertEquals(subsamplingXOffset, jpegParam.getSubsamplingXOffset());
+        assertEquals(subsamplingYOffset, jpegParam.getSubsamplingYOffset());
+        assertArrayEquals(sourceBands, jpegParam.getSourceBands());
+
+        assertEquals(destinationOffset, jpegParam.getDestinationOffset());
+        assertNull(jpegParam.getDestinationBands()); // Only in read param
+    }
+
+    @Test
+    void copyStandardParamsImageWriteParam() {
+        int sourceXSubsampling = 3;
+        int sourceYSubsampling = 4;
+        int subsamplingXOffset = 1;
+        int subsamplingYOffset = 2;
+        Rectangle sourceRegion = new Rectangle(1, 2, 42, 43);
+        int[] sourceBands = { 0, 1, 2 };
+
+        Point destinationOffset = new Point(7, 9);
+
+        ImageWriteParam sourceParam = new ImageWriteParam(null);
+        sourceParam.setSourceRegion(sourceRegion);
+        sourceParam.setSourceSubsampling(sourceXSubsampling, sourceYSubsampling, subsamplingXOffset, subsamplingYOffset);
+        sourceParam.setSourceBands(sourceBands);
+
+        sourceParam.setDestinationOffset(destinationOffset);
+
+        BMPImageWriteParam fooParam = IIOUtil.copyStandardParams(sourceParam, new BMPImageWriteParam());
+
+        assertEquals(sourceRegion, fooParam.getSourceRegion());
+        assertEquals(sourceXSubsampling, fooParam.getSourceXSubsampling());
+        assertEquals(sourceYSubsampling, fooParam.getSourceYSubsampling());
+        assertEquals(subsamplingXOffset, fooParam.getSubsamplingXOffset());
+        assertEquals(subsamplingYOffset, fooParam.getSubsamplingYOffset());
+        assertArrayEquals(sourceBands, fooParam.getSourceBands());
+
+        assertEquals(destinationOffset, fooParam.getDestinationOffset());
+    }
+
+    @Test
+    void copyStandardParamsImageWriteParamEverything() {
+        int sourceXSubsampling = 3;
+        int sourceYSubsampling = 4;
+        int subsamplingXOffset = 1;
+        int subsamplingYOffset = 2;
+        Rectangle sourceRegion = new Rectangle(1, 2, 42, 43);
+        int[] sourceBands = { 0, 1, 2 };
+
+        Point destinationOffset = new Point(7, 9);
+
+        String compressionType = "Foo";
+        float quality = 0.42f;
+
+        ImageWriteParam sourceParam = new ImageWriteParam() {
+            {
+                canWriteProgressive = true;
+
+                canWriteTiles = true;
+                canOffsetTiles = true;
+
+                canWriteCompressed = true;
+                compressionTypes = new String[] { "Foo", "Bar" };
+            }
+        };
+        sourceParam.setSourceRegion(sourceRegion);
+        sourceParam.setSourceSubsampling(sourceXSubsampling, sourceYSubsampling, subsamplingXOffset, subsamplingYOffset);
+        sourceParam.setSourceBands(sourceBands);
+
+        sourceParam.setDestinationOffset(destinationOffset);
+
+        sourceParam.setProgressiveMode(ImageWriteParam.MODE_DEFAULT); // Default is COPY_FROM_METADATA...
+        sourceParam.setTilingMode(ImageWriteParam.MODE_EXPLICIT);
+        sourceParam.setTiling(1, 2, 3, 4);
+        sourceParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        sourceParam.setCompressionType(compressionType);
+        sourceParam.setCompressionQuality(quality);
+
+        FooImageWriteParam fooParam = IIOUtil.copyStandardParams(sourceParam, new FooImageWriteParam());
+
+        assertEquals(sourceRegion, fooParam.getSourceRegion());
+        assertEquals(sourceXSubsampling, fooParam.getSourceXSubsampling());
+        assertEquals(sourceYSubsampling, fooParam.getSourceYSubsampling());
+        assertEquals(subsamplingXOffset, fooParam.getSubsamplingXOffset());
+        assertEquals(subsamplingYOffset, fooParam.getSubsamplingYOffset());
+        assertArrayEquals(sourceBands, fooParam.getSourceBands());
+
+        assertEquals(destinationOffset, fooParam.getDestinationOffset());
+
+        assertEquals(ImageWriteParam.MODE_DEFAULT, fooParam.getProgressiveMode());
+
+        assertEquals(ImageWriteParam.MODE_EXPLICIT, fooParam.getTilingMode());
+        assertEquals(1, fooParam.getTileWidth());
+        assertEquals(2, fooParam.getTileHeight());
+        assertEquals(3, fooParam.getTileGridXOffset());
+        assertEquals(4, fooParam.getTileGridYOffset());
+
+        assertEquals(ImageWriteParam.MODE_EXPLICIT, fooParam.getCompressionMode());
+        assertEquals(compressionType, fooParam.getCompressionType());
+        assertEquals(quality, fooParam.getCompressionQuality());
+    }
+
+    // A basic param that supports "everything"
+    static class FooImageWriteParam extends ImageWriteParam {
+        FooImageWriteParam() {
+            canWriteProgressive = true;
+
+            canWriteTiles = true;
+            canOffsetTiles = true;
+
+            canWriteCompressed = true;
+            compressionType = "Unset";
+            compressionTypes = new String[] { "Bar", "Foo" };
+        }
     }
 }
