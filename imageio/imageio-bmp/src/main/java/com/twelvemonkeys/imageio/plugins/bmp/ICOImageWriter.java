@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.bmp;
 
 import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.imageio.util.SequenceSupport;
 
 import javax.imageio.IIOException;
 import javax.imageio.IIOImage;
@@ -64,7 +65,7 @@ public final class ICOImageWriter extends DIBImageWriter {
     private static final int ICO_MAX_DIMENSION = 256;
     private static final int INITIAL_ENTRY_COUNT = 8;
 
-    private int sequenceIndex = -1;
+    private final SequenceSupport sequence = new SequenceSupport();
 
     private ImageWriter pngDelegate;
 
@@ -74,7 +75,7 @@ public final class ICOImageWriter extends DIBImageWriter {
 
     @Override
     protected void resetMembers() {
-        sequenceIndex = -1;
+        sequence.reset();
 
         if (pngDelegate != null) {
             pngDelegate.dispose();
@@ -107,16 +108,12 @@ public final class ICOImageWriter extends DIBImageWriter {
     @Override
     public void prepareWriteSequence(final IIOMetadata streamMetadata) throws IOException {
         assertOutput();
-
-        if (sequenceIndex >= 0) {
-            throw new IllegalStateException("writeSequence already started");
-        }
+        sequence.start();
 
         writeICOHeader();
 
         // Count: Needs to be updated for each new image
         imageOutput.writeShort(0);
-        sequenceIndex = 0;
 
         // TODO: Allow passing the initial size of the directory in the stream metadata?
         // - as this is much more efficient than growing...
@@ -130,27 +127,19 @@ public final class ICOImageWriter extends DIBImageWriter {
     @Override
     public void endWriteSequence() {
         assertOutput();
-
-        if (sequenceIndex < 0) {
-            throw new IllegalStateException("prepareWriteSequence not called");
-        }
-
-        sequenceIndex = -1;
+        sequence.end();
     }
 
     @Override
     public void writeToSequence(final IIOImage image, final ImageWriteParam param) throws IOException {
         assertOutput();
-
-        if (sequenceIndex < 0) {
-            throw new IllegalStateException("prepareWriteSequence not called");
-        }
+        int imageIndex = sequence.advance();
 
         if (image.hasRaster()) {
             throw new UnsupportedOperationException("Raster not supported");
         }
 
-        if (sequenceIndex >= INITIAL_ENTRY_COUNT) {
+        if (imageIndex >= INITIAL_ENTRY_COUNT) {
             growIfNecessary();
         }
 
@@ -172,7 +161,7 @@ public final class ICOImageWriter extends DIBImageWriter {
         // Uncompressed, RLE4/RLE8 or PNG compressed
         boolean pngCompression = param != null && "BI_PNG".equals(param.getCompressionType());
 
-        processImageStarted(sequenceIndex);
+        processImageStarted(imageIndex);
 
         if (pngCompression) {
             // NOTE: Embedding a PNG in a ICO is slightly different than a BMP with BI_PNG compression,
@@ -198,16 +187,14 @@ public final class ICOImageWriter extends DIBImageWriter {
 
         // Update count
         imageOutput.seek(4);
-        imageOutput.writeShort(sequenceIndex + 1);
+        imageOutput.writeShort(imageIndex + 1);
 
         // Write entry
-        int entryPosition = 6 + sequenceIndex * ENTRY_SIZE;
+        int entryPosition = 6 + imageIndex * ENTRY_SIZE;
         imageOutput.seek(entryPosition);
 
         long size = nextPosition - imageOffset;
         writeEntry(width,  height, colorModel, (int) size, (int) imageOffset);
-
-        sequenceIndex++;
 
         imageOutput.seek(nextPosition);
     }
@@ -265,7 +252,7 @@ public final class ICOImageWriter extends DIBImageWriter {
             pngDelegate.addIIOWriteWarningListener(new IIOWriteWarningListener() {
                 @Override
                 public void warningOccurred(ImageWriter source, int imageIndex, String warning) {
-                    processWarningOccurred(sequenceIndex, warning);
+                    processWarningOccurred(sequence.current(), warning);
                 }
             });
         }

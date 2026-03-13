@@ -33,6 +33,7 @@ package com.twelvemonkeys.imageio.plugins.icns;
 import com.twelvemonkeys.imageio.ImageWriterBase;
 import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.imageio.util.SequenceSupport;
 
 import javax.imageio.IIOException;
 import javax.imageio.IIOImage;
@@ -55,7 +56,7 @@ import java.util.Iterator;
  */
 public final class ICNSImageWriter extends ImageWriterBase {
 
-    private int sequenceIndex = -1;
+    private final SequenceSupport sequence = new SequenceSupport();
     private ImageWriter pngDelegate;
 
     ICNSImageWriter(ImageWriterSpi provider) {
@@ -64,7 +65,7 @@ public final class ICNSImageWriter extends ImageWriterBase {
 
     @Override
     protected void resetMembers() {
-        sequenceIndex = -1;
+        sequence.reset();
 
         if (pngDelegate != null) {
             pngDelegate.dispose();
@@ -97,41 +98,29 @@ public final class ICNSImageWriter extends ImageWriterBase {
     @Override
     public void prepareWriteSequence(final IIOMetadata streamMetadata) throws IOException {
         assertOutput();
+        sequence.start();
 
         // TODO: Allow TOC resource to be passed as stream metadata?
         // - We only need number of icons to be written later
         // - The contents of the TOC could be updated while adding to the sequence
 
-        if (sequenceIndex >= 0) {
-            throw new IllegalStateException("writeSequence already started");
-        }
-
         writeICNSHeader();
-        sequenceIndex = 0;
     }
 
     @SuppressWarnings("RedundantThrows")
     @Override
     public void endWriteSequence() throws IOException {
         assertOutput();
-
-        if (sequenceIndex < 0) {
-            throw new IllegalStateException("prepareWriteSequence not called");
-        }
+        sequence.end();
 
         // TODO: Now that we know the number of icon resources, we could move all data backwards
         // and write a TOC... But I don't think the benefit will outweigh the cost.
-
-        sequenceIndex = -1;
     }
 
     @Override
     public void writeToSequence(final IIOImage image, final ImageWriteParam param) throws IOException {
         assertOutput();
-
-        if (sequenceIndex < 0) {
-            throw new IllegalStateException("prepareWriteSequence not called");
-        }
+        int imageIndex = sequence.advance();
 
         if (image.hasRaster()) {
             throw new UnsupportedOperationException("image has a Raster");
@@ -148,7 +137,7 @@ public final class ICNSImageWriter extends ImageWriterBase {
         imageOutput.writeInt(IconResource.typeFromImage(image.getRenderedImage(), "PNG"));
         imageOutput.writeInt(0); // Size, update later
 
-        processImageStarted(sequenceIndex);
+        processImageStarted(imageIndex);
 
         // Write icon in PNG format
         ImageWriter writer = getPNGDelegate();
@@ -208,7 +197,7 @@ public final class ICNSImageWriter extends ImageWriterBase {
             pngDelegate.addIIOWriteWarningListener(new IIOWriteWarningListener() {
                 @Override
                 public void warningOccurred(ImageWriter source, int imageIndex, String warning) {
-                    processWarningOccurred(sequenceIndex, warning);
+                    processWarningOccurred(sequence.current(), warning);
                 }
             });
         }
