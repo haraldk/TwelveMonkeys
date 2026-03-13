@@ -47,9 +47,12 @@ import java.awt.Dimension;
 import java.io.IOException;
 import java.util.Arrays;
 
+/**
+ * @see <a href="https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header">DDS_HEADER structure</a>
+ * @see <a href="https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dx-graphics-dds-pguide">Programming Guide for DDS</a>
+ */
 final class DDSHeader {
 
-    // https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dx-graphics-dds-pguide
     private int flags;
 
     private int mipMapCount;
@@ -69,26 +72,16 @@ final class DDSHeader {
     static DDSHeader read(final ImageInputStream imageInput) throws IOException {
         DDSHeader header = new DDSHeader();
 
-        // Read MAGIC bytes [0,3]
-        int magic = imageInput.readInt();
-        if (magic != DDS.MAGIC) {
-            throw new IIOException(String.format("Not a DDS file. Expected DDS magic 0x%8x', read 0x%8x", DDS.MAGIC, magic));
-        }
-
-        // DDS_HEADER structure
-        // https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header
         int dwSize = imageInput.readInt(); // [4,7]
         if (dwSize != DDS.HEADER_SIZE) {
             throw new IIOException(String.format("Invalid DDS header size (expected %d): %d", DDS.HEADER_SIZE, dwSize));
         }
 
-        // Verify setFlags
+        // Verify flags
         header.flags = imageInput.readInt(); // [8,11]
-        if (!header.getFlag(DDS.FLAG_CAPS
-                | DDS.FLAG_HEIGHT
-                | DDS.FLAG_WIDTH
-                | DDS.FLAG_PIXELFORMAT)) {
-            throw new IIOException("Required DDS Flag missing in header: " + Integer.toBinaryString(header.flags));
+        if (!header.hasFlag(DDS.FLAG_CAPS | DDS.FLAG_HEIGHT | DDS.FLAG_WIDTH | DDS.FLAG_PIXELFORMAT)) {
+            // NOTE: The Microsoft DDS documentation mention that readers should not rely on these flags...
+            throw new IIOException("Required DDS flag missing in header: " + Integer.toBinaryString(header.flags));
         }
 
         // Read Height & Width
@@ -109,7 +102,7 @@ final class DDSHeader {
         // DDS_PIXELFORMAT structure
         int px_dwSize = imageInput.readInt(); // [76,79]
         if (px_dwSize != DDS.PIXELFORMAT_SIZE) {
-            throw new IIOException(String.format("Invalid DDS PIXELFORMAT size (expected %d): %d", DDS.PIXELFORMAT_SIZE, dwSize));
+            throw new IIOException(String.format("Invalid DDS pixel format structure size (expected %d): %d", DDS.PIXELFORMAT_SIZE, dwSize));
         }
 
         header.pixelFormatFlags = imageInput.readInt(); // [80,83]
@@ -128,6 +121,7 @@ final class DDSHeader {
         int dwReserved2 = imageInput.readInt(); // [124,127]
 
         if (header.fourCC == DDSType.DXT10.fourCC()) {
+            // If DXT10, the DXT10 header will follow immediately
             header.dxt10Header = DXT10Header.read(imageInput);
         }
 
@@ -146,8 +140,8 @@ final class DDSHeader {
         }
     }
 
-    private boolean getFlag(int mask) {
-        return (flags & mask) != 0;
+    private boolean hasFlag(int mask) {
+        return (flags & mask) == mask;
     }
 
     int getWidth(int imageIndex) {

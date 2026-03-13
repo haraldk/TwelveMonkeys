@@ -77,5 +77,4 @@ final class DDSImageMetadata extends StandardImageMetadataSupport {
 
         return count;
     }
-
 }

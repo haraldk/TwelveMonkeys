@@ -33,6 +33,7 @@ package com.twelvemonkeys.imageio.plugins.dds;
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
@@ -167,6 +168,12 @@ public final class DDSImageReader extends ImageReaderBase {
     private void readHeader() throws IOException {
         if (header == null) {
             imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+
+            int magic = imageInput.readInt();
+            if (magic != DDS.MAGIC) {
+                throw new IIOException(String.format("Not a DDS file. Expected DDS magic 0x%8x', read 0x%8x", DDS.MAGIC, magic));
+            }
+
             header = DDSHeader.read(imageInput);
             imageInput.flushBefore(imageInput.getStreamPosition());
         }
