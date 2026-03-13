@@ -2,6 +2,7 @@ package com.twelvemonkeys.imageio.plugins.dds;
 
 import com.twelvemonkeys.imageio.ImageWriterBase;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.util.SequenceSupport;
 
 import javax.imageio.IIOException;
 import javax.imageio.IIOImage;
@@ -29,9 +30,9 @@ import java.nio.file.Paths;
  */
 class DDSImageWriter extends ImageWriterBase {
 
-    private long startPos;
-    // TODO: Create a SequenceSupport class that handles sequence prepare/write/end
-    private int mipmapIndex = -1;
+    private final SequenceSupport mipmapSequence = new SequenceSupport();
+
+    private long headerStartPos;
     private DDSType mipmapType;
     private Dimension mipmapDimension;
 
@@ -46,7 +47,8 @@ class DDSImageWriter extends ImageWriterBase {
 
     @Override
     protected void resetMembers() {
-        mipmapIndex = -1;
+        headerStartPos = 0;
+        mipmapSequence.reset();
         mipmapType = null;
         mipmapDimension = null;
     }
@@ -64,30 +66,22 @@ class DDSImageWriter extends ImageWriterBase {
     @Override
     public void prepareWriteSequence(IIOMetadata streamMetadata) throws IOException {
         assertOutput();
+        mipmapSequence.start();
 
-        if (mipmapIndex >= 0) {
-            throw new IllegalStateException("writeSequence already started");
-        }
-        mipmapIndex = 0;
-
-        startPos = imageOutput.getStreamPosition();
         imageOutput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
         imageOutput.writeInt(DDS.MAGIC);
         imageOutput.flush();
+
+        headerStartPos = imageOutput.getStreamPosition();
     }
 
     @Override
     public void endWriteSequence() throws IOException {
-        assertOutput();
+        int mipmapCount = mipmapSequence.end();
 
-        if (mipmapIndex < 0) {
-            throw new IllegalStateException("prepareWriteSequence not called");
-        }
+        // Go back and update header
+        updateHeader(mipmapCount);
 
-        // Go back and update hader
-        updateHeader(mipmapIndex);
-
-        mipmapIndex = -1;
         mipmapType = null;
         mipmapDimension = null;
 
@@ -103,13 +97,12 @@ class DDSImageWriter extends ImageWriterBase {
 
     @Override
     public void writeToSequence(IIOImage image, ImageWriteParam param) throws IOException {
-        if (mipmapIndex < 0) {
-            throw new IllegalStateException("prepareWriteSequence not called");
-        }
+        int mipmapIndex = mipmapSequence.advance();
 
         Raster raster = getRaster(image);
         ensureImageChannels(raster);
         ensureTextureDimension(raster);
+        mipmapDimension = new Dimension(raster.getWidth(), raster.getHeight());
 
         DDSImageWriteParam ddsParam = param instanceof DDSImageWriteParam
             ? ((DDSImageWriteParam) param)
@@ -120,7 +113,7 @@ class DDSImageWriter extends ImageWriterBase {
             mipmapType = type;
         }
         else if (type != mipmapType) {
-            processWarningOccurred(mipmapIndex, "All images in DDS MipMap must use same pixel format and compression");
+            processWarningOccurred(mipmapIndex, "All images in DDS mipmap must use same pixel format and compression");
         }
         if (mipmapType == null) {
             throw new IIOException("Only compressed DDS using DXT1-5 or DXT10 with block compression is currently supported");
@@ -140,9 +133,6 @@ class DDSImageWriter extends ImageWriterBase {
 
         processImageProgress(100f);
         processImageComplete();
-
-        mipmapDimension = new Dimension(raster.getWidth(), raster.getHeight());
-        mipmapIndex++;
     }
 
     private static Raster getRaster(IIOImage image) throws IIOException {
@@ -210,7 +200,7 @@ class DDSImageWriter extends ImageWriterBase {
         //dwDepth
         imageOutput.writeInt(0);
         //dwMipmapCount
-        imageOutput.writeInt(1);
+        imageOutput.writeInt(1); // Should probably write 0 here for non-mipmap?
         //reserved
         imageOutput.write(new byte[44]);
         //pixFmt
@@ -230,7 +220,7 @@ class DDSImageWriter extends ImageWriterBase {
         }
 
         long streamPosition = imageOutput.getStreamPosition();
-        imageOutput.seek(startPos + 8); // Seek back to start + 4 magic + 4 header size
+        imageOutput.seek(headerStartPos + 4); // Seek back to header start, skip 4 byte header size
 
         int flags = imageOutput.readInt();
         imageOutput.seek(imageOutput.getStreamPosition() - 4);
@@ -268,15 +258,14 @@ class DDSImageWriter extends ImageWriterBase {
             //dwRGBBitCount
             imageOutput.writeInt(type.blockSize() * 8); // TODO: Is bitcount always a multiple of 8?
 
-            int[] mask = type.rgbaMasks;
             //dwRBitMask
-            imageOutput.writeInt(mask[0]);
+            imageOutput.writeInt(type.rgbaMasks[0]);
             //dwGBitMask
-            imageOutput.writeInt(mask[1]);
+            imageOutput.writeInt(type.rgbaMasks[1]);
             //dwBBitMask
-            imageOutput.writeInt(mask[2]);
+            imageOutput.writeInt(type.rgbaMasks[2]);
             //dwABitMask
-            imageOutput.writeInt(mask[3]);
+            imageOutput.writeInt(type.rgbaMasks[3]);
         }
         else {
             //write 5 zero integers as fourCC is used
@@ -302,7 +291,8 @@ class DDSImageWriter extends ImageWriterBase {
             imageOutput.writeInt(DDS.PIXEL_FORMAT_FLAG_FOURCC);
         }
         else {
-            imageOutput.writeInt(DDS.PIXEL_FORMAT_FLAG_RGB | (type.rgbaMasks != null ? DDS.PIXEL_FORMAT_FLAG_ALPHAPIXELS : 0));
+            imageOutput.writeInt(DDS.PIXEL_FORMAT_FLAG_RGB
+                | (type.rgbaMasks != null && type.rgbaMasks[3] != 0 ? DDS.PIXEL_FORMAT_FLAG_ALPHAPIXELS : 0));
         }
     }
 
@@ -334,6 +324,7 @@ class DDSImageWriter extends ImageWriterBase {
         if (args.length != 1) {
             throw new IllegalArgumentException("Use 1 input file at a time.");
         }
+
         ImageIO.write(ImageIO.read(new File(args[0])), "dds", new MemoryCacheImageOutputStream(Files.newOutputStream(Paths.get("output.dds"))));
     }
 }
