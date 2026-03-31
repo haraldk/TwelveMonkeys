@@ -270,6 +270,29 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
         }
     }
 
+    @Test
+    public void testSubsampleLargeVP8FromRepositorySample() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/alpha_filter.webp"))) {
+            reader.setInput(stream);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceSubsampling(8, 8, 0, 0);
+
+            BufferedImage image = reader.read(0, param);
+
+            assertEquals(200, image.getWidth());
+            assertEquals(200, image.getHeight());
+            assertEquals(Transparency.TRANSLUCENT, image.getTransparency());
+            assertRGBEquals("Expected transparent area to stay transparent after subsampling", 0x00000000, image.getRGB(25, 66) & 0xFF000000, 8);
+            assertRGBEquals("Expected opaque area to stay opaque after subsampling", 0xFF000000, image.getRGB(166, 111) & 0xFF000000, 8);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
     /**
      * This test compares alpha channel information that is decoded by the WebPImageReader with the known "good" alpha 
      * channel information. To generate the known "good" alpha channel information, we use the command line and libwebp,
