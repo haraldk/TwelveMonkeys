@@ -271,7 +271,7 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
     }
 
     @Test
-    public void testSubsampleLargeVP8FromRepositorySample() throws IOException {
+    void testSubsampleLargeVP8FromRepositorySample() throws IOException {
         WebPImageReader reader = createReader();
 
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/alpha_filter.webp"))) {

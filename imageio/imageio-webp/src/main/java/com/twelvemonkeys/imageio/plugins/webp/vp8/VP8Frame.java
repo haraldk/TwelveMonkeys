@@ -164,9 +164,7 @@ public final class VP8Frame {
         currentMacroBlockRowIndex = -1;
         lastNonBPredMacroBlockByColumn = new MacroBlock[macroBlockCols + 2];
 
-        for (int mbCol = 0; mbCol < macroBlockCols + 2; mbCol++) {
-            lastNonBPredMacroBlockByColumn[mbCol] = topMacroBlockRow[mbCol];
-        }
+        System.arraycopy(topMacroBlockRow, 0, lastNonBPredMacroBlockByColumn, 0, macroBlockCols + 2);
     }
 
     private static int ySubBlockModeIndex(final int subX, final int subY) {
@@ -1172,10 +1170,10 @@ public final class VP8Frame {
 
                 skipCoeffs[mb_row][mb_col] = macroBlockNoCoeffSkip > 0 ? bc.readBool(prob_skip_false) : 0;
 
-                int y_mode = readYMode(bc);
-                yModes[mb_row][mb_col] = y_mode;
+                int yMode = readYMode(bc);
+                yModes[mb_row][mb_col] = yMode;
 
-                if (y_mode == Globals.B_PRED) {
+                if (yMode == Globals.B_PRED) {
                     for (int subY = 0; subY < 4; subY++) {
                         for (int subX = 0; subX < 4; subX++) {
                             int aboveMode = getAboveYSubBlockMode(mb_row, mb_col, subX, subY);
@@ -1193,7 +1191,7 @@ public final class VP8Frame {
                 else {
                     int blockMode;
 
-                    switch (y_mode) {
+                    switch (yMode) {
                         case Globals.V_PRED:
                             blockMode = Globals.B_VE_PRED;
                             break;
