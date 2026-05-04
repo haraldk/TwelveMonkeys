@@ -284,20 +284,6 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
                 return false;
             }
 
-            /*
-            // NOTE: Extra cautions is taken, to only remove the entry if it
-            // equals the entry in the map
-            Object key = ((Entry) o).getKey();
-            Entry entry = (Entry) entries.get(key);
-
-            // Same entry?
-            if (entry != null && entry.equals(o)) {
-                return AbstractWrappedMap.this.remove(key) != null;
-            }
-
-            return false;
-            */
-
             //noinspection unchecked
             return AbstractDecoratedMap.this.removeEntry((Entry) o) != null;
         }
@@ -322,7 +308,7 @@ abstract class AbstractDecoratedMap<K, V> extends AbstractMap<K, V> implements M
             return containsKey(o);
         }
         public boolean remove(Object o) {
-            return AbstractDecoratedMap.this.remove(o) != null;
+            return AbstractDecoratedMap.this.removeEntry(getEntry((K) o)) != null;
         }
         public void clear() {
             AbstractDecoratedMap.this.clear();

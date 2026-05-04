@@ -436,24 +436,24 @@ public abstract class CollectionAbstractTest extends ObjectAbstractTest {
      */
     public Object[] getFullNonNullElements() {
         return new Object[] {
-            new String(""),
-            new String("One"),
-            new Integer(2),
-            "Three",
-            new Integer(4),
+            "",
             "One",
-            new Double(5),
-            new Float(6),
+            2,
+            "Three",
+            4,
+            "One",
+            5.0,
+            6F,
             "Seven",
             "Eight",
-            new String("Nine"),
-            new Integer(10),
-            new Short((short)11),
-            new Long(12),
+            "Nine",
+            10,
+            (short) 11,
+            12L,
             "Thirteen",
             "14",
             "15",
-            new Byte((byte)16)
+            (byte) 16
         };
     }
 
@@ -1149,7 +1149,7 @@ public abstract class CollectionAbstractTest extends ObjectAbstractTest {
     public void testUnsupportedRemove() {
         if (isRemoveSupported()) return;
 
-        resetEmpty();
+        resetFull();
         try {
             collection.clear();
             fail("clear should raise UnsupportedOperationException");
@@ -1159,7 +1159,7 @@ public abstract class CollectionAbstractTest extends ObjectAbstractTest {
         verifyAll();
 
         try {
-            collection.remove(null);
+            collection.remove(getFullElements()[0]);
             fail("remove should raise UnsupportedOperationException");
         } catch (UnsupportedOperationException e) {
             // expected
@@ -1167,7 +1167,7 @@ public abstract class CollectionAbstractTest extends ObjectAbstractTest {
         verifyAll();
 
         try {
-            collection.removeAll(null);
+            collection.removeAll(Arrays.asList(getFullElements()));
             fail("removeAll should raise UnsupportedOperationException");
         } catch (UnsupportedOperationException e) {
             // expected
@@ -1175,7 +1175,7 @@ public abstract class CollectionAbstractTest extends ObjectAbstractTest {
         verifyAll();
 
         try {
-            collection.retainAll(null);
+            collection.retainAll(Collections.emptySet());
             fail("removeAll should raise UnsupportedOperationException");
         } catch (UnsupportedOperationException e) {
             // expected
@@ -1192,7 +1192,6 @@ public abstract class CollectionAbstractTest extends ObjectAbstractTest {
             // expected
         }
         verifyAll();
-
     }
 
 
