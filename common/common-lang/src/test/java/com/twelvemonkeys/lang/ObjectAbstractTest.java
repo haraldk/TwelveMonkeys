@@ -71,7 +71,6 @@ public abstract class ObjectAbstractTest {
         // TODO: What more can we test?
     }
 
-    // TODO: assert that either BOTH or NONE of equals/hashcode is overridden
     @Test
     public void testEqualsHashCode(){
         Object obj = makeObject();

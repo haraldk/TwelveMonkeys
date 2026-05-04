@@ -1255,6 +1255,7 @@ public abstract class MapAbstractTest extends ObjectAbstractTest {
     }
     */
 
+    @Nested
     public class TestMapEntrySet extends SetAbstractTest {
 
         // Have to implement manually; entrySet doesn't support addAll
@@ -1429,6 +1430,7 @@ public abstract class MapAbstractTest extends ObjectAbstractTest {
     }
     */
 
+    @Nested
     public class TestMapKeySet extends SetAbstractTest {
         public Object[] getFullElements() {
             return getSampleKeys();
@@ -1495,6 +1497,7 @@ public abstract class MapAbstractTest extends ObjectAbstractTest {
     }
     */
 
+    @Nested
     public class TestMapValues extends CollectionAbstractTest {
         public Object[] getFullElements() {
             return getSampleValues();
