@@ -327,5 +327,4 @@ public abstract class ObjectAbstractTest {
             return new Cloneable() {};
         }
     }
-
 }
