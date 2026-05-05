@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-pict</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: PICT plugin</name>
+    <name>TwelveMonkeys » ImageIO » PICT plugin</name>
     <description>ImageIO plugin for Apple Mac Paint Picture (PICT) format.</description>
 
     <properties>

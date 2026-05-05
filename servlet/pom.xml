@@ -9,7 +9,7 @@
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys.servlet</groupId>
     <artifactId>servlet</artifactId>
-    <name>TwelveMonkeys :: Servlet</name>
+    <name>TwelveMonkeys » Servlet</name>
     <description>
         TwelveMonkeys Servlet support classes.
     </description>

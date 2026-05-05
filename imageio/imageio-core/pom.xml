@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-core</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: Core</name>
+    <name>TwelveMonkeys » ImageIO » Core</name>
     <description>
         TwelveMonkeys ImageIO core support classes.
     </description>

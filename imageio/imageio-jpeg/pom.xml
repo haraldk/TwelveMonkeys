@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-jpeg</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: JPEG plugin</name>
+    <name>TwelveMonkeys » ImageIO » JPEG plugin</name>
     <description>
         ImageIO plugin for Joint Photographer Expert Group images (JPEG/JFIF).
     </description>

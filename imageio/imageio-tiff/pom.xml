@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-tiff</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: TIFF plugin</name>
+    <name>TwelveMonkeys » ImageIO » TIFF plugin</name>
     <description>
       ImageIO plugin for Aldus/Adobe Tagged Image File Format (TIFF).
     </description>

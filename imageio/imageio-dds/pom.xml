@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-dds</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: DDS plugin</name>
+    <name>TwelveMonkeys » ImageIO » DDS plugin</name>
     <description>
         ImageIO plugin for Microsoft Direct DrawSurface (DDS).
     </description>

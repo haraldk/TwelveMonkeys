@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-jpeg-jai-interop</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: JPEG/JAI TIFF Interop</name>
+    <name>TwelveMonkeys » ImageIO » JPEG/JAI TIFF Interop</name>
     <description>
         Test JPEG plugin and JAI TIFF plugin interoperability
     </description>

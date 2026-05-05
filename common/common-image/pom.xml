@@ -8,7 +8,7 @@
     </parent>
     <artifactId>common-image</artifactId>
     <packaging>jar</packaging>
-    <name>TwelveMonkeys :: Common :: Image</name>
+    <name>TwelveMonkeys » Common » Image</name>
     <description>
         TwelveMonkeys Common image support classes.
     </description>

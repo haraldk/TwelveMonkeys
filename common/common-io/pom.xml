@@ -8,7 +8,7 @@
     </parent>
     <artifactId>common-io</artifactId>
     <packaging>jar</packaging>
-    <name>TwelveMonkeys :: Common :: IO</name>
+    <name>TwelveMonkeys » Common » IO</name>
     <description>
         TwelveMonkeys Common I/O support classes.
     </description>

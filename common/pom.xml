@@ -9,7 +9,7 @@
     <groupId>com.twelvemonkeys.common</groupId>
     <artifactId>common</artifactId>
     <packaging>pom</packaging>
-    <name>TwelveMonkeys :: Common</name>
+    <name>TwelveMonkeys » Common</name>
     <description>
         The TwelveMonkeys Common library. Contains common utility classes.
     </description>
