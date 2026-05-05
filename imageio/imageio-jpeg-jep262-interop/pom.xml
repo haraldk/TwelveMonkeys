@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-jpeg-jep262-interop</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: JPEG/JEP-262 Interop</name>
+    <name>TwelveMonkeys » ImageIO » JPEG/JEP-262 Interop</name>
     <description>
         Test JPEG plugin and JEP-262 (JDK TIFF plugin) interoperability
     </description>

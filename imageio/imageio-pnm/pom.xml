@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-pnm</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: PNM plugin</name>
+    <name>TwelveMonkeys » ImageIO » PNM plugin</name>
     <description>
         ImageIO plugin for NetPBM Portable Any Map (PNM)
     </description>

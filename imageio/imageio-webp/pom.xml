@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-webp</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: WebP plugin</name>
+    <name>TwelveMonkeys » ImageIO » WebP plugin</name>
     <description>
       ImageIO plugin for Google WebP File Format (WebP).
     </description>

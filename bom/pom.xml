@@ -11,7 +11,7 @@
     <groupId>com.twelvemonkeys.bom</groupId>
     <artifactId>bom</artifactId>
     <packaging>pom</packaging>
-    <name>TwelveMonkeys :: BOM</name>
+    <name>TwelveMonkeys » BOM</name>
     <description>
         TwelveMonkeys "Bill of Materials" (BOM).
     </description>

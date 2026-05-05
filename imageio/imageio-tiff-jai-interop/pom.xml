@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-tiff-jai-interop</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: TIFF/JAI Metadata Interop</name>
+    <name>TwelveMonkeys » ImageIO » TIFF/JAI Metadata Interop</name>
     <description>
         Test TIFF plugin and JAI TIFF plugin Metadata interoperability
     </description>

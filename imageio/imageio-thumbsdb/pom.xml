@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-thumbsdb</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: Thumbs.db plugin</name>
+    <name>TwelveMonkeys » ImageIO » Thumbs.db plugin</name>
     <description>
         ImageIO plugin for Windows Thumbs DB (Thumbs.db) format.
     </description>

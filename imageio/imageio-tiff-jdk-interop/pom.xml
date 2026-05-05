@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-tiff-jdk-interop</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: TIFF/JDK JPEG Interop</name>
+    <name>TwelveMonkeys » ImageIO » TIFF/JDK JPEG Interop</name>
     <description>
         Test TIFF plugin and JDK JPEG plugin interoperability
     </description>

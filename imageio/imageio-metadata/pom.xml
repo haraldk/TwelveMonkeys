@@ -7,7 +7,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>imageio-metadata</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: Metadata</name>
+    <name>TwelveMonkeys » ImageIO » Metadata</name>
     <description>
         TwelveMonkeys ImageIO metadata support classes.
     </description>

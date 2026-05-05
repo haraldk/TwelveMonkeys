@@ -7,7 +7,7 @@
         <version>3.13.2-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-icns</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: ICNS plugin</name>
+    <name>TwelveMonkeys » ImageIO » ICNS plugin</name>
     <description>ImageIO plugin for Apple Icon Image (ICNS) format.</description>
 
     <properties>

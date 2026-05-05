@@ -8,7 +8,7 @@
     </parent>
     <groupId>com.twelvemonkeys.contrib</groupId>
     <artifactId>contrib</artifactId>
-    <name>TwelveMonkeys :: Contrib</name>
+    <name>TwelveMonkeys » Contrib</name>
     <description>
       Contributions to TwelveMonkeys and code that doesn't fit anywhere else.
     </description>

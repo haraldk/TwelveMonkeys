@@ -9,7 +9,7 @@
     <groupId>com.twelvemonkeys.imageio</groupId>
     <artifactId>imageio</artifactId>
     <packaging>pom</packaging>
-    <name>TwelveMonkeys :: ImageIO</name>
+    <name>TwelveMonkeys » ImageIO</name>
     <url>https://github.com/haraldk/TwelveMonkeys/tree/master/imageio</url>
 
     <contributors>
