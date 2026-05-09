@@ -14,7 +14,6 @@ public final class DDSImageWriteParam extends ImageWriteParam {
     private static String[] compressionTypes() {
         // TODO: Maybe hardcode subset of values that we actually support writing?
         List<String> compressionTypes = Arrays.stream(DDSType.values())
-            .filter(DDSType::isBlockCompression)
             .map(Enum::name)
             .collect(Collectors.toList());
         compressionTypes.add(0, "None");

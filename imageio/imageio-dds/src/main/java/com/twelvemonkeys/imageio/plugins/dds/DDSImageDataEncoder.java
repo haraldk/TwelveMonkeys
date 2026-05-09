@@ -8,7 +8,7 @@ import java.io.IOException;
 import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.ARGB_ORDER;
 import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.BIT5;
 import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.BIT6;
-import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.RGB_16_ORDER;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.RGB_565_ORDER;
 
 /**
  * A designated class to encode image data to binary.
@@ -26,9 +26,8 @@ class DDSImageDataEncoder {
     private static final int BC4_CHANNEL_ALPHA = 3; //BC3 reuses algorithm from BC4 but uses alpha channelIndex for sampling.
     private static final int BC4_CHANNEL_GREEN = 1; //same re-usage as BC3 but for green channel BC5 uses
 
-    static void writeImageData(ImageOutputStream imageOutput, Raster raster, BlockCompression compression) throws IOException {
+    static void writeCompressedImageData(ImageOutputStream imageOutput, Raster raster, BlockCompression compression) throws IOException {
         // TODO: Support compression == null for uncompressed RGB(A/X) data?
-
         switch (compression) {
             case BC1:
                 new BlockCompressor1(false).encode(imageOutput, raster);
@@ -47,6 +46,188 @@ class DDSImageDataEncoder {
                 break;
             default:
                 throw new IllegalArgumentException("DDS block compression is not supported yet: " + compression);
+        }
+    }
+
+    public static void writeUncompressedImageData(ImageOutputStream imageOutput, Raster raster, DDSType mipmapType) throws IOException {
+        if (mipmapType.isBlockCompression())
+            throw new IllegalArgumentException("Type " + mipmapType + " is a compressed format, but uncompression function gets called.");
+        switch (mipmapType) {
+            case A1R5G5B5:
+                UncompressedWriter.writeA1R5G5B5(imageOutput, raster);
+                break;
+            case X1R5G5B5:
+                UncompressedWriter.writeX1R5G5B5(imageOutput, raster);
+                break;
+            case A4R4G4B4:
+                UncompressedWriter.writeA4R4G4B4(imageOutput, raster);
+                break;
+            case X4R4G4B4:
+                UncompressedWriter.writeX4R4G4B4(imageOutput, raster);
+                break;
+            case R5G6B5:
+                UncompressedWriter.writeR5G6B5(imageOutput, raster);
+                break;
+            case R8G8B8:
+                UncompressedWriter.writeR8G8B8(imageOutput, raster);
+                break;
+            case A8B8G8R8:
+                UncompressedWriter.writeR8G8B8A8(imageOutput, raster);
+                break;
+            case X8B8G8R8:
+                UncompressedWriter.writeR8G8B8X8(imageOutput, raster);
+                break;
+            case A8R8G8B8:
+                UncompressedWriter.writeB8G8R8A8(imageOutput, raster);
+                break;
+            case X8R8G8B8:
+                UncompressedWriter.writeB8G8R8X8(imageOutput, raster);
+                break;
+            default:
+                throw new IllegalArgumentException("Unsupported uncompressed format : " + mipmapType);
+        }
+    }
+
+    private static final class UncompressedWriter {
+        private static void writeB8G8R8X8(ImageOutputStream output, Raster raster) throws IOException {
+            int bands = raster.getNumBands();
+            int[] pixels = new int[bands];
+            for (int h = 0; h < raster.getHeight(); h++) {
+                for (int w = 0; w < raster.getWidth(); w++) {
+                    raster.getPixel(w, h, pixels);
+                    output.write(pixels[2]);
+                    output.write(pixels[1]);
+                    output.write(pixels[0]);
+                    output.write(0xFF);
+                }
+            }
+        }
+
+        private static void writeB8G8R8A8(ImageOutputStream output, Raster raster) throws IOException {
+            int bands = raster.getNumBands();
+            int[] pixels = new int[bands];
+            for (int h = 0; h < raster.getHeight(); h++) {
+                for (int w = 0; w < raster.getWidth(); w++) {
+                    raster.getPixel(w, h, pixels);
+                    output.write(pixels[2]);
+                    output.write(pixels[1]);
+                    output.write(pixels[0]);
+                    output.write(bands == 3 ? 0xff : pixels[3]);
+                }
+            }
+        }
+
+        private static void writeR8G8B8X8(ImageOutputStream output, Raster raster) throws IOException {
+            int[] pixels = new int[3];
+            for (int h = 0; h < raster.getHeight(); h++) {
+                for (int w = 0; w < raster.getWidth(); w++) {
+                    raster.getPixel(w, h, pixels);
+                    output.write(pixels[0]);
+                    output.write(pixels[1]);
+                    output.write(pixels[2]);
+                    output.write(0xff);
+                }
+            }
+        }
+
+        private static void writeR8G8B8A8(ImageOutputStream output, Raster raster) throws IOException {
+            int bands = raster.getNumBands();
+            int[] pixels = new int[bands];
+            for (int h = 0; h < raster.getHeight(); h++) {
+                for (int w = 0; w < raster.getWidth(); w++) {
+                    raster.getPixel(w, h, pixels);
+                    output.write(pixels[0]);
+                    output.write(pixels[1]);
+                    output.write(pixels[2]);
+                    output.write(bands == 3 ? 0xff : pixels[3]);
+                }
+            }
+        }
+
+        private static void writeR8G8B8(ImageOutputStream output, Raster raster) throws IOException {
+            int[] pixels = new int[3];
+            for (int h = 0; h < raster.getHeight(); h++) {
+                for (int w = 0; w < raster.getWidth(); w++) {
+                    raster.getPixel(w, h, pixels);
+                    output.write(pixels[2]);
+                    output.write(pixels[1]);
+                    output.write(pixels[0]);
+                }
+            }
+        }
+
+        private static void writeR5G6B5(ImageOutputStream output, Raster raster) throws IOException {
+            int[] pixels = new int[3];
+            for (int h = 0; h < raster.getHeight(); h++) {
+                for (int w = 0; w < raster.getWidth(); w++) {
+                    raster.getPixel(w, h, pixels);
+                    int color = convertTo565(pixels[0], pixels[1], pixels[2]);
+                    output.writeShort(color);
+                }
+            }
+        }
+
+        private static void writeX4R4G4B4(ImageOutputStream output, Raster raster) throws IOException {
+            int bands = raster.getNumBands();
+            int[] pixels = new int[bands];
+            for (int h = 0; h < raster.getHeight(); h++) {
+                for (int w = 0; w < raster.getWidth(); w++) {
+                    raster.getPixel(w, h, pixels);
+                    int r = pixels[0] / 17;
+                    int g = pixels[1] / 17;
+                    int b = pixels[2] / 17;
+                    int data = (0b1111 << 12) | ((r & 0b1111) << 8) | ((g & 0b1111) << 4) | (b & 0b1111);
+                    output.writeShort(data);
+                }
+            }
+        }
+
+        private static void writeA4R4G4B4(ImageOutputStream output, Raster raster) throws IOException {
+            int bands = raster.getNumBands();
+            int[] pixels = new int[bands];
+            for (int h = 0; h < raster.getHeight(); h++) {
+                for (int w = 0; w < raster.getWidth(); w++) {
+                    raster.getPixel(w, h, pixels);
+                    int r = pixels[0] / 17;
+                    int g = pixels[1] / 17;
+                    int b = pixels[2] / 17;
+                    int a = (bands == 3 ? 0xff : pixels[3]) / 17;
+                    int data = ((a & 0b1111) << 12) | ((r & 0b1111) << 8) | ((g & 0b1111) << 4) | (b & 0b1111);
+                    output.writeShort(data);
+                }
+            }
+        }
+
+        private static void writeA1R5G5B5(ImageOutputStream output, Raster raster) throws IOException {
+            int bands = raster.getNumBands();
+            int[] pixels = new int[bands];
+            for (int h = 0; h < raster.getHeight(); h++) {
+                for (int w = 0; w < raster.getWidth(); w++) {
+                    raster.getPixel(w, h, pixels);
+                    int a = bands == 3 ? 0xff : pixels[3] <= BC1_ALPHA_CAP ? 0 : 1;
+                    int r = pixels[0] >> 3;
+                    int g = pixels[1] >> 3;
+                    int b = pixels[2] >> 3;
+                    int data = ((a & 0b1) << 15) | ((r & 0xff) << 10) | ((g & 0xff) << 5) | (b & 0xff);
+                    output.writeShort(data);
+                }
+            }
+        }
+
+        private static void writeX1R5G5B5(ImageOutputStream output, Raster raster) throws IOException {
+            int bands = raster.getNumBands();
+            int[] pixels = new int[bands];
+            for (int h = 0; h < raster.getHeight(); h++) {
+                for (int w = 0; w < raster.getWidth(); w++) {
+                    raster.getPixel(w, h, pixels);
+                    int a = 0b1;
+                    int r = pixels[0] >> 3;
+                    int g = pixels[1] >> 3;
+                    int b = pixels[2] >> 3;
+                    int data = ((a & 0b1) << 15) | ((r & 0xff) << 10) | ((g & 0xff) << 5) | (b & 0xff);
+                    output.writeShort(data);
+                }
+            }
         }
     }
 
@@ -212,40 +393,6 @@ class DDSImageDataEncoder {
             return alphaMode;
         }
 
-        //Reference [3] Page 7
-        boolean getBlockEndpoints2(int[] sampled, int[] paletteBuffer) {
-            int maxDistance = -1;
-            boolean alphaMode = false;
-            for (int i = 0; i < 60; i += 4) {
-                for (int j = i + 4; j < 64; j += 4) {
-                    if (!forceOpaque && isAlphaBelowCap(Math.min(sampled[i + 3], sampled[j + 3]))) {
-                        alphaMode = true;
-                        continue;
-                    }
-                    int distance = getColorDistance(sampled[i], sampled[i + 1], sampled[i + 2], sampled[j], sampled[j + 1], sampled[j + 2]);
-                    if (distance > maxDistance) {
-                        maxDistance = distance;
-                        paletteBuffer[0] = convertTo565(sampled[i], sampled[i + 1], sampled[i + 2]);
-                        paletteBuffer[1] = convertTo565(sampled[j], sampled[j + 1], sampled[j + 2]);
-                    }
-                }
-            }
-
-            if ((alphaMode && paletteBuffer[0] > paletteBuffer[1]) || (!alphaMode && paletteBuffer[1] > paletteBuffer[0])) {
-                int a = paletteBuffer[0];
-                paletteBuffer[0] = paletteBuffer[1];
-                paletteBuffer[1] = a;
-            }
-            return alphaMode;
-        }
-
-        private static int getColorDistance(int r1, int g1, int b1, int r2, int g2, int b2) {
-            int r3 = r1 - r2;
-            int g3 = g1 - g2;
-            int b3 = b1 - b2;
-            return r3 * r3 + g3 * g3 + b3 * b3;
-        }
-
 
         private static Color convertTo888(int c565) {
             int r8 = BIT5[(c565 & 0xF800) >> 11];
@@ -393,7 +540,7 @@ class DDSImageDataEncoder {
 
     //pack 16 bits of the colors to a single int value.
     private static int color565ToInt(int r5, int g6, int b5) {
-        return (r5 << RGB_16_ORDER.redShift) | (g6 << RGB_16_ORDER.greenShift) | (b5 << RGB_16_ORDER.blueShift);
+        return (r5 << RGB_565_ORDER.redShift) | (g6 << RGB_565_ORDER.greenShift) | (b5 << RGB_565_ORDER.blueShift);
     }
 
     private abstract static class BlockCompressorBase {
@@ -438,7 +585,6 @@ class DDSImageDataEncoder {
     }
 
     private static final class MutableColor extends Color {
-
         int mutableValue;
 
         public MutableColor() {
