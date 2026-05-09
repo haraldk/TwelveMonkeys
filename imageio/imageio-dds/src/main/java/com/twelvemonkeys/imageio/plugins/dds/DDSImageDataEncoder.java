@@ -27,7 +27,6 @@ class DDSImageDataEncoder {
     private static final int BC4_CHANNEL_GREEN = 1; //same re-usage as BC3 but for green channel BC5 uses
 
     static void writeCompressedImageData(ImageOutputStream imageOutput, Raster raster, BlockCompression compression) throws IOException {
-        // TODO: Support compression == null for uncompressed RGB(A/X) data?
         switch (compression) {
             case BC1:
                 new BlockCompressor1(false).encode(imageOutput, raster);
