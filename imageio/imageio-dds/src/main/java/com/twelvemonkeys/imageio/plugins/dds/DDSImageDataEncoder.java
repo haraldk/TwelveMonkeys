@@ -111,7 +111,7 @@ class DDSImageDataEncoder {
                     output.write(pixels[2]);
                     output.write(pixels[1]);
                     output.write(pixels[0]);
-                    output.write(bands == 3 ? 0xff : pixels[3]);
+                    output.write(getAlphaFull(bands, pixels));
                 }
             }
         }
@@ -138,7 +138,7 @@ class DDSImageDataEncoder {
                     output.write(pixels[0]);
                     output.write(pixels[1]);
                     output.write(pixels[2]);
-                    output.write(bands == 3 ? 0xff : pixels[3]);
+                    output.write(getAlphaFull(bands, pixels));
                 }
             }
         }
@@ -172,10 +172,11 @@ class DDSImageDataEncoder {
             for (int h = 0; h < raster.getHeight(); h++) {
                 for (int w = 0; w < raster.getWidth(); w++) {
                     raster.getPixel(w, h, pixels);
+                    int a = 0x1111;
                     int r = pixels[0] / 17;
                     int g = pixels[1] / 17;
                     int b = pixels[2] / 17;
-                    int data = (0b1111 << 12) | ((r & 0b1111) << 8) | ((g & 0b1111) << 4) | (b & 0b1111);
+                    int data = (a << 12) | ((r & 0b1111) << 8) | ((g & 0b1111) << 4) | (b & 0b1111);
                     output.writeShort(data);
                 }
             }
@@ -187,10 +188,10 @@ class DDSImageDataEncoder {
             for (int h = 0; h < raster.getHeight(); h++) {
                 for (int w = 0; w < raster.getWidth(); w++) {
                     raster.getPixel(w, h, pixels);
+                    int a = getAlphaFull(bands, pixels) / 17;
                     int r = pixels[0] / 17;
                     int g = pixels[1] / 17;
                     int b = pixels[2] / 17;
-                    int a = (bands == 3 ? 0xff : pixels[3]) / 17;
                     int data = ((a & 0b1111) << 12) | ((r & 0b1111) << 8) | ((g & 0b1111) << 4) | (b & 0b1111);
                     output.writeShort(data);
                 }
@@ -203,7 +204,7 @@ class DDSImageDataEncoder {
             for (int h = 0; h < raster.getHeight(); h++) {
                 for (int w = 0; w < raster.getWidth(); w++) {
                     raster.getPixel(w, h, pixels);
-                    int a = bands == 3 ? 0xff : pixels[3] <= BC1_ALPHA_CAP ? 0 : 1;
+                    int a = getAlphaBit(bands, pixels);
                     int r = pixels[0] >> 3;
                     int g = pixels[1] >> 3;
                     int b = pixels[2] >> 3;
@@ -227,6 +228,19 @@ class DDSImageDataEncoder {
                     output.writeShort(data);
                 }
             }
+        }
+
+        //return alpha as full 0-255 value
+        private static int getAlphaFull(int numBands, int[] sampled) {
+            if (numBands == 3) return 0xFF;
+            return sampled[3];
+        }
+
+        //return alpha as 1 bit value, for A1-formats,
+        //if the input image doesn't have alpha channel then treat it as a fully opaque
+        private static int getAlphaBit(int numBands, int[] sampled) {
+            if (numBands == 3) return 1;
+            return sampled[3] < BC1_ALPHA_CAP ? 0 : 1;
         }
     }
 

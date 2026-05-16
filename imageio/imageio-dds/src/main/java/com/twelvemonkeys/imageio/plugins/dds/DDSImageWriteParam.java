@@ -12,7 +12,6 @@ public final class DDSImageWriteParam extends ImageWriteParam {
     private static final String[] COMPRESSION_TYPES = compressionTypes();
 
     private static String[] compressionTypes() {
-        // TODO: Maybe hardcode subset of values that we actually support writing?
         List<String> compressionTypes = Arrays.stream(DDSType.values())
             .map(Enum::name)
             .collect(Collectors.toList());

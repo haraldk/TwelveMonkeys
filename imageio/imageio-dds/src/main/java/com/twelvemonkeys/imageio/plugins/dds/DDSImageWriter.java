@@ -117,6 +117,7 @@ class DDSImageWriter extends ImageWriterBase {
             processWarningOccurred(mipmapIndex, "All images in DDS mipmap must use same pixel format and compression");
         }
         if (mipmapType == null) {
+            //TODO: we can remove this one as we now have all formats write and read support.
             throw new IIOException("Only compressed DDS using DXT1-5 or DXT10 with block compression is currently supported");
         }
 
@@ -331,7 +332,6 @@ class DDSImageWriter extends ImageWriterBase {
         DDSImageWriteParam writeParam = new DDSImageWriteParam();
         writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
         writeParam.setCompressionType("X8R8G8B8");
-        //writeParam.setWriteDX10();
         MemoryCacheImageOutputStream ios = new MemoryCacheImageOutputStream(Files.newOutputStream(Paths.get("output.dds")));
         writer.setOutput(ios);
         writer.write(null, new IIOImage(ImageIO.read(new File(args[0])), null,null), writeParam);

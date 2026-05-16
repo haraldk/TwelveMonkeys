@@ -157,7 +157,7 @@ final class DDSReader {
             case X8B8G8R8:
             case A8R8G8B8:
             case X8R8G8B8:
-                return type.blockSize() * width * height;
+                return (type.blockSize() / 8) * width * height;
             default:
                 throw new IIOException("Unknown type: " + type);
         }
