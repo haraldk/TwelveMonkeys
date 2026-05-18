@@ -9,6 +9,7 @@ import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
@@ -25,7 +26,7 @@ import java.nio.file.Paths;
 /**
  * ImageWriter implementation for Microsoft DirectDraw Surface (DDS) format.
  *
- * @author KhanTypo
+ * @author KhanhTypo
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
 class DDSImageWriter extends ImageWriterBase {
@@ -116,6 +117,7 @@ class DDSImageWriter extends ImageWriterBase {
             processWarningOccurred(mipmapIndex, "All images in DDS mipmap must use same pixel format and compression");
         }
         if (mipmapType == null) {
+            //TODO: we can remove this one as we now have all formats write and read support.
             throw new IIOException("Only compressed DDS using DXT1-5 or DXT10 with block compression is currently supported");
         }
 
@@ -129,7 +131,9 @@ class DDSImageWriter extends ImageWriterBase {
         processImageStarted(mipmapIndex);
         processImageProgress(0f);
 
-        DDSImageDataEncoder.writeImageData(imageOutput, raster, mipmapType.compression);
+        if (mipmapType.isBlockCompression())
+            DDSImageDataEncoder.writeCompressedImageData(imageOutput, raster, mipmapType.compression);
+        else DDSImageDataEncoder.writeUncompressedImageData(imageOutput, raster, mipmapType);
 
         processImageProgress(100f);
         processImageComplete();
@@ -256,8 +260,7 @@ class DDSImageWriter extends ImageWriterBase {
     private void writeRGBAData(DDSType type, boolean writeDXT10) throws IOException {
         if (!writeDXT10 && !type.isFourCC()) {
             //dwRGBBitCount
-            imageOutput.writeInt(type.blockSize() * 8); // TODO: Is bitcount always a multiple of 8?
-
+            imageOutput.writeInt(type.blockSize());
             //dwRBitMask
             imageOutput.writeInt(type.rgbaMasks[0]);
             //dwGBitMask
@@ -301,7 +304,7 @@ class DDSImageWriter extends ImageWriterBase {
             imageOutput.writeInt(((width + 3) / 4) * ((height + 3) / 4) * type.blockSize());
         }
         else {
-            imageOutput.writeInt(width * type.blockSize());
+            imageOutput.writeInt(Math.floorDiv(width * type.blockSize() + 7, 8));
         }
     }
 
@@ -325,6 +328,12 @@ class DDSImageWriter extends ImageWriterBase {
             throw new IllegalArgumentException("Use 1 input file at a time.");
         }
 
-        ImageIO.write(ImageIO.read(new File(args[0])), "dds", new MemoryCacheImageOutputStream(Files.newOutputStream(Paths.get("output.dds"))));
+        ImageWriter writer = ImageIO.getImageWritersByFormatName("dds").next();
+        DDSImageWriteParam writeParam = new DDSImageWriteParam();
+        writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        writeParam.setCompressionType("X8R8G8B8");
+        MemoryCacheImageOutputStream ios = new MemoryCacheImageOutputStream(Files.newOutputStream(Paths.get("output.dds")));
+        writer.setOutput(ios);
+        writer.write(null, new IIOImage(ImageIO.read(new File(args[0])), null,null), writeParam);
     }
 }
