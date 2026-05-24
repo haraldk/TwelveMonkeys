@@ -1,0 +1,21 @@
+module com.twelvemonkeys.imageio.bmp {
+    requires com.twelvemonkeys.common.image;
+    requires com.twelvemonkeys.common.io;
+    requires com.twelvemonkeys.common.lang;
+    requires java.xml;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive java.desktop;
+
+    exports com.twelvemonkeys.imageio.plugins.bmp;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.bmp.BMPImageReaderSpi,
+        com.twelvemonkeys.imageio.plugins.bmp.CURImageReaderSpi,
+        com.twelvemonkeys.imageio.plugins.bmp.ICOImageReaderSpi;
+    provides javax.imageio.spi.ImageWriterSpi with
+        com.twelvemonkeys.imageio.plugins.bmp.BMPImageWriterSpi,
+        com.twelvemonkeys.imageio.plugins.bmp.ICOImageWriterSpi;
+
+}
+
