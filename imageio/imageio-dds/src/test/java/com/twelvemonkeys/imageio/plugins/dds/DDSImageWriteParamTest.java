@@ -21,7 +21,6 @@ class DDSImageWriteParamTest {
 
         String[] compressionTypes = param.getCompressionTypes();
         DDSType[] values = Arrays.stream(DDSType.values())
-            .filter(DDSType::isBlockCompression)
             .toArray(DDSType[]::new);
 
         assertEquals(values.length + 1, compressionTypes.length);
