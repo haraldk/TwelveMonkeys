@@ -32,11 +32,17 @@ package com.twelvemonkeys.imageio.plugins.sgi;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import javax.imageio.ImageIO;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
+import org.junit.jupiter.api.Test;
 
 /**
  * SGIImageReaderTest
@@ -74,5 +80,55 @@ public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> 
         return Arrays.asList(
                 "image/sgi", "image/x-sgi"
         );
+    }
+
+    @Test
+    public void testNormalize8Bit() throws IOException {
+        // 3x1 8-bit grayscale SGI with PixMin=0, PixMax=200
+        // Raw pixel values: [0, 100, 200]
+        // After normalization: [0, 127, 255] — PixMax should map to full white
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/sgi/normalize_8bit.sgi"))) {
+            SGIImageReader reader = createReader();
+            reader.setInput(input);
+
+            BufferedImage image = reader.read(0);
+            assertNotNull(image);
+
+            // Pixel at x=2 has raw value 200 (= PixMax), should normalize to 255
+            assertRGBEquals("8-bit PixMax value should normalize to white", 0xffffffff, image.getRGB(2, 0), 1);
+
+            // Pixel at x=0 has raw value 0 (= PixMin), should remain black
+            assertRGBEquals("8-bit PixMin value should be black", 0xff000000, image.getRGB(0, 0), 0);
+
+            // Pixel at x=1 has raw value 100 (half of PixMax), should normalize to ~127
+            assertRGBEquals("8-bit mid value should normalize correctly", 0xff7f7f7f, image.getRGB(1, 0), 1);
+
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testNormalize16Bit() throws IOException {
+        // 3x1 16-bit grayscale SGI with PixMin=0, PixMax=1000
+        // Raw pixel values: [0, 500, 1000]
+        // After normalization: [0, 32767, 65535] — PixMax should map to full white
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/sgi/normalize_16bit.sgi"))) {
+            SGIImageReader reader = createReader();
+            reader.setInput(input);
+
+            BufferedImage image = reader.read(0);
+            assertNotNull(image);
+
+            // Pixel at x=2 has raw value 1000 (= PixMax), should normalize to 65535 (white)
+            assertRGBEquals("16-bit PixMax value should normalize to white", 0xffffffff, image.getRGB(2, 0), 1);
+
+            // Pixel at x=0 has raw value 0 (= PixMin), should remain black
+            assertRGBEquals("16-bit PixMin value should be black", 0xff000000, image.getRGB(0, 0), 0);
+
+            // Pixel at x=1 has raw value 500 (half of PixMax), should normalize to ~32767 (~mid-gray)
+            assertRGBEquals("16-bit mid value should normalize correctly", 0xff7f7f7f, image.getRGB(1, 0), 2);
+
+            reader.dispose();
+        }
     }
 }
