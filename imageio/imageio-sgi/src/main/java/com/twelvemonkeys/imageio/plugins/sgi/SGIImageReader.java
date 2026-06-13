@@ -332,7 +332,7 @@ public final class SGIImageReader extends ImageReaderBase {
         if (minValue != 0 || maxValue != 0xff) {
             // Normalize
             for (int i = start; i < length; i++) {
-                rowData[i] = (byte) (((rowData[i] & 0xff - minValue) * 0xff) / maxValue);
+                rowData[i] = (byte) ((((rowData[i] & 0xff) - minValue) * 0xff) / (maxValue - minValue));
             }
         }
     }
@@ -344,7 +344,7 @@ public final class SGIImageReader extends ImageReaderBase {
         if (minValue != 0 || maxValue != 0xffff) {
             // Normalize
             for (int i = start; i < length; i++) {
-                rowData[i] = (short) (((rowData[i] & 0xffff - minValue) * 0xffff) / maxValue);
+                rowData[i] = (short) ((((rowData[i] & 0xffff) - minValue) * 0xffff) / (maxValue - minValue));
             }
         }
     }
