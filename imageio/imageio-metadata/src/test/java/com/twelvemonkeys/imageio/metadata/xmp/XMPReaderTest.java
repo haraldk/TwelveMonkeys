@@ -495,9 +495,23 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
     }
 
     @Test
+    public void testDoctypeDisallowed() throws Exception {
+        // XMP with a DOCTYPE should be rejected now that disallow-doctype-decl is enabled
+        String xmlWithDoctype = resourceAsString("/xmp/xmp-jpeg-xxe.xml");
+
+        try (DirectImageInputStream input = new DirectImageInputStream(new ByteArrayInputStream(xmlWithDoctype.getBytes(StandardCharsets.UTF_8)))) {
+            createReader().read(input);
+            throw new AssertionError("XMP with DOCTYPE should have been rejected");
+        } catch (IOException expected) {
+            // Expected: parser rejects DOCTYPE declaration
+        }
+    }
+
+    @Test
     public void testNoExternalRequest() throws Exception {
         assertTimeoutPreemptively(Duration.ofMillis(2500L), () -> {
-            String maliciousXML = resourceAsString("/xmp/xmp-jpeg-xxe.xml");
+            // Use DOCTYPE-free XMP with xml-stylesheet PI referencing an external URL
+            String maliciousXML = resourceAsString("/xmp/xmp-jpeg-xxe-no-doctype.xml");
 
             try (HTTPServer server = new HTTPServer()) {
                 String dynamicXML = maliciousXML.replace("http://localhost:7777/", "http://localhost:" + server.port() + "/");
