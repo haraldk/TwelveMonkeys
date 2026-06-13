@@ -157,4 +157,54 @@ public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> 
             reader.dispose();
         }
     }
+
+    @Test
+    public void testNormalize8BitOffset() throws IOException {
+        // 3x1 8-bit grayscale SGI with PixMin=50, PixMax=200
+        // Raw pixel values: [50, 125, 200]
+        // This test exposes the operator precedence bug: & has lower precedence than -
+        // Without fix: (rowData[i] & 0xff - minValue) = (rowData[i] & (0xff - minValue))
+        // With fix: ((rowData[i] & 0xff) - minValue)
+        // After normalization: [0, 127, 255]
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/sgi/normalize_8bit_offset.sgi"))) {
+            SGIImageReader reader = createReader();
+            reader.setInput(input);
+
+            BufferedImage image = reader.read(0);
+            assertNotNull(image);
+
+            DataBuffer buffer = image.getRaster().getDataBuffer();
+
+            assertEquals(0, buffer.getElem(0), "8-bit offset PixMin value should be black");
+            assertEquals(127, buffer.getElem(1), "8-bit offset mid value should normalize correctly");
+            assertEquals(255, buffer.getElem(2), "8-bit offset PixMax value should normalize to white");
+
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testNormalize16BitOffset() throws IOException {
+        // 3x1 16-bit grayscale SGI with PixMin=100, PixMax=1000
+        // Raw pixel values: [100, 550, 1000]
+        // This test exposes the operator precedence bug: & has lower precedence than -
+        // Without fix: (rowData[i] & 0xffff - minValue) = (rowData[i] & (0xffff - minValue))
+        // With fix: ((rowData[i] & 0xffff) - minValue)
+        // After normalization: [0, 32767, 65535]
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClassLoaderResource("/sgi/normalize_16bit_offset.sgi"))) {
+            SGIImageReader reader = createReader();
+            reader.setInput(input);
+
+            BufferedImage image = reader.read(0);
+            assertNotNull(image);
+
+            DataBuffer buffer = image.getRaster().getDataBuffer();
+
+            assertEquals(0, buffer.getElem(0), "16-bit offset PixMin value should be black");
+            assertEquals(32767, buffer.getElem(1), "16-bit offset mid value should normalize correctly");
+            assertEquals(65535, buffer.getElem(2), "16-bit offset PixMax value should normalize to white");
+
+            reader.dispose();
+        }
+    }
 }
