@@ -277,4 +277,59 @@ public class ImageReaderBaseTest {
         param.setDestinationOffset(new Point(0, 0));
         assertFalse(ImageReaderBase.hasExplicitDestination(param));
     }
+
+    // Destination allocation size guard (GHSA-7c3w-m9qh-j2vj). TYPES is INT_RGB/INT_ARGB, i.e. 4 bytes/pixel.
+
+    @Test
+    public void testGetDestinationWithinExpansionRatioIsAllowed() throws IIOException {
+        // 100 x 100 x 4 = 40000 bytes; with 40000 bytes of input the limit is 40000 * 16, so it must not be rejected.
+        BufferedImage destination = ImageReaderBase.getDestination(null, TYPES.iterator(), 100, 100, 40000L, 16);
+        assertNotNull(destination);
+        assertEquals(100, destination.getWidth());
+        assertEquals(100, destination.getHeight());
+    }
+
+    @Test
+    public void testGetDestinationExceedingExpansionRatioIsRejected() {
+        // A 100-byte input must not be able to force a ~1.6 GB raster (20000 x 20000 x 4).
+        IIOException exception = assertThrows(IIOException.class,
+                () -> ImageReaderBase.getDestination(null, TYPES.iterator(), 20000, 20000, 100L, 16));
+        assertTrue(exception.getMessage().contains("exceeding"), exception.getMessage());
+    }
+
+    @Test
+    public void testGetDestinationUnknownLengthRejectedByMaxImageBytes() {
+        // Unknown length (-1) uses the MAX_IMAGE_BYTES ceiling; override it low to assert deterministic rejection.
+        System.setProperty(ImageReaderBase.MAX_IMAGE_BYTES_PROPERTY, String.valueOf(1024 * 1024));
+        try {
+            // 1000 x 1000 x 4 = 4 MB > 1 MB ceiling.
+            IIOException exception = assertThrows(IIOException.class,
+                    () -> ImageReaderBase.getDestination(null, TYPES.iterator(), 1000, 1000, -1L, 16));
+            assertTrue(exception.getMessage().contains("unknown length"), exception.getMessage());
+        }
+        finally {
+            System.clearProperty(ImageReaderBase.MAX_IMAGE_BYTES_PROPERTY);
+        }
+    }
+
+    @Test
+    public void testGetDestinationUnknownLengthWithinMaxImageBytesIsAllowed() throws IIOException {
+        System.setProperty(ImageReaderBase.MAX_IMAGE_BYTES_PROPERTY, String.valueOf(64 * 1024 * 1024));
+        try {
+            // 1000 x 1000 x 4 = 4 MB < 64 MB ceiling.
+            BufferedImage destination = ImageReaderBase.getDestination(null, TYPES.iterator(), 1000, 1000, -1L, 16);
+            assertNotNull(destination);
+        }
+        finally {
+            System.clearProperty(ImageReaderBase.MAX_IMAGE_BYTES_PROPERTY);
+        }
+    }
+
+    @Test
+    public void testGetDestinationWithoutRatioIsNotGuarded() throws IIOException {
+        // A non-positive ratio (and the legacy four-argument overload) disables the guard: a tiny declared input
+        // length must not cause rejection. 1000 x 1000 x 4 = 4 MB is a safe allocation to prove this.
+        assertNotNull(ImageReaderBase.getDestination(null, TYPES.iterator(), 1000, 1000, 1L, 0));
+        assertNotNull(ImageReaderBase.getDestination(null, TYPES.iterator(), 1000, 1000));
+    }
 }

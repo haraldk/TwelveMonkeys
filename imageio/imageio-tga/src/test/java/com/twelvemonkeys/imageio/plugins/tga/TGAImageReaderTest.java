@@ -30,10 +30,12 @@
 
 package com.twelvemonkeys.imageio.plugins.tga;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import org.w3c.dom.NodeList;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
@@ -46,6 +48,7 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
@@ -62,6 +65,25 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
     @Override
     protected ImageReaderSpi createProvider() {
         return new TGAImageReaderSpi();
+    }
+
+    @Test
+    public void readTinyInputDeclaringHugeDimensionsIsRejectedBeforeAllocation() throws IOException {
+        // GHSA-7c3w-m9qh-j2vj: a 46-byte TGA header declaring huge dimensions allocated ~2.64 GB before this guard.
+        byte[] poc = Base64.getDecoder().decode("AAAKAAAAAAAAAAAANji9uyAIJXfC7O9koAw2esCQYMAYwTUX7JRX7bRKaLngdQ==");
+
+        ImageReader reader = createReader();
+        try (ImageInputStream input = new ByteArrayImageInputStream(poc)) {
+            reader.setInput(input);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            // "exceeding" is unique to the size-guard message, confirming rejection in the guard (before
+            // allocation), not a later EOF/parse error after a large buffer was committed.
+            assertTrue(exception.getMessage().contains("exceeding"), exception.getMessage());
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Override

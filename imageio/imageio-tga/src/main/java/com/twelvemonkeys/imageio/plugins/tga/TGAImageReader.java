@@ -62,6 +62,13 @@ final class TGAImageReader extends ImageReaderBase {
     // http://www.fileformat.info/format/tga/egff.htm
     // http://www.gamers.org/dEngine/quake3/TGA.txt
 
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for TGA, used to bound the destination allocation
+     * against the input length. TGA is uncompressed or run-length encoded; 128:1 leaves margin above RLE's
+     * maximum (~64:1 for 8-bit pixels), so no valid image is rejected.
+     */
+    private static final int MAX_EXPANSION_RATIO = 128;
+
     private TGAHeader header;
     private TGAExtensions extensions;
 
@@ -172,7 +179,7 @@ final class TGAImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
-        BufferedImage destination = getDestination(param, imageTypes, width, height);
+        BufferedImage destination = getDestination(param, imageTypes, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
 
         Rectangle srcRegion = new Rectangle();
         Rectangle destRegion = new Rectangle();
@@ -489,7 +496,7 @@ final class TGAImageReader extends ImageReaderBase {
         // For thumbnail, always read entire image
         Rectangle srcRegion = new Rectangle(width, height);
 
-        BufferedImage destination = getDestination(null, imageTypes, width, height);
+        BufferedImage destination = getDestination(null, imageTypes, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
         WritableRaster destRaster = destination.getRaster();
         WritableRaster rowRaster = rawType.createBufferedImage(width, 1).getRaster();
 
