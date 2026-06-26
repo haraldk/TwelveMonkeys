@@ -66,9 +66,13 @@ public abstract class ImageReaderBase extends ImageReader {
 
     /**
      * System property ({@value}) overriding the maximum size, in bytes, of a destination image allocated from
-     * declared dimensions when the input length is unknown. Defaults to half the maximum heap size.
+     * declared dimensions when the input length is unknown. Read once at class initialization, so it must be
+     * set as a launch {@code -D} option. When unset, the default is half the maximum heap, capped at 512 MB and
+     * floored at 64 MB.
      */
     public static final String MAX_IMAGE_BYTES_PROPERTY = "com.twelvemonkeys.imageio.maxImageBytes";
+
+    private static final long MAX_IMAGE_BYTES = defaultMaxImageBytes();
 
     /**
      * For convenience. Only set if the input is an {@code ImageInputStream}.
@@ -238,7 +242,11 @@ public abstract class ImageReaderBase extends ImageReader {
      * Or, if the resulting image would have a width or height less than 1,
      * or if the product of {@code width} and {@code height} of the resulting image is greater than
      * {@code Integer.MAX_VALUE}.
+     *
+     * @deprecated Use {@link #getDestination(ImageReadParam, Iterator, int, int, long, int)}, which additionally
+     * guards against unbounded allocation driven by the declared dimensions.
      */
+    @Deprecated
     public static BufferedImage getDestination(final ImageReadParam param, final Iterator<ImageTypeSpecifier> types,
                                                final int width, final int height) throws IIOException {
         return getDestination(param, types, width, height, -1L, 0);
@@ -364,27 +372,25 @@ public abstract class ImageReaderBase extends ImageReader {
             throw new IIOException(String.format("destination width * height * samplesPerPixel > Integer.MAX_VALUE: %d", size));
         }
 
-        // Size guarding is opt-in: callers that do not request it (such as the legacy four-argument overload)
-        // keep the original behaviour.
-        if (maxExpansionRatio <= 0) {
-            return imageType.createBufferedImage(destWidth, destHeight);
-        }
-
         // A tiny input must not be able to force a multi-gigabyte raster before any pixel data has been read.
+        // The size check is opt-in (maxExpansionRatio > 0); the OutOfMemoryError backstop always applies.
         long declaredBytes = size * (DataBuffer.getDataTypeSize(imageType.getSampleModel().getDataType()) / 8);
-        checkDestinationSize(declaredBytes, inputLength, maxExpansionRatio);
+        if (maxExpansionRatio > 0) {
+            checkDestinationSize(declaredBytes, inputLength, maxExpansionRatio, MAX_IMAGE_BYTES);
+        }
 
         try {
             return imageType.createBufferedImage(destWidth, destHeight);
         }
         catch (OutOfMemoryError e) {
-            // Backstop: the check above bounds the request, but a generous ratio can still exceed the heap.
-            // Surface it as an IIOException so callers treat it as a read error rather than a fatal Error.
+            // The check above bounds the request when active, but a generous ratio (or the legacy path) can
+            // still exceed the heap. Surface it as an IIOException so callers treat it as a read error rather
+            // than a fatal Error.
             throw new IIOException(String.format("Unable to allocate destination image of %d bytes", declaredBytes), e);
         }
     }
 
-    private static void checkDestinationSize(final long declaredBytes, final long inputLength, final int maxExpansionRatio) throws IIOException {
+    static void checkDestinationSize(final long declaredBytes, final long inputLength, final int maxExpansionRatio, final long maxImageBytes) throws IIOException {
         long limit;
         String detail;
 
@@ -395,7 +401,7 @@ public abstract class ImageReaderBase extends ImageReader {
         }
         else {
             // Unknown input length: fall back to a best-effort, overridable ceiling.
-            limit = maxImageBytes();
+            limit = maxImageBytes;
             detail = String.format("the maximum %d bytes for input of unknown length (override with -D%s)", limit, MAX_IMAGE_BYTES_PROPERTY);
         }
 
@@ -404,22 +410,23 @@ public abstract class ImageReaderBase extends ImageReader {
         }
     }
 
-    private static long maxImageBytes() {
-        // Read on each (unknown-length) call so the limit can be overridden at runtime via the system property.
+    static long defaultMaxImageBytes() {
+        // Resolved once into MAX_IMAGE_BYTES at class init; the property is read at launch, not per call.
         long override = Long.getLong(MAX_IMAGE_BYTES_PROPERTY, -1L);
         if (override > 0) {
             return override;
         }
 
-        // Best-effort default for inputs of unknown length: never auto-allocate a single raster larger than half
-        // the maximum heap (a near-certain OutOfMemoryError, and almost never a legitimate single image), but
-        // never reject below 64 MB, so a modest legitimate image still decodes even on a tiny heap. Falls back
-        // to 2 GiB when the heap is unbounded.
+        // Best-effort default for inputs of unknown length (e.g. streamed input, whose length is not known).
+        // Bounded by an absolute cap so it does not scale with the heap: on a large-heap server, half the heap
+        // would let a tiny streamed input drive a multi-gigabyte transient allocation. Floored at 64 MB so a
+        // modest image still decodes on a tiny heap.
         long maxHeap = Runtime.getRuntime().maxMemory();
-        long fallback = 2L * 1024 * 1024 * 1024;
+        long cap = 512L * 1024 * 1024;
         long floor = 64L * 1024 * 1024;
+        long heapBound = maxHeap == Long.MAX_VALUE ? cap : Math.min(cap, maxHeap / 2);
 
-        return maxHeap == Long.MAX_VALUE ? fallback : Math.max(floor, maxHeap / 2);
+        return Math.max(floor, heapBound);
     }
 
     private static long saturatedMultiply(final long a, final long b) {

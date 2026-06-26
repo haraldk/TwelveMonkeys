@@ -298,33 +298,30 @@ public class ImageReaderBaseTest {
     }
 
     @Test
-    public void testGetDestinationUnknownLengthRejectedByMaxImageBytes() {
-        // Unknown length (-1) uses the MAX_IMAGE_BYTES ceiling; override it low to assert deterministic rejection.
-        System.setProperty(ImageReaderBase.MAX_IMAGE_BYTES_PROPERTY, String.valueOf(1024 * 1024));
-        try {
-            // 1000 x 1000 x 4 = 4 MB > 1 MB ceiling.
-            IIOException exception = assertThrows(IIOException.class,
-                    () -> ImageReaderBase.getDestination(null, TYPES.iterator(), 1000, 1000, -1L, 16));
-            assertTrue(exception.getMessage().contains("unknown length"), exception.getMessage());
-        }
-        finally {
-            System.clearProperty(ImageReaderBase.MAX_IMAGE_BYTES_PROPERTY);
-        }
+    public void testCheckDestinationUnknownLengthRejectedByMaxImageBytes() {
+        // Unknown length (-1) uses the injected ceiling; 4 MB declared against a 1 MB ceiling must be rejected.
+        IIOException exception = assertThrows(IIOException.class,
+                () -> ImageReaderBase.checkDestinationSize(4L * 1024 * 1024, -1L, 16, 1024 * 1024));
+        assertTrue(exception.getMessage().contains("unknown length"), exception.getMessage());
     }
 
     @Test
-    public void testGetDestinationUnknownLengthWithinMaxImageBytesIsAllowed() throws IIOException {
-        System.setProperty(ImageReaderBase.MAX_IMAGE_BYTES_PROPERTY, String.valueOf(64 * 1024 * 1024));
-        try {
-            // 1000 x 1000 x 4 = 4 MB < 64 MB ceiling.
-            BufferedImage destination = ImageReaderBase.getDestination(null, TYPES.iterator(), 1000, 1000, -1L, 16);
-            assertNotNull(destination);
-        }
-        finally {
-            System.clearProperty(ImageReaderBase.MAX_IMAGE_BYTES_PROPERTY);
-        }
+    public void testCheckDestinationUnknownLengthWithinMaxImageBytesIsAllowed() throws IIOException {
+        // 4 MB declared against a 64 MB ceiling must be allowed (no exception).
+        ImageReaderBase.checkDestinationSize(4L * 1024 * 1024, -1L, 16, 64L * 1024 * 1024);
     }
 
+    @Test
+    public void testDefaultMaxImageBytesIsCappedAndFloored() {
+        // No property set: default is half the heap, capped at 512 MB, floored at 64 MB.
+        long cap = 512L * 1024 * 1024;
+        long floor = 64L * 1024 * 1024;
+        long maxHeap = Runtime.getRuntime().maxMemory();
+        long expected = Math.max(floor, maxHeap == Long.MAX_VALUE ? cap : Math.min(cap, maxHeap / 2));
+        assertEquals(expected, ImageReaderBase.defaultMaxImageBytes());
+    }
+
+    @SuppressWarnings("deprecation")
     @Test
     public void testGetDestinationWithoutRatioIsNotGuarded() throws IIOException {
         // A non-positive ratio (and the legacy four-argument overload) disables the guard: a tiny declared input
