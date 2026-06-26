@@ -71,7 +71,7 @@ import java.io.IOException;
  */
 final class DDSReader {
     static final Order ARGB_ORDER = new Order(16, 8, 0, 24);   //  8 alpha | 8 red | 8 green | 8 blue
-    static final Order RGB_16_ORDER = new Order(11, 5, 0, -1); // no alpha | 5 red | 6 green | 5 blue
+    static final Order RGB_565_ORDER = new Order(11, 5, 0, -1); // no alpha | 5 red | 6 green | 5 blue
 
     private final DDSHeader header;
 
@@ -157,7 +157,7 @@ final class DDSReader {
             case X8B8G8R8:
             case A8R8G8B8:
             case X8R8G8B8:
-                return type.blockSize() * width * height;
+                return (type.blockSize() / 8) * width * height;
             default:
                 throw new IIOException("Unknown type: " + type);
         }
@@ -211,7 +211,7 @@ final class DDSReader {
                     int a0 = (buffer[index++] & 0xFF);
                     int a1 = (buffer[index++] & 0xFF);
                     // 4bit alpha to 8bit alpha
-                    alphaTable[4 * k    ] = 17 * ((a0 & 0xF0) >> 4);
+                    alphaTable[4 * k] = 17 * ((a0 & 0xF0) >> 4);
                     alphaTable[4 * k + 1] = 17 * (a0 & 0x0F);
                     alphaTable[4 * k + 2] = 17 * ((a1 & 0xF0) >> 4);
                     alphaTable[4 * k + 3] = 17 * (a1 & 0x0F);
