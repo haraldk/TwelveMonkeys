@@ -31,12 +31,14 @@
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.io.FileUtil;
+import com.twelvemonkeys.io.enc.DecodeException;
 import com.twelvemonkeys.io.enc.Decoder;
 import com.twelvemonkeys.io.enc.DecoderAbstractTest;
 import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.Encoder;
 
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -81,6 +83,65 @@ public class LZWDecoderTest extends DecoderAbstractTest {
         InputStream unpacked = getClass().getResourceAsStream("/lzw/unpacked-long.bin");
 
         assertSameStreamContents(unpacked, stream);
+    }
+
+    @Test
+    public void testTableOverflowDoesNotWritePastTable() throws IOException {
+        // A stream that keeps extending the dictionary without ever emitting a CLEAR code
+        // must be rejected with a DecodeException, not write one entry past the code table.
+        byte[] packed = lzwStreamFillingTableWithoutClear(3839);
+
+        InputStream stream = new DecoderStream(new ByteArrayInputStream(packed), LZWDecoder.create(false), 1024);
+
+        DecodeException exception = assertThrows(DecodeException.class, () -> {
+            byte[] sink = new byte[4096];
+            while (stream.read(sink) != -1) {
+                // drain
+            }
+        });
+        assertTrue(exception.getMessage().contains("table overflow"), exception.getMessage());
+    }
+
+    /**
+     * Packs an LZW (spec, MSB-first) stream that decodes to single-byte codes only, never emitting
+     * a CLEAR code, so the decoder keeps adding dictionary entries until the table is full.
+     * Code widths follow the same schedule the decoder uses to read them.
+     */
+    private static byte[] lzwStreamFillingTableWithoutClear(final int addingCodes) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        int[] state = {0, 0, 9, (1 << 9) - 1, (1 << 9) - 2, 258}; // bits, bitPos, bitsPerCode, bitMask, maxCode, tableLength
+
+        writeCode(out, state, 256); // CLEAR
+        writeCode(out, state, 0);   // first literal, read in CLEAR branch (no table growth)
+
+        for (int i = 0; i < addingCodes; i++) {
+            writeCode(out, state, (i & 1) == 0 ? 1 : 0); // single-byte codes, always in table
+            // Mirror addStringToTable: grow table, widen code as the decoder does
+            state[5]++;
+            if (state[5] > state[4]) {
+                if (state[2] < 12) {
+                    state[2]++;
+                }
+                state[3] = (1 << state[2]) - 1;
+                state[4] = state[3] - 1;
+            }
+        }
+
+        if (state[1] > 0) {
+            out.write((state[0] << (8 - state[1])) & 0xff);
+        }
+
+        return out.toByteArray();
+    }
+
+    private static void writeCode(final ByteArrayOutputStream out, final int[] state, final int code) {
+        state[0] = (state[0] << state[2]) | (code & state[3]);
+        state[1] += state[2];
+        while (state[1] >= 8) {
+            out.write((state[0] >> (state[1] - 8)) & 0xff);
+            state[1] -= 8;
+        }
+        state[0] &= (1 << state[1]) - 1;
     }
 
     private void assertSameStreamContents(InputStream expected, InputStream actual) {
