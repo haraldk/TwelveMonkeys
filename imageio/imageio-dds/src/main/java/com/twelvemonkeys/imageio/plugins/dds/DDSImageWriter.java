@@ -304,7 +304,7 @@ class DDSImageWriter extends ImageWriterBase {
             imageOutput.writeInt(((width + 3) / 4) * ((height + 3) / 4) * type.blockSize());
         }
         else {
-            imageOutput.writeInt(Math.floorDiv(width * type.blockSize() + 7, 8));
+            imageOutput.writeInt((width * type.blockSize() + 7) / 8);
         }
     }
 
