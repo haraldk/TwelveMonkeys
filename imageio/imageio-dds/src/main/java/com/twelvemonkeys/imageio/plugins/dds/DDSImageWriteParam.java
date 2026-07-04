@@ -1,7 +1,6 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
 import javax.imageio.ImageWriteParam;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -13,8 +12,9 @@ public final class DDSImageWriteParam extends ImageWriteParam {
 
     private static String[] compressionTypes() {
         List<String> compressionTypes = Arrays.stream(DDSType.values())
-            .map(Enum::name)
-            .collect(Collectors.toList());
+                .filter(DDSType::isBlockCompression)
+                .map(Enum::name)
+                .collect(Collectors.toList());
         compressionTypes.add(0, "None");
 
         return compressionTypes.toArray(new String[0]);

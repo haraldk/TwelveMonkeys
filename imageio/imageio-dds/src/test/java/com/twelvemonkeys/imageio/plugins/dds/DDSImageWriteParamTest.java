@@ -1,12 +1,11 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
-import static org.junit.jupiter.api.Assertions.*;
-
-import java.util.Arrays;
+import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageWriteParam;
+import java.util.Arrays;
 
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class DDSImageWriteParamTest {
     @Test
@@ -21,7 +20,8 @@ class DDSImageWriteParamTest {
 
         String[] compressionTypes = param.getCompressionTypes();
         DDSType[] values = Arrays.stream(DDSType.values())
-            .toArray(DDSType[]::new);
+                .filter(DDSType::isBlockCompression)
+                .toArray(DDSType[]::new);
 
         assertEquals(values.length + 1, compressionTypes.length);
 
