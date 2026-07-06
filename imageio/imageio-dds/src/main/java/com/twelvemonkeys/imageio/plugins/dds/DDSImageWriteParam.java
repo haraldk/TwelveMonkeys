@@ -48,6 +48,13 @@ public final class DDSImageWriteParam extends ImageWriteParam {
         return DDSType.valueOf(compressionType);
     }
 
+    @Override
+    public void setCompressionMode(int mode) {
+        if (mode == MODE_DISABLED)
+            this.compressionType = "None";
+        super.setCompressionMode(mode);
+    }
+
     int getDxgiFormat() {
         DDSType type = type();
 
