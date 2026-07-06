@@ -101,7 +101,6 @@ class DDSImageWriter extends ImageWriterBase {
 
         Raster raster = getRaster(image);
         ensureImageChannels(raster);
-        mipmapDimension = new Dimension(raster.getWidth(), raster.getHeight());
 
         DDSImageWriteParam ddsParam = param instanceof DDSImageWriteParam
             ? ((DDSImageWriteParam) param)
@@ -135,6 +134,7 @@ class DDSImageWriter extends ImageWriterBase {
         if (mipmapType.isBlockCompression()) {
             //this was meant for block compression, uncompressed formats aren't affected by image size
             ensureTextureDimension(raster);
+            mipmapDimension = new Dimension(raster.getWidth(), raster.getHeight());
             DDSImageDataEncoder.writeCompressedImageData(imageOutput, raster, mipmapType.compression);
         } else DDSImageDataEncoder.writeUncompressedImageData(imageOutput, raster, mipmapType);
 
