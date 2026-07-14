@@ -78,7 +78,6 @@ public final class VP8Frame {
     private int[][] yModes;
     private MacroBlock[] previousMacroBlockRow;
     private MacroBlock[] topMacroBlockRow;
-    private boolean windowedDecode;
     private int macroBlockSegementAbsoluteDelta;
     private int[] macroBlockSegmentTreeProbs;
     private final int[] modeLoopFilterDeltas = new int[MAX_MODE_LF_DELTAS];
@@ -111,15 +110,6 @@ public final class VP8Frame {
 
     public void setProgressListener(IIOReadProgressListener listener) {
         this.listener = listener;
-    }
-
-    private void createMacroBlocks() {
-        macroBlocks = new MacroBlock[macroBlockRows + 2][macroBlockCols + 2];
-        for (int y = 0; y < macroBlockRows + 2; y++) {
-            for (int x = 0; x < macroBlockCols + 2; x++) {
-                macroBlocks[y][x] = new MacroBlock(x, y, debug);
-            }
-        }
     }
 
     private void createMacroBlockMetadata() {
@@ -262,14 +252,7 @@ public final class VP8Frame {
 //        logger.log("macroBlockCols: " + macroBlockCols);
 //        logger.log("macroBlockRows: " + macroBlockRows);
 
-        windowedDecode = !debug;
-
-        if (windowedDecode) {
-            initializeWindowedDecodeState();
-        }
-        else {
-            createMacroBlocks();
-        }
+        initializeWindowedDecodeState();
 
         offset = frame.getStreamPosition();
 
@@ -424,46 +407,27 @@ public final class VP8Frame {
         int sourceXSubsampling = param != null ? param.getSourceXSubsampling() : 1;
         int sourceYSubsampling = param != null ? param.getSourceYSubsampling() : 1;
 
-        if (windowedDecode) {
-            for (int row = 0; row < macroBlockRows; row++) {
-                if (parts > 1) {
-                    tokenBoolDecoder = tokenBoolDecoders.get(ibc);
-                    tokenBoolDecoder.seek();
+        for (int row = 0; row < macroBlockRows; row++) {
+            if (parts > 1) {
+                tokenBoolDecoder = tokenBoolDecoders.get(ibc);
+                tokenBoolDecoder.seek();
 
-                    ibc++;
-                    if (ibc == parts) {
-                        ibc = 0;
-                    }
+                ibc++;
+                if (ibc == parts) {
+                    ibc = 0;
                 }
-
-                currentMacroBlockRow = createMacroBlockRow(row);
-                currentMacroBlockRowIndex = row;
-
-                decodeMacroBlockRow(row, raster, region, sourceXSubsampling, sourceYSubsampling);
-
-                previousMacroBlockRow = currentMacroBlockRow;
-                currentMacroBlockRow = null;
-                currentMacroBlockRowIndex = -1;
-
-                fireProgressUpdate(row);
             }
-        }
-        else {
-            for (int row = 0; row < macroBlockRows; row++) {
-                if (parts > 1) {
-                    tokenBoolDecoder = tokenBoolDecoders.get(ibc);
-                    tokenBoolDecoder.seek();
 
-                    ibc++;
-                    if (ibc == parts) {
-                        ibc = 0;
-                    }
-                }
+            currentMacroBlockRow = createMacroBlockRow(row);
+            currentMacroBlockRowIndex = row;
 
-                decodeMacroBlockRow(row, raster, region, sourceXSubsampling, sourceYSubsampling);
+            decodeMacroBlockRow(row, raster, region, sourceXSubsampling, sourceYSubsampling);
 
-                fireProgressUpdate(row);
-            }
+            previousMacroBlockRow = currentMacroBlockRow;
+            currentMacroBlockRow = null;
+            currentMacroBlockRowIndex = -1;
+
+            fireProgressUpdate(row);
         }
 
         return true;
@@ -474,15 +438,13 @@ public final class VP8Frame {
         final boolean filter = filterLevel != 0;
 
         MacroBlock left = null;
-        MacroBlock[] prevRow = windowedDecode ? previousMacroBlockRow : macroBlocks[mbRow];
-        MacroBlock[] currRow = windowedDecode ? currentMacroBlockRow : macroBlocks[mbRow + 1];
+        MacroBlock[] prevRow = previousMacroBlockRow;
+        MacroBlock[] currRow = currentMacroBlockRow;
 
         for (int mbCol = 0; mbCol < macroBlockCols; mbCol++) {
             MacroBlock mb = currRow[mbCol + 1];
 
-            if (windowedDecode) {
-                populateMacroBlock(mb, mbRow, mbCol);
-            }
+            populateMacroBlock(mb, mbRow, mbCol);
 
             mb.decodeMacroBlock(this);
             mb.dequantMacroBlock(this);
@@ -494,7 +456,7 @@ public final class VP8Frame {
 
             copyBlock(mb, raster, region, xSubsampling, ySubsampling);
 
-            if (windowedDecode && mb.getYMode() != Globals.B_PRED) {
+            if (mb.getYMode() != Globals.B_PRED) {
                 lastNonBPredMacroBlockByColumn[mbCol + 1] = mb;
             }
 
@@ -509,7 +471,7 @@ public final class VP8Frame {
         }
     }
 
-    public SubBlock getAboveRightSubBlock(SubBlock sb, SubBlock.Plane plane) {
+    SubBlock getAboveRightSubBlock(SubBlock sb, SubBlock.Plane plane) {
         // this might break at right edge
         SubBlock r;
         MacroBlock mb = sb.getMacroBlock();
@@ -564,7 +526,7 @@ public final class VP8Frame {
         }
     }
 
-    public SubBlock getAboveSubBlock(SubBlock sb, SubBlock.Plane plane) {
+    SubBlock getAboveSubBlock(SubBlock sb, SubBlock.Plane plane) {
         SubBlock above = sb.getAbove();
 
         if (above == null) {
@@ -573,13 +535,8 @@ public final class VP8Frame {
 
             MacroBlock mb2 = getMacroBlock(mb.getX(), mb.getY() - 1);
             //TODO: SPLIT
-            while (plane == SubBlock.Plane.Y2 && mb2.getYMode() == Globals.B_PRED) {
-                if (windowedDecode) {
-                    mb2 = lastNonBPredMacroBlockByColumn[mb.getX() + 1];
-                    break;
-                }
-
-                mb2 = getMacroBlock(mb2.getX(), mb2.getY() - 1);
+            if (plane == SubBlock.Plane.Y2 && mb2.getYMode() == Globals.B_PRED) {
+                mb2 = lastNonBPredMacroBlockByColumn[mb.getX() + 1];
             }
 
             above = mb2.getBottomSubBlock(x, sb.getPlane());
@@ -918,7 +875,7 @@ public final class VP8Frame {
         return height;
     }
 
-    public SubBlock getLeftSubBlock(SubBlock sb, SubBlock.Plane plane) {
+    SubBlock getLeftSubBlock(SubBlock sb, SubBlock.Plane plane) {
         SubBlock r = sb.getLeft();
         if (r == null) {
             MacroBlock mb = sb.getMacroBlock();
@@ -936,11 +893,7 @@ public final class VP8Frame {
         return r;
     }
 
-    public MacroBlock getMacroBlock(int mbCol, int mbRow) {
-        if (!windowedDecode) {
-            return macroBlocks[mbRow + 1][mbCol + 1];
-        }
-
+    MacroBlock getMacroBlock(int mbCol, int mbRow) {
         if (mbRow == currentMacroBlockRowIndex && currentMacroBlockRow != null) {
             return currentMacroBlockRow[mbCol + 1];
         }
@@ -1079,83 +1032,6 @@ public final class VP8Frame {
         while (++mb_row < macroBlockRows) {
             int mb_col = -1;
             while (++mb_col < macroBlockCols) {
-                if (!windowedDecode) {
-                    MacroBlock mb = getMacroBlock(mb_col, mb_row);
-
-                    if ((segmentationIsEnabled > 0) && (updateMacroBlockSegmentationMap > 0)) {
-                        int value = bc.readTree(Globals.macroBlockSegmentTree, this.macroBlockSegmentTreeProbs, 0);
-                        mb.setSegmentId(value);
-                    }
-
-                    if (modeRefLoopFilterDeltaEnabled > 0) {
-                        int level = filterLevel;
-                        level = level + refLoopFilterDeltas[0];
-                        level = (level < 0) ? 0 : Math.min(level, 63);
-                        mb.setFilterLevel(level);
-                    }
-                    else {
-                        mb.setFilterLevel(segmentQuants.getSegQuants()[mb.getSegmentId()].getFilterStrength());
-                    }
-
-                    int mb_skip_coeff = macroBlockNoCoeffSkip > 0 ? bc.readBool(prob_skip_false) : 0;
-
-                    mb.setSkipCoeff(mb_skip_coeff);
-
-                    int y_mode = readYMode(bc);
-
-                    mb.setYMode(y_mode);
-
-                    if (y_mode == Globals.B_PRED) {
-                        for (int i = 0; i < 4; i++) {
-                            for (int j = 0; j < 4; j++) {
-                                SubBlock sb = mb.getYSubBlock(j, i);
-                                SubBlock A = getAboveSubBlock(sb, SubBlock.Plane.Y1);
-                                SubBlock L = getLeftSubBlock(sb, SubBlock.Plane.Y1);
-
-                                int mode = readSubBlockMode(bc, A.getMode(), L.getMode());
-
-                                sb.setMode(mode);
-                            }
-                        }
-
-                        if (modeRefLoopFilterDeltaEnabled > 0) {
-                            int level = mb.getFilterLevel();
-                            level = level + this.modeLoopFilterDeltas[0];
-                            level = (level < 0) ? 0 : Math.min(level, 63);
-                            mb.setFilterLevel(level);
-                        }
-                    }
-                    else {
-                        int BMode;
-
-                        switch (y_mode) {
-                            case Globals.V_PRED:
-                                BMode = Globals.B_VE_PRED;
-                                break;
-                            case Globals.H_PRED:
-                                BMode = Globals.B_HE_PRED;
-                                break;
-                            case Globals.TM_PRED:
-                                BMode = Globals.B_TM_PRED;
-                                break;
-                            case Globals.DC_PRED:
-                            default:
-                                BMode = Globals.B_DC_PRED;
-                                break;
-                        }
-
-                        for (int x = 0; x < 4; x++) {
-                            for (int y = 0; y < 4; y++) {
-                                SubBlock sb = mb.getYSubBlock(x, y);
-                                sb.setMode(BMode);
-                            }
-                        }
-                    }
-                    int mode = readUvMode(bc);
-                    mb.setUvMode(mode);
-                    continue;
-                }
-
                 if ((segmentationIsEnabled > 0) && (updateMacroBlockSegmentationMap > 0)) {
                     segmentIds[mb_row][mb_col] = bc.readTree(Globals.macroBlockSegmentTree, this.macroBlockSegmentTreeProbs, 0);
                 }
