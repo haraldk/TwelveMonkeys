@@ -38,31 +38,31 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * BrightnessContrastFilterTest
  */
-public class BrightnessContrastFilterTest {
+class BrightnessContrastFilterTest {
 
     @Test
-    public void testNoChange() {
+    void testNoChange() {
         BrightnessContrastFilter filter = new BrightnessContrastFilter(0, 0);
         int argb = 0xFF123456;
         assertEquals(argb, filter.filterRGB(0, 0, argb));
     }
 
     @Test
-    public void testBrightnessMax() {
+    void testBrightnessMax() {
         BrightnessContrastFilter filter = new BrightnessContrastFilter(2.0f, 0);
         int argb = 0xFF123456;
         assertEquals(0xFFFFFFFF, filter.filterRGB(0, 0, argb));
     }
 
     @Test
-    public void testBrightnessMin() {
+    void testBrightnessMin() {
         BrightnessContrastFilter filter = new BrightnessContrastFilter(-2.0f, 0);
         int argb = 0xFF123456;
         assertEquals(0xFF000000, filter.filterRGB(0, 0, argb));
     }
 
     @Test
-    public void testContrastMax() {
+    void testContrastMax() {
         BrightnessContrastFilter filter = new BrightnessContrastFilter(0, 1.0f);
         // Max contrast should result in primary colors
 
@@ -76,7 +76,7 @@ public class BrightnessContrastFilterTest {
     }
 
     @Test
-    public void testContrastMin() {
+    void testContrastMin() {
         BrightnessContrastFilter filter = new BrightnessContrastFilter(0, -1.0f);
         // Min contrast should result in gray (127 or 128 depending on implementation, 
         // looking at the code: 127.5 * 1.0 + (i - 127) * 0 = 127.5 -> 127)
@@ -87,7 +87,7 @@ public class BrightnessContrastFilterTest {
     }
 
     @Test
-    public void testDefaultConstructor() {
+    void testDefaultConstructor() {
         BrightnessContrastFilter filter = new BrightnessContrastFilter();
         // Default is 0.3, 0.3. Should be brighter and more contrast than the original.
         int argb = 0xFF808080;
@@ -103,7 +103,7 @@ public class BrightnessContrastFilterTest {
     }
 
     @Test
-    public void testAlphaRemains() {
+    void testAlphaRemains() {
         BrightnessContrastFilter filter = new BrightnessContrastFilter(0.5f, 0.5f);
         int argb = 0x12345678;
         int filtered = filter.filterRGB(0, 0, argb);
@@ -111,7 +111,7 @@ public class BrightnessContrastFilterTest {
     }
 
     @Test
-    public void testCanFilterIndexColorModel() {
+    void testCanFilterIndexColorModel() {
         class BrightnessContrastFilterSub extends BrightnessContrastFilter {
             boolean canFilter() {
                 return canFilterIndexColorModel;

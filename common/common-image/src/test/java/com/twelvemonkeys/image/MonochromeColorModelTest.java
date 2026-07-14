@@ -38,10 +38,10 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * MonochromeColorModelTest
  */
-public class MonochromeColorModelTest {
+class MonochromeColorModelTest {
 
     @Test
-    public void testGetInstance() {
+    void testGetInstance() {
         IndexColorModel instance1 = MonochromeColorModel.getInstance();
         IndexColorModel instance2 = MonochromeColorModel.getInstance();
 
@@ -51,7 +51,7 @@ public class MonochromeColorModelTest {
     }
 
     @Test
-    public void testProperties() {
+    void testProperties() {
         IndexColorModel cm = MonochromeColorModel.getInstance();
         assertEquals(1, cm.getPixelSize());
         assertEquals(2, cm.getMapSize());
@@ -64,7 +64,7 @@ public class MonochromeColorModelTest {
     }
 
     @Test
-    public void testGetDataElements() {
+    void testGetDataElements() {
         MonochromeColorModel cm = (MonochromeColorModel) MonochromeColorModel.getInstance();
 
         // Black
@@ -118,7 +118,7 @@ public class MonochromeColorModelTest {
     }
 
     @Test
-    public void testGetDataElementsReuse() {
+    void testGetDataElementsReuse() {
         MonochromeColorModel cm = (MonochromeColorModel) MonochromeColorModel.getInstance();
         byte[] pixel = new byte[1];
         
@@ -132,14 +132,14 @@ public class MonochromeColorModelTest {
     }
 
     @Test
-    public void testGetRGB() {
+    void testGetRGB() {
         IndexColorModel cm = MonochromeColorModel.getInstance();
         assertEquals(0xFF000000, cm.getRGB(0));
         assertEquals(0xFFFFFFFF, cm.getRGB(1));
     }
 
     @Test
-    public void testGetDataElementsInvalid() {
+    void testGetDataElementsInvalid() {
         MonochromeColorModel cm = (MonochromeColorModel) MonochromeColorModel.getInstance();
         assertThrows(ClassCastException.class, () -> cm.getDataElements(0xFFFFFFFF, new int[1]));
     }

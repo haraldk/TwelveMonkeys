@@ -41,15 +41,15 @@ import java.io.InputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class ImageUtilTest {
+class ImageUtilTest {
 
     private final static String IMAGE_NAME = "/sunflower.jpg";
     private BufferedImage original;
     private BufferedImage image;
     private Image scaled;
 
-    public ImageUtilTest() throws Exception {
-        image = new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
+    ImageUtilTest() throws Exception {
+        image = createImage(10, 10);
         scaled = image.getScaledInstance(5, 5, Image.SCALE_FAST);
 
         // Read image from class path
@@ -59,25 +59,26 @@ public class ImageUtilTest {
         assertNotNull(original);
     }
 
-    /*
-    public void setUp() throws Exception {
-        image = new BufferedImage(10, 10, BufferedImage.TYPE_INT_ARGB);
-        scaled = image.getScaledInstance(5, 5, Image.SCALE_FAST);
-
-        // Read image from class path
-        InputStream is = ClassLoader.getSystemResourceAsStream(IMAGE_NAME);
-        original = ImageIO.read(is);
-
-        assertNotNull(original);
+    protected static BufferedImage createImage(final int width, final int height) {
+        return createImage(width, height, BufferedImage.TYPE_INT_ARGB);
     }
 
-    protected void tearDown() throws Exception {
-        original = null;
+    protected static BufferedImage createImage(final int width, final int height, final int type) {
+        BufferedImage image = new BufferedImage(width, height, type);
+        Graphics2D g = image.createGraphics();
+        try {
+            g.setPaint(new GradientPaint(0, 0, Color.RED, width, height, Color.BLUE));
+            g.fillRect(0, 0, width, height);
+        }
+        finally {
+            g.dispose();
+        }
+
+        return image;
     }
-    */
 
     @Test
-    public void testToBufferedImageNull() {
+    void testToBufferedImageNull() {
         BufferedImage img = null;
         boolean threwRuntimeException = false;
 
@@ -95,7 +96,7 @@ public class ImageUtilTest {
     }
 
     @Test
-    public void testToBufferedImageTypeNull() {
+    void testToBufferedImageTypeNull() {
         BufferedImage img = null;
         boolean threwRuntimeException = false;
 
@@ -113,7 +114,7 @@ public class ImageUtilTest {
     }
 
     @Test
-    public void testImageIsNotBufferedImage() {
+    void testImageIsNotBufferedImage() {
         // Should not be a buffered image
         assertFalse(
                 scaled instanceof BufferedImage,
@@ -122,7 +123,7 @@ public class ImageUtilTest {
     }
 
     @Test
-    public void testToBufferedImage() {
+    void testToBufferedImage() {
         BufferedImage sameAsImage = ImageUtil.toBuffered((RenderedImage) image);
         BufferedImage bufferedScaled = ImageUtil.toBuffered(scaled);
 
@@ -135,7 +136,7 @@ public class ImageUtilTest {
     }
 
     @Test
-    public void testToBufferedImageType() {
+    void testToBufferedImageType() {
         // Assumes image is TYPE_INT_ARGB
         BufferedImage converted = ImageUtil.toBuffered(image, BufferedImage.TYPE_BYTE_INDEXED);
         BufferedImage convertedToo = ImageUtil.toBuffered(image, BufferedImage.TYPE_BYTE_BINARY);
@@ -157,7 +158,7 @@ public class ImageUtilTest {
     }
 
     @Test
-    public void testBrightness() {
+    void testBrightness() {
         final BufferedImage original = this.original;
         assertNotNull(original);
 
@@ -237,7 +238,7 @@ public class ImageUtilTest {
     }
 
     @Test
-    public void testContrast() {
+    void testContrast() {
         final BufferedImage original = this.original;
 
         assertNotNull(original);
@@ -390,7 +391,7 @@ public class ImageUtilTest {
     }
 
     @Test
-    public void testSharpen() {
+    void testSharpen() {
         final BufferedImage original = this.original;
 
         assertNotNull(original);
@@ -456,7 +457,7 @@ public class ImageUtilTest {
     }
 
     @Test
-    public void testBlur() {
+    void testBlur() {
         final BufferedImage original = this.original;
 
         assertNotNull(original);
@@ -522,7 +523,7 @@ public class ImageUtilTest {
     }
 
     @Test
-    public void testIndexImage() {
+    void testIndexImage() {
         BufferedImage sunflower = original;
 
         assertNotNull(sunflower);

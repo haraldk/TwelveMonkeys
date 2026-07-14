@@ -57,7 +57,7 @@ import org.junit.jupiter.api.Test;
  * @author last modified by $Author: harald.kuhr$
  * @version $Id: AffineTransformOpTest.java,v 1.0 03/06/16 harald.kuhr Exp$
  */
-public class AffineTransformOpTest {
+class AffineTransformOpTest {
     // Some notes:
     // It would be nice to have the following classes from imageio-core available:
     // - ColorSpaces (for CMYK testing)
@@ -111,7 +111,7 @@ public class AffineTransformOpTest {
     private final double anchor = min(width, height) / 2.0;
 
     @Test
-    public void testGetPoint2D() {
+    void testGetPoint2D() {
         AffineTransform rotateInstance = AffineTransform.getRotateInstance(2.1);
         BufferedImageOp original = new java.awt.image.AffineTransformOp(rotateInstance, null);
         BufferedImageOp fallback = new com.twelvemonkeys.image.AffineTransformOp(rotateInstance, null);
@@ -121,7 +121,7 @@ public class AffineTransformOpTest {
     }
 
     @Test
-    public void testGetBounds2D() {
+    void testGetBounds2D() {
         AffineTransform shearInstance = AffineTransform.getShearInstance(33.77, 77.33);
         BufferedImageOp original = new java.awt.image.AffineTransformOp(shearInstance, null);
         BufferedImageOp fallback = new com.twelvemonkeys.image.AffineTransformOp(shearInstance, null);
@@ -135,7 +135,7 @@ public class AffineTransformOpTest {
     // It won't test much for now, but it will make sure we don't accidentally break things in the future.
 
     @Test
-    public void testFilterRotateBIStandard() {
+    void testFilterRotateBIStandard() {
         BufferedImageOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
         BufferedImageOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
 
@@ -154,7 +154,7 @@ public class AffineTransformOpTest {
     }
 
     @Test
-    public void testFilterRotateBICustom() {
+    void testFilterRotateBICustom() {
         BufferedImageOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
         BufferedImageOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
 
@@ -193,7 +193,7 @@ public class AffineTransformOpTest {
     // Test RasterOp variants
 
     @Test
-    public void testGetBounds2DRaster() {
+    void testGetBounds2DRaster() {
         AffineTransform shearInstance = AffineTransform.getShearInstance(33.77, 77.33);
         RasterOp original = new java.awt.image.AffineTransformOp(shearInstance, null);
         RasterOp fallback = new com.twelvemonkeys.image.AffineTransformOp(shearInstance, null);
@@ -204,7 +204,7 @@ public class AffineTransformOpTest {
     }
 
     @Test
-    public void testFilterRotateRasterStandard() {
+    void testFilterRotateRasterStandard() {
         RasterOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
         RasterOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
 
@@ -245,7 +245,7 @@ public class AffineTransformOpTest {
     }
 
     @Test
-    public void testFilterRotateRasterCustom() {
+    void testFilterRotateRasterCustom() {
         RasterOp jreOp = new java.awt.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
         RasterOp tmOp = new com.twelvemonkeys.image.AffineTransformOp(AffineTransform.getQuadrantRotateInstance(1, anchor, anchor), null);
 
