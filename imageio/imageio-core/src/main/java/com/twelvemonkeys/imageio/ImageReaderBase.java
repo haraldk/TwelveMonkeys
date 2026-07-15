@@ -70,7 +70,7 @@ public abstract class ImageReaderBase extends ImageReader {
      * set as a launch {@code -D} option. When unset, the default is half the maximum heap, capped at 512 MB and
      * floored at 64 MB.
      */
-    public static final String MAX_IMAGE_BYTES_PROPERTY = "com.twelvemonkeys.imageio.maxImageBytes";
+    private static final String MAX_IMAGE_BYTES_PROPERTY = "com.twelvemonkeys.imageio.maxImageBytes";
 
     private static final long MAX_IMAGE_BYTES = defaultMaxImageBytes();
 
@@ -261,7 +261,7 @@ public abstract class ImageReaderBase extends ImageReader {
      * {@code inputLength * maxExpansionRatio} (the largest plausible expansion of the actual input for the given
      * format). When active but the input length is unknown, the best-effort ceiling from the
      * {@value #MAX_IMAGE_BYTES_PROPERTY} system property is applied instead. A non-positive
-     * {@code maxExpansionRatio} disables the guard entirely, leaving the original behaviour unchanged.
+     * {@code maxExpansionRatio} disables the guard entirely, leaving the original behavior unchanged.
      * </p>
      *
      * @param param an {@code ImageReadParam} used to get the destination image or type, or {@code null}.
