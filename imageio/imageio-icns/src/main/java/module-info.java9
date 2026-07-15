@@ -1,0 +1,16 @@
+module com.twelvemonkeys.imageio.icns {
+    requires com.twelvemonkeys.common.io;
+    requires com.twelvemonkeys.common.lang;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive java.desktop;
+
+    exports com.twelvemonkeys.imageio.plugins.icns;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.icns.ICNSImageReaderSpi;
+    provides javax.imageio.spi.ImageWriterSpi with
+        com.twelvemonkeys.imageio.plugins.icns.ICNSImageWriterSpi;
+
+}
+

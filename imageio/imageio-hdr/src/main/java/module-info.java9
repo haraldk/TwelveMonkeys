@@ -1,0 +1,14 @@
+module com.twelvemonkeys.imageio.hdr {
+    requires java.xml;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive java.desktop;
+
+    exports com.twelvemonkeys.imageio.plugins.hdr;
+    exports com.twelvemonkeys.imageio.plugins.hdr.tonemap;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.hdr.HDRImageReaderSpi;
+
+}
+

@@ -1,0 +1,16 @@
+module com.twelvemonkeys.imageio.tga {
+    requires com.twelvemonkeys.common.io;
+    requires com.twelvemonkeys.common.lang;
+    requires java.xml;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive java.desktop;
+
+    exports com.twelvemonkeys.imageio.plugins.tga;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.tga.TGAImageReaderSpi;
+    provides javax.imageio.spi.ImageWriterSpi with
+        com.twelvemonkeys.imageio.plugins.tga.TGAImageWriterSpi;
+
+}
