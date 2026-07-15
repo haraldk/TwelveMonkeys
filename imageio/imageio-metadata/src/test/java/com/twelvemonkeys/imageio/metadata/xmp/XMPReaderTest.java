@@ -495,6 +495,22 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
     }
 
     @Test
+    public void testDoctypeDisallowed() throws Exception {
+        // XMP with a DOCTYPE should be rejected now that disallow-doctype-decl is enabled
+        String xmlWithDoctype = resourceAsString("/xmp/xmp-jpeg-xxe.xml");
+
+        IOException exception = assertThrows(IOException.class, () -> {
+            try (DirectImageInputStream input = new DirectImageInputStream(new ByteArrayInputStream(xmlWithDoctype.getBytes(StandardCharsets.UTF_8)))) {
+                createReader().read(input);
+            }
+        });
+
+        // Verify the exception is related to DOCTYPE being disallowed
+        assertTrue(exception.getMessage().contains("DOCTYPE"),
+                "Expected exception message to contain 'DOCTYPE', but was: " + exception.getMessage());
+    }
+
+    @Test
     public void testNoExternalRequest() throws Exception {
         assertTimeoutPreemptively(Duration.ofMillis(2500L), () -> {
             String maliciousXML = resourceAsString("/xmp/xmp-jpeg-xxe.xml");
@@ -505,8 +521,14 @@ public class XMPReaderTest extends MetadataReaderAbstractTest {
                 try (DirectImageInputStream input = new DirectImageInputStream(new ByteArrayInputStream(dynamicXML.getBytes(StandardCharsets.UTF_8)));) {
                     createReader().read(input);
                 } catch (IOException ioe) {
+                    // With disallow-doctype-decl enabled, the parser rejects the DOCTYPE outright
+                    // before attempting any external requests — this is the expected behavior
+                    if (ioe.getMessage().contains("DOCTYPE")) {
+                        return; // Good: DOCTYPE was rejected
+                    }
+
                     if (ioe.getMessage().contains("501")) {
-                        throw new AssertionError("Reading should not cause external requests", ioe);
+                        fail("Reading should not cause external requests", ioe);
                     }
 
                     // Any other exception is a bug (but might happen if the parser does not support certain features)
