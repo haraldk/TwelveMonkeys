@@ -73,7 +73,19 @@ public class SVGImageReaderSpiTest {
         "<ns0:svg>", // namespace prefix undefined
         "<ns0:svg xmlns:ns0=\"foo\">", // not the official svg namespace
         "<ns0:svg xmlns:ns1=\"http://www.w3.org/2000/svg\">", // mismatching prefix
+        // Prefix is used to build a regex, a crafted one must not cause catastrophic backtracking
+        "<(a{0,100}){0,100}:svg xmlns:" + repeat("a", 900) + "=>",
+        "<(a*){50}:svg xmlns:" + repeat("a", 900) + "=>",
+        "<((((a*)*)*)*)*:svg xmlns:" + repeat("a", 900) + "=>",
     };
+
+    private static String repeat(String s, int count) {
+        StringBuilder builder = new StringBuilder(s.length() * count);
+        for (int i = 0; i < count; i++) {
+            builder.append(s);
+        }
+        return builder.toString();
+    }
 
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());
