@@ -30,8 +30,18 @@
 
 package com.twelvemonkeys.io;
 
+import org.junit.jupiter.api.Test;
+
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.attribute.PosixFilePermission;
+import java.util.EnumSet;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 /**
  * FileCacheSeekableStreamTestCase
@@ -47,6 +57,41 @@ public class FileCacheSeekableStreamTest extends SeekableInputStreamAbstractTest
         }
         catch (IOException e) {
             throw new RuntimeException(e);
+        }
+    }
+
+    @Test
+    public void testTempFileNotReadableByOthers() throws IOException {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"));
+
+        File file = FileCacheSeekableStream.createTempFile("iocache", null);
+
+        try {
+            assertEquals(EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE),
+                    Files.getPosixFilePermissions(file.toPath()));
+        }
+        finally {
+            //noinspection ResultOfMethodCallIgnored
+            file.delete();
+        }
+    }
+
+    @Test
+    public void testTempFileInDirNotReadableByOthers() throws IOException {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"));
+
+        File dir = Files.createTempDirectory("iocache").toFile();
+        File file = FileCacheSeekableStream.createTempFile("iocache", dir);
+
+        try {
+            assertEquals(EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE),
+                    Files.getPosixFilePermissions(file.toPath()));
+        }
+        finally {
+            //noinspection ResultOfMethodCallIgnored
+            file.delete();
+            //noinspection ResultOfMethodCallIgnored
+            dir.delete();
         }
     }
 }
