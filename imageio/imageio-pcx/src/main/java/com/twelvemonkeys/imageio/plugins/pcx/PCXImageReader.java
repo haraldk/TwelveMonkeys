@@ -199,6 +199,13 @@ public final class PCXImageReader extends ImageReaderBase {
 
         if (rawType.getColorModel() instanceof IndexColorModel && header.getChannels() > 1) {
             // Bit planes!
+            // The plane buffer and BitRotator both assume at most 8 planes, but getChannels() is an
+            // unsigned byte from the header, so a value of 9-16 (still a valid IndexColorModel) would
+            // make the readRowByte fill length exceed planeData and overrun the buffer.
+            if (header.getChannels() > 8) {
+                throw new IIOException("Unsupported number of bit planes for PCX: " + header.getChannels());
+            }
+
             // Create raster from a default 8 bit layout
             int planeWidth = header.getBytesPerLine();
             int rowWidth = planeWidth * 8; // bitsPerPixel == 1
