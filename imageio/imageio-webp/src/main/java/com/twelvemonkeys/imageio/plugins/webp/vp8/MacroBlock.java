@@ -577,11 +577,12 @@ final class MacroBlock {
             case Globals.TM_PRED:
                 // TODO:
                 // System.out.println("UV TM_PRED MB");
+                boolean aboveRowAvailableUV = this.y > 0;
                 MacroBlock ALMb = frame.getMacroBlock(x - 1, y - 1);
                 SubBlock ALUSb = ALMb.getUSubBlock(1, 1);
-                int alu = ALUSb.getRecon()[3][3];
+                int alu = ALUSb.getReconAboveLeft(aboveRowAvailableUV)[3][3];
                 SubBlock ALVSb = ALMb.getVSubBlock(1, 1);
-                int alv = ALVSb.getRecon()[3][3];
+                int alv = ALVSb.getReconAboveLeft(aboveRowAvailableUV)[3][3];
 
                 aboveUSb = new SubBlock[2];
                 leftUSb = new SubBlock[2];
@@ -599,13 +600,13 @@ final class MacroBlock {
                         for (int d = 0; d < 2; d++) {
                             for (int c = 0; c < 4; c++) {
 
-                                int upred = leftUSb[b].getRecon()[3][a]
-                                        + aboveUSb[d].getRecon()[c][3] - alu;
+                                int upred = leftUSb[b].getReconLeft()[3][a]
+                                        + aboveUSb[d].getReconAbove()[c][3] - alu;
                                 upred = Globals.clamp(upred, 255);
                                 uSubBlocks[d][b].setPixel(c, a, upred);
 
-                                int vpred = leftVSb[b].getRecon()[3][a]
-                                        + aboveVSb[d].getRecon()[c][3] - alv;
+                                int vpred = leftVSb[b].getReconLeft()[3][a]
+                                        + aboveVSb[d].getReconAbove()[c][3] - alv;
                                 vpred = Globals.clamp(vpred, 255);
                                 vSubBlocks[d][b].setPixel(c, a, vpred);
                             }
@@ -740,9 +741,10 @@ final class MacroBlock {
                 break;
             case Globals.TM_PRED:
                 // System.out.println("TM_PRED MB");
+                boolean aboveRowAvailableY = this.y > 0;
                 MacroBlock ALMb = frame.getMacroBlock(x - 1, y - 1);
                 SubBlock ALSb = ALMb.getYSubBlock(3, 3);
-                int al = ALSb.getRecon()[3][3];
+                int al = ALSb.getReconAboveLeft(aboveRowAvailableY)[3][3];
 
                 aboveYSb = new SubBlock[4];
                 leftYSb = new SubBlock[4];
@@ -759,8 +761,8 @@ final class MacroBlock {
 
                         for (int d = 0; d < 4; d++) {
                             for (int c = 0; c < 4; c++) {
-                                int pred = leftYSb[b].getRecon()[3][a]
-                                        + aboveYSb[d].getRecon()[c][3] - al;
+                                int pred = leftYSb[b].getReconLeft()[3][a]
+                                        + aboveYSb[d].getReconAbove()[c][3] - al;
 
                                 ySubBlocks[d][b].setPixel(c, a,
                                         Globals.clamp(pred, 255));

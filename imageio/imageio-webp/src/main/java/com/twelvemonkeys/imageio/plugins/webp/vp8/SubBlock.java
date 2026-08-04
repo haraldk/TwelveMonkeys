@@ -303,6 +303,48 @@ final class SubBlock {
     }
 
     /**
+     * The unfiltered reconstruction, for use as the *above* prediction context.
+     * Outside the frame the above row reads as 127 (RFC 6386, 12.2).
+     */
+    public int[][] getReconAbove() {
+        if (recon != null) {
+            return recon;
+        }
+
+        return borderSamples(false);
+    }
+
+    /**
+     * The unfiltered reconstruction, for use as the *left* prediction context.
+     * Outside the frame the left column reads as 129 (RFC 6386, 12.2).
+     */
+    public int[][] getReconLeft() {
+        if (recon != null) {
+            return recon;
+        }
+
+        return borderSamples(true);
+    }
+
+    /**
+     * The unfiltered reconstruction, for use as the *above-left* prediction
+     * context. Outside the frame this reads as 127 when the above row is also
+     * outside the frame, and as 129 otherwise -- matching libwebp, which fills
+     * the row above the first macroblock row (including its left-hand corner
+     * sample) with 127, and the column left of the first macroblock column
+     * (including its top corner sample) with 129.
+     *
+     * @param aboveRowAvailable whether the macroblock row above is inside the frame
+     */
+    public int[][] getReconAboveLeft(boolean aboveRowAvailable) {
+        if (recon != null) {
+            return recon;
+        }
+
+        return borderSamples(aboveRowAvailable);
+    }
+
+    /**
      * As {@link #getMacroBlockPredict(int)}, but returning the unfiltered
      * reconstruction. Use this when reading a *neighbouring* macroblock as
      * prediction context.
