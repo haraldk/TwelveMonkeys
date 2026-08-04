@@ -41,6 +41,18 @@ final class SubBlock {
     private final SubBlock above;
 
     private int[][] dest;
+    /**
+     * Snapshot of {@link #dest} as it was immediately after reconstruction, i.e.
+     * *before* the loop filter modified it.
+     * <p>
+     * RFC 6386 applies the loop filter to the entire frame only after every
+     * macroblock has been reconstructed, so intra prediction must always see
+     * unfiltered neighbour samples. As this decoder interleaves reconstruction
+     * and filtering macroblock by macroblock (to avoid buffering the whole
+     * frame), the unfiltered samples have to be retained separately -- the same
+     * approach libwebp takes with its saved top/left sample rows.
+     */
+    private int[][] recon;
     private int[][] diff;
     private boolean hasNoZeroToken;
     private final SubBlock left;
@@ -271,6 +283,80 @@ final class SubBlock {
         return macroBlock;
     }
 
+    /**
+     * The unfiltered reconstruction of this sub block, for use as intra
+     * prediction context by neighbouring blocks. See {@link #recon}.
+     */
+    public int[][] getRecon() {
+        if (recon != null) {
+            return recon;
+        }
+
+        return new int[4][4];
+    }
+
+    /**
+     * Whether this sub block has been reconstructed.
+     */
+    public boolean hasRecon() {
+        return recon != null;
+    }
+
+    /**
+     * As {@link #getMacroBlockPredict(int)}, but returning the unfiltered
+     * reconstruction. Use this when reading a *neighbouring* macroblock as
+     * prediction context.
+     */
+    public int[][] getMacroBlockReconPredict(int intra_mode) {
+        if (recon != null) {
+            return recon;
+        }
+
+        return borderSamples(intra_mode == Globals.H_PRED);
+    }
+
+    /**
+     * As {@link #getPredict(int, boolean)}, but returning the unfiltered
+     * reconstruction. Use this when reading a *neighbouring* sub block as
+     * prediction context.
+     */
+    public int[][] getReconPredict(int intra_bmode, boolean left) {
+        if (recon != null) {
+            return recon;
+        }
+        if (predict != null) {
+            return predict;
+        }
+
+        return borderSamples(left && isLeftBorder129(intra_bmode));
+    }
+
+    private static boolean isLeftBorder129(int intra_bmode) {
+        return intra_bmode == Globals.B_TM_PRED
+                || intra_bmode == Globals.B_DC_PRED
+                || intra_bmode == Globals.B_VE_PRED
+                || intra_bmode == Globals.B_HE_PRED
+                || intra_bmode == Globals.B_VR_PRED
+                || intra_bmode == Globals.B_RD_PRED
+                || intra_bmode == Globals.B_HD_PRED;
+    }
+
+    /**
+     * Off-frame border samples: 129 to the left of the frame, 127 above it.
+     */
+    private static int[][] borderSamples(boolean leftOfFrame) {
+        int rv = leftOfFrame ? 129 : 127;
+
+        int[][] r = new int[4][4];
+        for (int j = 0; j < 4; j++) {
+            for (int i = 0; i < 4; i++) {
+                r[i][j] = rv;
+            }
+        }
+
+        return r;
+    }
+
     public int[][] getMacroBlockPredict(int intra_mode) {
         if (dest != null) {
             return dest;
@@ -355,36 +441,36 @@ final class SubBlock {
         int[] above = new int[4];
         int[] left = new int[4];
 
-        above[0] = aboveSb.getPredict(sb.getMode(), false)[0][3];
-        above[1] = aboveSb.getPredict(sb.getMode(), false)[1][3];
-        above[2] = aboveSb.getPredict(sb.getMode(), false)[2][3];
-        above[3] = aboveSb.getPredict(sb.getMode(), false)[3][3];
-        left[0] = leftSb.getPredict(sb.getMode(), true)[3][0];
-        left[1] = leftSb.getPredict(sb.getMode(), true)[3][1];
-        left[2] = leftSb.getPredict(sb.getMode(), true)[3][2];
-        left[3] = leftSb.getPredict(sb.getMode(), true)[3][3];
+        above[0] = aboveSb.getReconPredict(sb.getMode(), false)[0][3];
+        above[1] = aboveSb.getReconPredict(sb.getMode(), false)[1][3];
+        above[2] = aboveSb.getReconPredict(sb.getMode(), false)[2][3];
+        above[3] = aboveSb.getReconPredict(sb.getMode(), false)[3][3];
+        left[0] = leftSb.getReconPredict(sb.getMode(), true)[3][0];
+        left[1] = leftSb.getReconPredict(sb.getMode(), true)[3][1];
+        left[2] = leftSb.getReconPredict(sb.getMode(), true)[3][2];
+        left[3] = leftSb.getReconPredict(sb.getMode(), true)[3][3];
         SubBlock AL = frame.getLeftSubBlock(aboveSb, sb.getPlane());
 
         // for above left if left and above is null use left (129?) else use
         // above (127?)
         int al;
-        if (!leftSb.isDest() && !aboveSb.isDest()) {
+        if (!leftSb.hasRecon() && !aboveSb.hasRecon()) {
 
-            al = AL.getPredict(sb.getMode(), false)[3][3];
+            al = AL.getReconPredict(sb.getMode(), false)[3][3];
         }
-        else if (!aboveSb.isDest()) {
+        else if (!aboveSb.hasRecon()) {
 
-            al = AL.getPredict(sb.getMode(), false)[3][3];
+            al = AL.getReconPredict(sb.getMode(), false)[3][3];
         }
         else {
-            al = AL.getPredict(sb.getMode(), true)[3][3];
+            al = AL.getReconPredict(sb.getMode(), true)[3][3];
         }
         SubBlock AR = frame.getAboveRightSubBlock(sb, sb.plane);
         int[] ar = new int[4];
-        ar[0] = AR.getPredict(sb.getMode(), false)[0][3];
-        ar[1] = AR.getPredict(sb.getMode(), false)[1][3];
-        ar[2] = AR.getPredict(sb.getMode(), false)[2][3];
-        ar[3] = AR.getPredict(sb.getMode(), false)[3][3];
+        ar[0] = AR.getReconPredict(sb.getMode(), false)[0][3];
+        ar[1] = AR.getReconPredict(sb.getMode(), false)[1][3];
+        ar[2] = AR.getReconPredict(sb.getMode(), false)[2][3];
+        ar[3] = AR.getReconPredict(sb.getMode(), false)[3][3];
         int[][] p = new int[4][4];
         int[] pp;
         switch (sb.getMode()) {
@@ -613,6 +699,14 @@ final class SubBlock {
 
     public void setDest(int[][] dest) {
         this.dest = dest;
+
+        // Keep an unfiltered copy for intra prediction, see #recon.
+        this.recon = new int[][] {
+                {dest[0][0], dest[0][1], dest[0][2], dest[0][3]},
+                {dest[1][0], dest[1][1], dest[1][2], dest[1][3]},
+                {dest[2][0], dest[2][1], dest[2][2], dest[2][3]},
+                {dest[3][0], dest[3][1], dest[3][2], dest[3][3]},
+        };
     }
 
     public void setDiff(int[][] diff) {

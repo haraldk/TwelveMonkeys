@@ -499,7 +499,7 @@ public final class VP8Frame {
                                 dest[a][b] = 127;
                             }
                             else {
-                                dest[a][b] = this.getMacroBlock(mb.getX(), mb.getY() - 1).getSubBlock(SubBlock.Plane.Y1, 3, 3).getDest()[3][3];
+                                dest[a][b] = this.getMacroBlock(mb.getX(), mb.getY() - 1).getSubBlock(SubBlock.Plane.Y1, 3, 3).getRecon()[3][3];
                             }
                         }
                     }
