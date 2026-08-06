@@ -349,12 +349,12 @@ final class SubBlock {
      * reconstruction. Use this when reading a *neighbouring* macroblock as
      * prediction context.
      */
-    public int[][] getMacroBlockReconPredict(int intra_mode) {
+    public int[][] getMacroBlockReconPredict(int intraMode) {
         if (recon != null) {
             return recon;
         }
 
-        return borderSamples(intra_mode == Globals.H_PRED);
+        return borderSamples(intraMode == Globals.H_PRED);
     }
 
     /**
@@ -362,7 +362,7 @@ final class SubBlock {
      * reconstruction. Use this when reading a *neighbouring* sub block as
      * prediction context.
      */
-    public int[][] getReconPredict(int intra_bmode, boolean left) {
+    public int[][] getReconPredict(int intraBMode, boolean left) {
         if (recon != null) {
             return recon;
         }
@@ -370,17 +370,17 @@ final class SubBlock {
             return predict;
         }
 
-        return borderSamples(left && isLeftBorder129(intra_bmode));
+        return borderSamples(left && isLeftBorder129(intraBMode));
     }
 
-    private static boolean isLeftBorder129(int intra_bmode) {
-        return intra_bmode == Globals.B_TM_PRED
-                || intra_bmode == Globals.B_DC_PRED
-                || intra_bmode == Globals.B_VE_PRED
-                || intra_bmode == Globals.B_HE_PRED
-                || intra_bmode == Globals.B_VR_PRED
-                || intra_bmode == Globals.B_RD_PRED
-                || intra_bmode == Globals.B_HD_PRED;
+    private static boolean isLeftBorder129(int intraBMode) {
+        return intraBMode == Globals.B_TM_PRED
+                || intraBMode == Globals.B_DC_PRED
+                || intraBMode == Globals.B_VE_PRED
+                || intraBMode == Globals.B_HE_PRED
+                || intraBMode == Globals.B_VR_PRED
+                || intraBMode == Globals.B_RD_PRED
+                || intraBMode == Globals.B_HD_PRED;
     }
 
     /**
