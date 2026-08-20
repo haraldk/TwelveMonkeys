@@ -41,6 +41,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.util.Locale;
 import java.util.function.Predicate;
+import java.util.regex.Pattern;
 
 import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
 
@@ -166,8 +167,12 @@ public final class SVGImageReaderSpi extends ImageReaderSpiBase {
                         readBuffer(input, attrBuf, output -> output.size() < MAX_ATTR_SCAN, bb -> bb == '>');
 
                         // If the tag contains the SVG namespace, it's SVG.
+                        // The prefix comes straight from the input, so quote it to keep it a
+                        // literal, otherwise a crafted prefix is compiled as a regex and can
+                        // hang canDecodeInput with catastrophic backtracking
+                        String prefix = Pattern.quote(name.split(":")[0]);
                         if (attrBuf.toString("US-ASCII").matches(
-                            ".*xmlns:" + name.split(":")[0] + "\\s*=\\s*\"http://www.w3.org/2000/svg\".*")) {
+                            ".*xmlns:" + prefix + "\\s*=\\s*\"http://www.w3.org/2000/svg\".*")) {
                             return true;
                         }
                     }
