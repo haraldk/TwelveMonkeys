@@ -219,6 +219,7 @@ final class RGBE {
         if ((scanline_width < 8) || (scanline_width > 0x7fff)) {
             // run length encoding is not allowed so read flat
             readPixelsRaw(in, data, offset, scanline_width * num_scanlines);
+            return;
         }
 
         // read in each successive scanline
@@ -232,6 +233,7 @@ final class RGBE {
                 data[offset++] = rgbe[2];
                 data[offset++] = rgbe[3];
                 readPixelsRaw(in, data, offset, scanline_width * num_scanlines - 1);
+                return;
             }
 
             if ((((rgbe[2] & 0xFF) << 8) | (rgbe[3] & 0xFF)) != scanline_width) {
