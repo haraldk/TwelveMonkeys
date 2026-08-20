@@ -456,8 +456,8 @@ final class MacroBlock {
                             SubBlock usb = aboveMb.getUSubBlock(j, 1);
                             SubBlock vsb = aboveMb.getVSubBlock(j, 1);
                             for (int i = 0; i < 4; i++) {
-                                Uaverage += usb.getDest()[i][3];
-                                Vaverage += vsb.getDest()[i][3];
+                                Uaverage += usb.getRecon()[i][3];
+                                Vaverage += vsb.getRecon()[i][3];
                             }
                         }
                     }
@@ -467,8 +467,8 @@ final class MacroBlock {
                             SubBlock usb = leftMb.getUSubBlock(1, j);
                             SubBlock vsb = leftMb.getVSubBlock(1, j);
                             for (int i = 0; i < 4; i++) {
-                                Uaverage += usb.getDest()[3][i];
-                                Vaverage += vsb.getDest()[3][i];
+                                Uaverage += usb.getRecon()[3][i];
+                                Vaverage += vsb.getRecon()[3][i];
                             }
                         }
                     }
@@ -532,9 +532,9 @@ final class MacroBlock {
                         for (int j = 0; j < 4; j++) {
                             for (int i = 0; i < 4; i++) {
                                 ublock[j][i] = aboveUSb[y]
-                                        .getMacroBlockPredict(Globals.V_PRED)[j][3];
+                                        .getMacroBlockReconPredict(Globals.V_PRED)[j][3];
                                 vblock[j][i] = aboveVSb[y]
-                                        .getMacroBlockPredict(Globals.V_PRED)[j][3];
+                                        .getMacroBlockReconPredict(Globals.V_PRED)[j][3];
                             }
                         }
                         usb.setPredict(ublock);
@@ -563,9 +563,9 @@ final class MacroBlock {
                         for (int j = 0; j < 4; j++) {
                             for (int i = 0; i < 4; i++) {
                                 ublock[i][j] = leftUSb[y]
-                                        .getMacroBlockPredict(Globals.H_PRED)[3][j];
+                                        .getMacroBlockReconPredict(Globals.H_PRED)[3][j];
                                 vblock[i][j] = leftVSb[y]
-                                        .getMacroBlockPredict(Globals.H_PRED)[3][j];
+                                        .getMacroBlockReconPredict(Globals.H_PRED)[3][j];
                             }
                         }
                         usb.setPredict(ublock);
@@ -577,11 +577,12 @@ final class MacroBlock {
             case Globals.TM_PRED:
                 // TODO:
                 // System.out.println("UV TM_PRED MB");
+                boolean aboveRowAvailableUV = this.y > 0;
                 MacroBlock ALMb = frame.getMacroBlock(x - 1, y - 1);
                 SubBlock ALUSb = ALMb.getUSubBlock(1, 1);
-                int alu = ALUSb.getDest()[3][3];
+                int alu = ALUSb.getReconAboveLeft(aboveRowAvailableUV)[3][3];
                 SubBlock ALVSb = ALMb.getVSubBlock(1, 1);
-                int alv = ALVSb.getDest()[3][3];
+                int alv = ALVSb.getReconAboveLeft(aboveRowAvailableUV)[3][3];
 
                 aboveUSb = new SubBlock[2];
                 leftUSb = new SubBlock[2];
@@ -599,13 +600,13 @@ final class MacroBlock {
                         for (int d = 0; d < 2; d++) {
                             for (int c = 0; c < 4; c++) {
 
-                                int upred = leftUSb[b].getDest()[3][a]
-                                        + aboveUSb[d].getDest()[c][3] - alu;
+                                int upred = leftUSb[b].getReconLeft()[3][a]
+                                        + aboveUSb[d].getReconAbove()[c][3] - alu;
                                 upred = Globals.clamp(upred, 255);
                                 uSubBlocks[d][b].setPixel(c, a, upred);
 
-                                int vpred = leftVSb[b].getDest()[3][a]
-                                        + aboveVSb[d].getDest()[c][3] - alv;
+                                int vpred = leftVSb[b].getReconLeft()[3][a]
+                                        + aboveVSb[d].getReconAbove()[c][3] - alv;
                                 vpred = Globals.clamp(vpred, 255);
                                 vSubBlocks[d][b].setPixel(c, a, vpred);
                             }
@@ -644,7 +645,7 @@ final class MacroBlock {
                         for (int j = 0; j < 4; j++) {
                             SubBlock sb = aboveMb.getYSubBlock(j, 3);
                             for (int i = 0; i < 4; i++) {
-                                average += sb.getDest()[i][3];
+                                average += sb.getRecon()[i][3];
                             }
                         }
                     }
@@ -653,7 +654,7 @@ final class MacroBlock {
                         for (int j = 0; j < 4; j++) {
                             SubBlock sb = leftMb.getYSubBlock(3, j);
                             for (int i = 0; i < 4; i++) {
-                                average += sb.getDest()[3][i];
+                                average += sb.getRecon()[3][i];
                             }
                         }
                     }
@@ -700,7 +701,7 @@ final class MacroBlock {
                         int[][] block = new int[4][4];
                         for (int j = 0; j < 4; j++) {
                             for (int i = 0; i < 4; i++) {
-                                block[i][j] = aboveYSb[x].getPredict(
+                                block[i][j] = aboveYSb[x].getReconPredict(
                                         Globals.B_VE_PRED, false)[i][3];
                             }
                         }
@@ -724,7 +725,7 @@ final class MacroBlock {
                         int[][] block = new int[4][4];
                         for (int j = 0; j < 4; j++) {
                             for (int i = 0; i < 4; i++) {
-                                block[i][j] = leftYSb[y].getPredict(
+                                block[i][j] = leftYSb[y].getReconPredict(
                                         Globals.B_DC_PRED, true)[3][j];
                             }
                         }
@@ -740,9 +741,10 @@ final class MacroBlock {
                 break;
             case Globals.TM_PRED:
                 // System.out.println("TM_PRED MB");
+                boolean aboveRowAvailableY = this.y > 0;
                 MacroBlock ALMb = frame.getMacroBlock(x - 1, y - 1);
                 SubBlock ALSb = ALMb.getYSubBlock(3, 3);
-                int al = ALSb.getDest()[3][3];
+                int al = ALSb.getReconAboveLeft(aboveRowAvailableY)[3][3];
 
                 aboveYSb = new SubBlock[4];
                 leftYSb = new SubBlock[4];
@@ -759,8 +761,8 @@ final class MacroBlock {
 
                         for (int d = 0; d < 4; d++) {
                             for (int c = 0; c < 4; c++) {
-                                int pred = leftYSb[b].getDest()[3][a]
-                                        + aboveYSb[d].getDest()[c][3] - al;
+                                int pred = leftYSb[b].getReconLeft()[3][a]
+                                        + aboveYSb[d].getReconAbove()[c][3] - al;
 
                                 ySubBlocks[d][b].setPixel(c, a,
                                         Globals.clamp(pred, 255));
