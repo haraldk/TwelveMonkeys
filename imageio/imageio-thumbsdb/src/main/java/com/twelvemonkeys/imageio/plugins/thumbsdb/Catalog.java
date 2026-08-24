@@ -230,7 +230,7 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
 
             item.mLastModified = CompoundDocument.toJavaTimeInMillis(pDataInput.readLong());
 
-            StringBuilder name = new StringBuilder();
+            StringBuilder name = new StringBuilder(256);
             char ch;
             while ((ch = pDataInput.readChar()) != 0) {
                 name.append(ch);
