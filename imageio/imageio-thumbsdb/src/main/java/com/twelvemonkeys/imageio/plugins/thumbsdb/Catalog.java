@@ -34,6 +34,7 @@ import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.lang.StringUtil;
 
+import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.IOException;
 import java.io.InputStream;
@@ -91,7 +92,11 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
         for (int i = 0; i < header.getThumbnailCount(); i++) {
             CatalogItem item = CatalogItem.read(pDataInput);
             //System.out.println("item: " + item);
-            items[item.getItemId() - 1] = item;
+            int index = item.getItemId() - 1;
+            if (index < 0 || index >= items.length) {
+                throw new IIOException("Thumbs.db catalog item id out of range: " + item.getItemId());
+            }
+            items[index] = item;
         }
 
         return new Catalog(header, items);
@@ -225,15 +230,13 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
 
             item.mLastModified = CompoundDocument.toJavaTimeInMillis(pDataInput.readLong());
 
-            char[] chars = new char[256];
+            StringBuilder name = new StringBuilder();
             char ch;
-            int len = 0;
             while ((ch = pDataInput.readChar()) != 0) {
-                chars[len++] = ch;
+                name.append(ch);
             }
 
-            String name = new String(chars, 0, len);
-            item.mFilename = StringUtil.getLastElement(name, "\\");
+            item.mFilename = StringUtil.getLastElement(name.toString(), "\\");
 
             item.mReserved2 = pDataInput.readShort();
             return item;
