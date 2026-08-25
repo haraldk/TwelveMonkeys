@@ -217,28 +217,37 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
     }
 
     public static final class CatalogItem {
-        int mReserved1;
+        int mSize;
         int mItemId; // Reversed stream name
         String mFilename;
-        short mReserved2;
         private long mLastModified;
 
         private static CatalogItem read(final DataInput pDataInput) throws IOException {
             CatalogItem item = new CatalogItem();
-            item.mReserved1 = pDataInput.readInt();
+            item.mSize = pDataInput.readInt();
             item.mItemId = pDataInput.readInt();
 
             item.mLastModified = CompoundDocument.toJavaTimeInMillis(pDataInput.readLong());
 
-            StringBuilder name = new StringBuilder(256);
-            char ch;
-            while ((ch = pDataInput.readChar()) != 0) {
+            // The size covers the entire record. The fields read above are a fixed 16 bytes,
+            // the remainder holds the NUL-terminated UTF-16LE file name plus trailing padding.
+            int nameSize = item.mSize - 16;
+            if (nameSize < 0) {
+                throw new IIOException("Thumbs.db catalog item size too small: " + item.mSize);
+            }
+
+            StringBuilder name = new StringBuilder(nameSize / 2);
+            for (int read = 0; read + 2 <= nameSize; read += 2) {
+                char ch = pDataInput.readChar();
+                if (ch == 0) {
+                    pDataInput.skipBytes(nameSize - read - 2);
+                    break;
+                }
                 name.append(ch);
             }
 
             item.mFilename = StringUtil.getLastElement(name.toString(), "\\");
 
-            item.mReserved2 = pDataInput.readShort();
             return item;
         }
 
@@ -257,8 +266,8 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
         @Override
         public String toString() {
             return String.format(
-                    "%s: %d itemId: %d lastModified: %s fileName: %s %s",
-                    getClass().getSimpleName(), mReserved1, mItemId, new Date(mLastModified), mFilename, mReserved2
+                    "%s: size: %d itemId: %d lastModified: %s fileName: %s",
+                    getClass().getSimpleName(), mSize, mItemId, new Date(mLastModified), mFilename
             );
         }
     }

@@ -58,14 +58,16 @@ public class CatalogTest {
     }
 
     private static void writeItem(final LittleEndianDataOutputStream out, final int itemId, final String name) throws IOException {
-        out.writeInt(0); // reserved1
+        // 16 byte fixed part (size + itemId + timestamp) + UTF-16LE name + NUL + 2 byte padding
+        int size = 16 + (name.length() + 1) * 2 + 2;
+        out.writeInt(size);
         out.writeInt(itemId);
         out.writeLong(0L); // last modified
         for (int i = 0; i < name.length(); i++) {
             out.writeChar(name.charAt(i));
         }
         out.writeChar(0); // NUL terminator
-        out.writeShort(0); // reserved2
+        out.writeShort(0); // padding
     }
 
     private static DataInput catalogWith(final int itemId, final String name) throws IOException {
@@ -88,7 +90,7 @@ public class CatalogTest {
 
     @Test
     public void testFilenameLongerThanBuffer() throws IOException {
-        // Filename length is taken from the stream and was filled into a fixed 256 char buffer
+        // Filename length is taken from the stream and was filled into a fixed 256 char buffer before
         StringBuilder name = new StringBuilder();
         for (int i = 0; i < 400; i++) {
             name.append('a');
