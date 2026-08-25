@@ -30,14 +30,21 @@
 
 package com.twelvemonkeys.imageio.plugins.thumbsdb;
 
+import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.LittleEndianDataOutputStream;
+import com.twelvemonkeys.io.ole2.CompoundDocument;
+import com.twelvemonkeys.io.ole2.Entry;
 
 import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
 import java.io.IOException;
+import java.nio.ByteOrder;
 
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
@@ -50,7 +57,7 @@ import static org.junit.jupiter.api.Assertions.*;
 public class CatalogTest {
 
     private static void writeHeader(final LittleEndianDataOutputStream out, final int thumbCount) throws IOException {
-        out.writeShort(0); // reserved1
+        out.writeShort(16); // length? always 16 for real data, matches the size
         out.writeShort(0); // reserved2
         out.writeInt(thumbCount);
         out.writeInt(96); // max width
@@ -71,17 +78,17 @@ public class CatalogTest {
     }
 
     private static DataInput catalogWith(final int itemId, final String name) throws IOException {
-        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        FastByteArrayOutputStream bytes = new FastByteArrayOutputStream(1024);
         LittleEndianDataOutputStream out = new LittleEndianDataOutputStream(bytes);
         writeHeader(out, 1);
         writeItem(out, itemId, name);
         out.flush();
 
-        return new LittleEndianDataInputStream(new ByteArrayInputStream(bytes.toByteArray()));
+        return new LittleEndianDataInputStream(bytes.createInputStream());
     }
 
     @Test
-    public void testReadValidItem() throws IOException {
+    void testReadValidItem() throws IOException {
         Catalog catalog = Catalog.read(catalogWith(1, "3\\folder\\image.jpg"));
 
         assertEquals(1, catalog.getThumbnailCount());
@@ -89,26 +96,49 @@ public class CatalogTest {
     }
 
     @Test
-    public void testFilenameLongerThanBuffer() throws IOException {
-        // Filename length is taken from the stream and was filled into a fixed 256 char buffer before
+    void testFilenameLongerThanAllowed() throws IOException {
+        // Creates a crafted Catalog with a single entry and file name above the limit of 260 chars
         StringBuilder name = new StringBuilder();
         for (int i = 0; i < 400; i++) {
             name.append('a');
         }
 
-        Catalog catalog = Catalog.read(catalogWith(1, name.toString()));
-
-        assertEquals(name.toString(), catalog.getItem(0).getName());
+        assertThrows(IIOException.class, () -> Catalog.read(catalogWith(1, name.toString())));
     }
 
     @Test
-    public void testItemIdBelowRange() throws IOException {
-        // itemId is used as items[itemId - 1] without a bounds check
+    void testItemIdBelowRange() {
+        // Creates a crafted Catalog with entry less than the minimum 1
         assertThrows(IIOException.class, () -> Catalog.read(catalogWith(0, "image.jpg")));
     }
 
     @Test
-    public void testItemIdAboveRange() throws IOException {
+    void testItemIdAboveRange() {
+        // Creates a crafted Catalog with entry above the range
         assertThrows(IIOException.class, () -> Catalog.read(catalogWith(9, "image.jpg")));
+    }
+
+    @Test
+    void testRealInput() throws IOException {
+        try (ImageInputStream input = ImageIO.createImageInputStream(getClass().getResourceAsStream("/thumbsdb/Thumbs.db"))) {
+            input.setByteOrder(ByteOrder.LITTLE_ENDIAN);
+            Entry root = new CompoundDocument(input).getRootEntry();
+
+            Entry child = root.getChildEntry("Catalog");
+            assertNotNull(child);
+
+            Catalog catalog = Catalog.read(child.getInputStream());
+            assertNotNull(catalog);
+            assertEquals(9, catalog.getThumbnailCount());
+            assertEquals("{A42CD7B6-E9B9-4D02-B7A6-288B71AD28BA}", catalog.getItem(0).getName());
+            assertEquals("CoffeeBean.bmp", catalog.getItem(1).getName());
+            assertEquals("JavaCup.ico", catalog.getItem(2).getName());
+            assertEquals("office_05.gif", catalog.getItem(3).getName());
+            assertEquals("sunflower.jpg", catalog.getItem(4).getName());
+            assertEquals("test.jpg", catalog.getItem(5).getName());
+            assertEquals("test.png", catalog.getItem(6).getName());
+            assertEquals("test.tif", catalog.getItem(7).getName());
+            assertEquals("test.wmf", catalog.getItem(8).getName());
+        }
     }
 }

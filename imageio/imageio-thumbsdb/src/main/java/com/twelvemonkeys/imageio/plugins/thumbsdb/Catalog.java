@@ -38,6 +38,7 @@ import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Iterator;
 
@@ -92,10 +93,12 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
         for (int i = 0; i < header.getThumbnailCount(); i++) {
             CatalogItem item = CatalogItem.read(pDataInput);
             //System.out.println("item: " + item);
+
             int index = item.getItemId() - 1;
             if (index < 0 || index >= items.length) {
                 throw new IIOException("Thumbs.db catalog item id out of range: " + item.getItemId());
             }
+
             items[index] = item;
         }
 
@@ -103,15 +106,15 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
     }
 
     public final int getThumbnailCount() {
-        return header.mThumbCount;
+        return header.thumbCount;
     }
 
     public final int getMaxThumbnailWidth() {
-        return header.mThumbWidth;
+        return header.thumbWidth;
     }
 
     public final int getMaxThumbnailHeight() {
-        return header.mThumbHeight;
+        return header.thumbHeight;
     }
 
     final CatalogItem getItem(final int pIndex) {
@@ -157,14 +160,14 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
 
     public Iterator<CatalogItem> iterator() {
         return new Iterator<CatalogItem>() {
-            int mCurrentIdx;
+            int currentIdx;
 
             public boolean hasNext() {
-                return mCurrentIdx < items.length;
+                return currentIdx < items.length;
             }
 
             public CatalogItem next() {
-                return items[mCurrentIdx++];
+                return items[currentIdx++];
             }
 
             public void remove() {
@@ -174,11 +177,11 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
     }
 
     private static class CatalogHeader {
-        short mReserved1;
-        short mReserved2;
-        int mThumbCount;
-        int mThumbWidth;
-        int mThumbHeight;
+        short reserved1;
+        short reserved2;
+        int thumbCount;
+        int thumbWidth;
+        int thumbHeight;
 
         CatalogHeader() {
         }
@@ -186,88 +189,87 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
         public static CatalogHeader read(final DataInput pDataInput) throws IOException {
             CatalogHeader header = new CatalogHeader();
 
-            header.mReserved1 = pDataInput.readShort();
-            header.mReserved2 = pDataInput.readShort();
-            header.mThumbCount = pDataInput.readInt();
-            header.mThumbWidth = pDataInput.readInt();
-            header.mThumbHeight = pDataInput.readInt();
+            header.reserved1 = pDataInput.readShort(); // length?
+            header.reserved2 = pDataInput.readShort(); // version? flags?
+            header.thumbCount = pDataInput.readInt();
+            header.thumbWidth = pDataInput.readInt();
+            header.thumbHeight = pDataInput.readInt();
 
             return header;
         }
 
         public int getThumbnailCount() {
-            return mThumbCount;
+            return thumbCount;
         }
 
         public int getThumbHeight() {
-            return mThumbHeight;
+            return thumbHeight;
         }
 
         public int getThumbWidth() {
-            return mThumbWidth;
+            return thumbWidth;
         }
 
         @Override
         public String toString() {
             return String.format(
                     "%s: %s %s thumbs: %d maxWidth: %d maxHeight: %d",
-                    getClass().getSimpleName(),  mReserved1, mReserved2, mThumbCount, mThumbWidth, mThumbHeight
+                    getClass().getSimpleName(), reserved1, reserved2, thumbCount, thumbWidth, thumbHeight
             );
         }
     }
 
     public static final class CatalogItem {
-        int mSize;
-        int mItemId; // Reversed stream name
-        String mFilename;
-        private long mLastModified;
+        int size;
+        int itemId; // Reversed stream name
+        private long lastModified;
+        String filename;
 
         private static CatalogItem read(final DataInput pDataInput) throws IOException {
             CatalogItem item = new CatalogItem();
-            item.mSize = pDataInput.readInt();
-            item.mItemId = pDataInput.readInt();
 
-            item.mLastModified = CompoundDocument.toJavaTimeInMillis(pDataInput.readLong());
-
-            // The size covers the entire record. The fields read above are a fixed 16 bytes,
-            // the remainder holds the NUL-terminated UTF-16LE file name plus trailing padding.
-            int nameSize = item.mSize - 16;
-            if (nameSize < 0) {
-                throw new IIOException("Thumbs.db catalog item size too small: " + item.mSize);
+            // Size must be minimum 16 bytes, path name can be at most 260 UTF16LE chars, must be even
+            item.size = pDataInput.readInt();
+            if (item.size <= 16 || item.size - 16 > 520 || item.size % 2 != 0) {
+                throw new IIOException("Illegal Thumbs.db Catalog item size: " + item.size);
             }
 
-            StringBuilder name = new StringBuilder(nameSize / 2);
-            for (int read = 0; read + 2 <= nameSize; read += 2) {
-                char ch = pDataInput.readChar();
-                if (ch == 0) {
-                    pDataInput.skipBytes(nameSize - read - 2);
-                    break;
-                }
-                name.append(ch);
-            }
+            item.itemId = pDataInput.readInt();
+            item.lastModified = CompoundDocument.toJavaTimeInMillis(pDataInput.readLong());
 
-            item.mFilename = StringUtil.getLastElement(name.toString(), "\\");
+            // The remainder holds the NUL-terminated UTF-16LE file name plus trailing padding
+            int nameSize = (item.size - 16) / 2;
+
+            char[] name = new char[nameSize];
+            char ch;
+            int nameLen = 0;
+            while ((ch = pDataInput.readChar()) != 0) {
+                name[nameLen++] = ch;
+            }
+            pDataInput.skipBytes(item.size - 16 - (nameLen + 1) * 2);
+
+            item.filename = StringUtil.getLastElement(new String(name, 0, nameLen), "\\");
 
             return item;
         }
 
         public String getName() {
-            return mFilename;
+            return filename;
         }
 
         public int getItemId() {
-            return mItemId;
+            return itemId;
         }
 
         public long lastModified() {
-            return mLastModified;
+            return lastModified;
         }
 
         @Override
         public String toString() {
             return String.format(
                     "%s: size: %d itemId: %d lastModified: %s fileName: %s",
-                    getClass().getSimpleName(), mSize, mItemId, new Date(mLastModified), mFilename
+                    getClass().getSimpleName(), size, itemId, new Date(lastModified), filename
             );
         }
     }
