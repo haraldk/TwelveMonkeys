@@ -58,7 +58,7 @@ public class CatalogTest {
 
     private static void writeHeader(final LittleEndianDataOutputStream out, final int thumbCount) throws IOException {
         out.writeShort(16); // length? always 16 for real data, matches the size
-        out.writeShort(0); // reserved2
+        out.writeShort(7); // reserved2 (not sure what this is, but always 7 in sample files I've seen)
         out.writeInt(thumbCount);
         out.writeInt(96); // max width
         out.writeInt(96); // max height
