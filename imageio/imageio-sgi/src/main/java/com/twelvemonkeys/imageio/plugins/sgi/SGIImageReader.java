@@ -56,6 +56,12 @@ import java.util.Iterator;
 import java.util.List;
 
 public final class SGIImageReader extends ImageReaderBase {
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for SGI, used to bound the destination allocation
+     * against the input length. SGI is uncompressed or run-length encoded; 128:1 leaves margin above RLE's
+     * maximum (~64:1 for 8-bit pixels), so no valid image is rejected.
+     */
+    private static final int MAX_EXPANSION_RATIO = 128;
 
     private SGIHeader header;
 
@@ -162,7 +168,7 @@ public final class SGIImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
-        BufferedImage destination = getDestination(param, imageTypes, width, height);
+        BufferedImage destination = getDestination(param, imageTypes, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
 
         Rectangle srcRegion = new Rectangle();
         Rectangle destRegion = new Rectangle();

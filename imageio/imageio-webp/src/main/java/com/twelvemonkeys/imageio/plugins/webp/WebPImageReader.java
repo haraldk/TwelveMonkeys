@@ -70,6 +70,11 @@ import static java.lang.Math.min;
  */
 final class WebPImageReader extends ImageReaderBase {
 
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for WebP
+     */
+    private static final int MAX_EXPANSION_RATIO = 2048;
+
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.webp.debug"));
 
     private LSBBitReader lsbBitReader;
@@ -428,7 +433,7 @@ final class WebPImageReader extends ImageReaderBase {
     public BufferedImage read(final int imageIndex, final ImageReadParam param) throws IOException {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
-        BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
+        BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
 
         processImageStarted(imageIndex);
 
