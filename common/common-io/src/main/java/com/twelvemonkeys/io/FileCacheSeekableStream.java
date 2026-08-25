@@ -33,17 +33,18 @@ package com.twelvemonkeys.io;
 import com.twelvemonkeys.lang.Validate;
 
 import java.io.*;
+import java.nio.file.Files;
 
 /**
  * A {@code SeekableInputStream} implementation that caches data in a temporary {@code File}.
  * <p>
- * Temporary files are created as specified in {@link File#createTempFile(String, String, java.io.File)}.
+ * Temporary files are created as specified in {@code Files.createTempFile}, and are readable by the owner only.
  * </p>
  *
  * @see MemoryCacheSeekableStream
  * @see FileSeekableStream
  *
- * @see File#createTempFile(String, String)
+ * @see Files
  * @see RandomAccessFile
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
@@ -101,7 +102,11 @@ public final class FileCacheSeekableStream extends AbstractCachedSeekableStream 
     /*protected*/ static File createTempFile(String pTempBaseName, File pTempDir) throws IOException {
         Validate.notNull(pTempBaseName, "tempBaseName");
 
-        File file = File.createTempFile(pTempBaseName, null, pTempDir);
+        // NOTE: Files.createTempFile creates the file with owner-only permissions,
+        // unlike File.createTempFile which uses the process umask (typically world-readable)
+        File file = (pTempDir == null
+                     ? Files.createTempFile(pTempBaseName, null)
+                     : Files.createTempFile(pTempDir.toPath(), pTempBaseName, null)).toFile();
         file.deleteOnExit();
 
         return file;

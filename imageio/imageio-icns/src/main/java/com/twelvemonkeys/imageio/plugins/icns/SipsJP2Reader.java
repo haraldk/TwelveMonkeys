@@ -45,6 +45,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.util.Iterator;
 
 /**
@@ -160,7 +161,9 @@ final class SipsJP2Reader {
     }
 
     private static File dumpToFile(final ImageInputStream stream) throws IOException {
-        File tempFile = File.createTempFile("imageio-icns-", ".png");
+        // NOTE: Files.createTempFile creates the file with owner-only permissions,
+        // unlike File.createTempFile which uses the process umask (typically world-readable)
+        File tempFile = Files.createTempFile("imageio-icns-", ".png").toFile();
         tempFile.deleteOnExit();
 
         try (FileOutputStream out = new FileOutputStream(tempFile)) {
