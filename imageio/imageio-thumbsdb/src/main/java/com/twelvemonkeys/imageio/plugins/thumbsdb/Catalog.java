@@ -34,6 +34,7 @@ import com.twelvemonkeys.io.LittleEndianDataInputStream;
 import com.twelvemonkeys.io.ole2.CompoundDocument;
 import com.twelvemonkeys.lang.StringUtil;
 
+import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.IOException;
 import java.io.InputStream;
@@ -91,7 +92,11 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
         for (int i = 0; i < header.getThumbnailCount(); i++) {
             CatalogItem item = CatalogItem.read(pDataInput);
             //System.out.println("item: " + item);
-            items[item.getItemId() - 1] = item;
+            int index = item.getItemId() - 1;
+            if (index < 0 || index >= items.length) {
+                throw new IIOException("Thumbs.db catalog item id out of range: " + item.getItemId());
+            }
+            items[index] = item;
         }
 
         return new Catalog(header, items);
@@ -212,30 +217,37 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
     }
 
     public static final class CatalogItem {
-        int mReserved1;
+        int mSize;
         int mItemId; // Reversed stream name
         String mFilename;
-        short mReserved2;
         private long mLastModified;
 
         private static CatalogItem read(final DataInput pDataInput) throws IOException {
             CatalogItem item = new CatalogItem();
-            item.mReserved1 = pDataInput.readInt();
+            item.mSize = pDataInput.readInt();
             item.mItemId = pDataInput.readInt();
 
             item.mLastModified = CompoundDocument.toJavaTimeInMillis(pDataInput.readLong());
 
-            char[] chars = new char[256];
-            char ch;
-            int len = 0;
-            while ((ch = pDataInput.readChar()) != 0) {
-                chars[len++] = ch;
+            // The size covers the entire record. The fields read above are a fixed 16 bytes,
+            // the remainder holds the NUL-terminated UTF-16LE file name plus trailing padding.
+            int nameSize = item.mSize - 16;
+            if (nameSize < 0) {
+                throw new IIOException("Thumbs.db catalog item size too small: " + item.mSize);
             }
 
-            String name = new String(chars, 0, len);
-            item.mFilename = StringUtil.getLastElement(name, "\\");
+            StringBuilder name = new StringBuilder(nameSize / 2);
+            for (int read = 0; read + 2 <= nameSize; read += 2) {
+                char ch = pDataInput.readChar();
+                if (ch == 0) {
+                    pDataInput.skipBytes(nameSize - read - 2);
+                    break;
+                }
+                name.append(ch);
+            }
 
-            item.mReserved2 = pDataInput.readShort();
+            item.mFilename = StringUtil.getLastElement(name.toString(), "\\");
+
             return item;
         }
 
@@ -254,8 +266,8 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
         @Override
         public String toString() {
             return String.format(
-                    "%s: %d itemId: %d lastModified: %s fileName: %s %s",
-                    getClass().getSimpleName(), mReserved1, mItemId, new Date(mLastModified), mFilename, mReserved2
+                    "%s: size: %d itemId: %d lastModified: %s fileName: %s",
+                    getClass().getSimpleName(), mSize, mItemId, new Date(mLastModified), mFilename
             );
         }
     }
