@@ -3,6 +3,10 @@ package com.twelvemonkeys.imageio.plugins.pict;
 import com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
 
 import org.junit.jupiter.api.Test;
+
+import javax.imageio.IIOException;
+import java.io.ByteArrayInputStream;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -41,5 +45,42 @@ public class QTRAWDecompressorTest {
         QTDecompressor decompressor = new QTRAWDecompressor();
 
         assertTrue(decompressor.canDecompress(createDescription(40)));
+    }
+
+    @Test
+    public void decompressRGBADataSizeTooSmall() {
+        // width * height * 4 (256) is larger than the declared data size (16)
+        ImageDesc description = createDescription(32);
+        description.width = 8;
+        description.height = 8;
+        description.dataSize = 16;
+
+        QTDecompressor decompressor = new QTRAWDecompressor();
+        assertThrows(IIOException.class,
+                () -> decompressor.decompress(description, new ByteArrayInputStream(new byte[description.dataSize])));
+    }
+
+    @Test
+    public void decompressRGBDataSizeTooSmall() {
+        ImageDesc description = createDescription(24);
+        description.width = 8;
+        description.height = 8;
+        description.dataSize = 16;
+
+        QTDecompressor decompressor = new QTRAWDecompressor();
+        assertThrows(IIOException.class,
+                () -> decompressor.decompress(description, new ByteArrayInputStream(new byte[description.dataSize])));
+    }
+
+    @Test
+    public void decompressGrayDataSizeTooSmall() {
+        ImageDesc description = createDescription(40);
+        description.width = 8;
+        description.height = 8;
+        description.dataSize = 16;
+
+        QTDecompressor decompressor = new QTRAWDecompressor();
+        assertThrows(IIOException.class,
+                () -> decompressor.decompress(description, new ByteArrayInputStream(new byte[description.dataSize])));
     }
 }

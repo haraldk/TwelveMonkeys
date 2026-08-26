@@ -67,6 +67,17 @@ final class QTRAWDecompressor extends QTDecompressor {
             dataStream.readFully(data, 0, description.dataSize);
         }
 
+        // Width, height and dataSize are independent fields from the 'idsc' Atom, so a crafted stream may
+        // declare a data size smaller than width * height * bytesPerPixel. Validate before indexing the buffer
+        // by pixel geometry below. Note width and height are 16 bit, so the product must be computed as long.
+        int bytesPerPixel = description.depth == 24 ? 3 : description.depth == 32 ? 4 : 1;
+        if (description.width <= 0 || description.height <= 0
+                || (long) description.width * description.height * bytesPerPixel > data.length) {
+            throw new IIOException(String.format(
+                    "Corrupt QuickTime RAW: data size %d too small for %dx%d at depth %d",
+                    data.length, description.width, description.height, description.depth));
+        }
+
         DataBuffer buffer = new DataBufferByte(data, data.length);
 
         WritableRaster raster;
