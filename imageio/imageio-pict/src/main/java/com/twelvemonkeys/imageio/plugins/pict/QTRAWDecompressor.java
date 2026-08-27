@@ -61,6 +61,18 @@ final class QTRAWDecompressor extends QTDecompressor {
     }
 
     public BufferedImage decompress(final ImageDesc description, final InputStream stream) throws IOException {
+        // Width, height and dataSize are independent fields from the 'idsc' Atom, so a crafted stream may
+        // declare a data size smaller than width * height * bytesPerPixel. Validate before allocating and
+        // indexing the buffer by pixel geometry below. Note width and height are unsigned 16 bit, so the
+        // product must be computed as long.
+        int bytesPerPixel = description.depth == 24 ? 3 : description.depth == 32 ? 4 : 1;
+        if (description.width <= 0 || description.height <= 0
+                || (long) description.width * description.height * bytesPerPixel > description.dataSize) {
+            throw new IIOException(String.format(
+                    "Corrupt QuickTime RAW: data size %d too small for %dx%d at depth %d",
+                    description.dataSize, description.width, description.height, description.depth));
+        }
+
         byte[] data = new byte[description.dataSize];
 
         try (DataInputStream dataStream = new DataInputStream(stream)) {

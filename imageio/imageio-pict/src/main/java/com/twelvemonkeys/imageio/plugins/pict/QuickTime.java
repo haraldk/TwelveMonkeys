@@ -211,8 +211,8 @@ final class QuickTime {
             description.temporalQuality = pStream.readInt(); // Temporal quality, 0 means "no temporal compression"
             description.spatialQuality = pStream.readInt(); // Spatial quality, 0x0000 0200 is codecNormalQuality
 
-            description.width = pStream.readShort(); // Width (short)
-            description.height = pStream.readShort(); // Height (short)
+            description.width = pStream.readUnsignedShort(); // Width (unsigned short)
+            description.height = pStream.readUnsignedShort(); // Height (unsigned short)
 
             description.horizontalRes = PICTUtil.readFixedPoint(pStream); // Horizontal resolution, FP, 0x0048 0000 means 72 DPI
             description.verticalRes = PICTUtil.readFixedPoint(pStream); // Vertical resolution, FP, 0x0048 0000 means 72 DPI
