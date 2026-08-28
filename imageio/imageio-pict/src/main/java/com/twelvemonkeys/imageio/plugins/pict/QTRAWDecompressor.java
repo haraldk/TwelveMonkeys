@@ -30,13 +30,14 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
+import com.twelvemonkeys.imageio.ImageReaderBase;
+
 import javax.imageio.IIOException;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
-import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 
 import static com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
 import static com.twelvemonkeys.imageio.plugins.pict.QuickTime.VENDOR_APPLE;
@@ -54,30 +55,38 @@ final class QTRAWDecompressor extends QTDecompressor {
     //  - Have a look at com.sun.media.imageio.stream.RawImageInputStream...
     // TODO: Support different bit depths
 
+    @Override
     public boolean canDecompress(final ImageDesc description) {
         return VENDOR_APPLE.equals(description.compressorVendor)
                 && "raw ".equals(description.compressorIdentifer)
                 && (description.depth == 24 || description.depth == 32 || description.depth == 40);
     }
 
-    public BufferedImage decompress(final ImageDesc description, final InputStream stream) throws IOException {
+    @Override
+    public BufferedImage decompress(final ImageDesc description, final ImageInputStream stream) throws IOException {
         // Width, height and dataSize are independent fields from the 'idsc' Atom, so a crafted stream may
         // declare a data size smaller than width * height * bytesPerPixel. Validate before allocating and
-        // indexing the buffer by pixel geometry below. Note width and height are unsigned 16 bit, so the
-        // product must be computed as long.
+        // indexing the buffer by pixel geometry below.
+        // Note width and height are unsigned 16 bit, so the product must be computed as long.
         int bytesPerPixel = description.depth == 24 ? 3 : description.depth == 32 ? 4 : 1;
-        if (description.width <= 0 || description.height <= 0
-                || (long) description.width * description.height * bytesPerPixel > description.dataSize) {
+        long imageDataSize = (long) description.width * description.height * bytesPerPixel;
+        if (description.width <= 0 || description.height <= 0 || imageDataSize > description.dataSize) {
             throw new IIOException(String.format(
                     "Corrupt QuickTime RAW: data size %d too small for %dx%d at depth %d",
                     description.dataSize, description.width, description.height, description.depth));
         }
 
-        byte[] data = new byte[description.dataSize];
-
-        try (DataInputStream dataStream = new DataInputStream(stream)) {
-            dataStream.readFully(data, 0, description.dataSize);
+        // TODO: Replace with destination size check from ImageReaderBase when API is done
+        if (stream.length() < 0 && imageDataSize > 512L * 1024 * 1024) {
+            throw new IIOException(String.format("Image dimensions imply an allocation of %d bytes, exceeding 512 MB", imageDataSize));
         }
+        else if (stream.length() >= 0 && imageDataSize > stream.length() - stream.getStreamPosition()) {
+            throw new IIOException(String.format("Image dimensions imply an allocation of %d bytes, exceeding %s available bytes", imageDataSize, stream.length() - stream.getStreamPosition()));
+        }
+
+        byte[] data = new byte[(int) imageDataSize];
+        stream.readFully(data, 0, data.length);
+        stream.skipBytes(description.dataSize - imageDataSize);
 
         DataBuffer buffer = new DataBufferByte(data, data.length);
 

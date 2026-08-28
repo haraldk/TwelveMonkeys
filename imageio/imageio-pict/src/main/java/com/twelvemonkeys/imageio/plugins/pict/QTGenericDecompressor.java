@@ -35,7 +35,6 @@ import javax.imageio.ImageReader;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Iterator;
 
 import static com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
@@ -48,29 +47,27 @@ import static com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
  * @version $Id: QTGenericDecompressor.java,v 1.0 Feb 16, 2009 9:26:13 PM haraldk Exp$
  */
 final class QTGenericDecompressor extends QTDecompressor {
+    @Override
     public boolean canDecompress(final ImageDesc description) {
         // Instead of testing, we just allow everything, and might eventually fail on decompress later...
         return true;
     }
 
-    public BufferedImage decompress(final ImageDesc description, final InputStream stream) throws IOException {
-        BufferedImage image = ImageIO.read(stream);
+    @Override
+    public BufferedImage decompress(final ImageDesc description, final ImageInputStream stream) throws IOException {
+        // First try reading based on stream contents
+        Iterator<ImageReader> readers = ImageIO.getImageReaders(stream);
 
-        if (image == null) {
-            return readUsingFormatName(description.compressorIdentifer.trim(), stream);
+        if (!readers.hasNext()) {
+            // Fall back to reading using format name
+            readers = ImageIO.getImageReadersByFormatName(description.compressorIdentifer.trim());
         }
-
-        return image;
-    }
-
-    private BufferedImage readUsingFormatName(final String formatName, final InputStream stream) throws IOException {
-        Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName(formatName);
 
         if (readers.hasNext()) {
             ImageReader reader = readers.next();
 
-            try (ImageInputStream input = ImageIO.createImageInputStream(stream)) {
-                reader.setInput(input);
+            try {
+                reader.setInput(stream, true, true);
                 return reader.read(0);
             }
             finally {
@@ -80,4 +77,5 @@ final class QTGenericDecompressor extends QTDecompressor {
 
         return null;
     }
+
 }

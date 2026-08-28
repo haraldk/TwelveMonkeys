@@ -2,9 +2,11 @@ package com.twelvemonkeys.imageio.plugins.pict;
 
 import com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import org.junit.jupiter.api.Test;
 
 import javax.imageio.IIOException;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.io.ByteArrayInputStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,7 +59,7 @@ class QTRAWDecompressorTest {
 
         QTDecompressor decompressor = new QTRAWDecompressor();
         assertThrows(IIOException.class,
-                () -> decompressor.decompress(description, new ByteArrayInputStream(new byte[description.dataSize])));
+                () -> decompressor.decompress(description, new ByteArrayImageInputStream(new byte[description.dataSize])));
     }
 
     @Test
@@ -69,7 +71,7 @@ class QTRAWDecompressorTest {
 
         QTDecompressor decompressor = new QTRAWDecompressor();
         assertThrows(IIOException.class,
-                () -> decompressor.decompress(description, new ByteArrayInputStream(new byte[description.dataSize])));
+                () -> decompressor.decompress(description, new ByteArrayImageInputStream(new byte[description.dataSize])));
     }
 
     @Test
@@ -81,6 +83,46 @@ class QTRAWDecompressorTest {
 
         QTDecompressor decompressor = new QTRAWDecompressor();
         assertThrows(IIOException.class,
-                () -> decompressor.decompress(description, new ByteArrayInputStream(new byte[description.dataSize])));
+                () -> decompressor.decompress(description, new ByteArrayImageInputStream(new byte[description.dataSize])));
+    }
+
+    @Test
+    void decompressRGBDataSizeTooBig() {
+        ImageDesc description = createDescription(24);
+        description.width = 10;
+        description.height = 10;
+        description.dataSize = Integer.MAX_VALUE; // java.lang.OutOfMemoryError if allocation is attempted
+
+        QTDecompressor decompressor = new QTRAWDecompressor();
+        assertDoesNotThrow(() -> decompressor.decompress(description, new ByteArrayImageInputStream(new byte[300])));
+    }
+
+    @Test
+    void decompressRGBPixelSizeTooBigKnownStreamLength() {
+        ImageDesc description = createDescription(32);
+        description.width = Short.MAX_VALUE >> 1;
+        description.height = Short.MAX_VALUE >> 1;
+        description.dataSize = Integer.MAX_VALUE;
+
+        QTDecompressor decompressor = new QTRAWDecompressor();
+        assertThrows(IIOException.class,
+                () -> decompressor.decompress(description, new ByteArrayImageInputStream(new byte[300])));
+    }
+
+    @Test
+    void decompressRGBPixelSizeTooBigUnknownStreamLength() {
+        ImageDesc description = createDescription(32);
+        description.width = Short.MAX_VALUE >> 1;
+        description.height = Short.MAX_VALUE >> 1;
+        description.dataSize = Integer.MAX_VALUE;
+
+        QTDecompressor decompressor = new QTRAWDecompressor();
+        assertThrows(IIOException.class,
+                () -> decompressor.decompress(description, new MemoryCacheImageInputStream(new ByteArrayInputStream(new byte[100])) {
+                    @Override
+                    public long length() {
+                        return -1L;
+                    }
+                }));
     }
 }
