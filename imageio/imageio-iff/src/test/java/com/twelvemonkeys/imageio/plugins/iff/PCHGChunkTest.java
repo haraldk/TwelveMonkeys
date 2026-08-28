@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2024, Harald Kuhr
+ * Copyright (c) 2026, Harald Kuhr
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -43,7 +43,7 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
-public class PCHGChunkTest {
+class PCHGChunkTest {
 
     private static IndexColorModel base() {
         return new IndexColorModel(4, 16, new int[16], 0, false, -1, DataBuffer.TYPE_BYTE);
@@ -77,7 +77,7 @@ public class PCHGChunkTest {
     }
 
     @Test
-    public void negativeRegisterIsIgnored() throws IOException {
+    void negativeRegisterIsIgnored() throws IOException {
         // reg 0xfffe reads back as a negative short; adjustColorMap must not index the palette with it
         PCHGChunk chunk = parse(chunkWithRegister(0xfffe));
         IndexColorModel base = base();
@@ -88,7 +88,7 @@ public class PCHGChunkTest {
     }
 
     @Test
-    public void inRangeRegisterIsApplied() throws IOException {
+    void inRangeRegisterIsApplied() throws IOException {
         PCHGChunk chunk = parse(chunkWithRegister(5));
         IndexColorModel base = base();
 
