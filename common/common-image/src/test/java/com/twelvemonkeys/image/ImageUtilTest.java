@@ -532,4 +532,47 @@ class ImageUtilTest {
         assertNotNull(image, "Image was null");
         assertInstanceOf(IndexColorModel.class, image.getColorModel());
     }
+
+    // Issue #1019
+    @Test
+    void testCreateRotatedQuadrantPreservesNoAlpha() {
+        BufferedImage source = createImage(100, 50, BufferedImage.TYPE_INT_RGB);
+        assertFalse(source.getColorModel().hasAlpha());
+
+        BufferedImage result = ImageUtil.createRotated(source, 90);
+
+        assertEquals(50, result.getWidth());
+        assertEquals(100, result.getHeight());
+        assertFalse(result.getColorModel().hasAlpha(), "Quadrant rotation of an opaque image should not add alpha");
+
+        // Rotating 90 degrees CW, the bottom-left corner of the source becomes the top-left corner
+        assertEquals(source.getRGB(0, 49), result.getRGB(0, 0));
+        assertEquals(source.getRGB(0, 0), result.getRGB(49, 0));
+        assertEquals(source.getRGB(99, 49), result.getRGB(0, 99));
+    }
+
+    // Issue #1019
+    @Test
+    void testCreateRotatedQuadrantPreservesAlpha() {
+        BufferedImage source = createImage(100, 50, BufferedImage.TYPE_INT_ARGB);
+        assertTrue(source.getColorModel().hasAlpha());
+
+        BufferedImage result = ImageUtil.createRotated(source, 180);
+
+        assertEquals(100, result.getWidth());
+        assertEquals(50, result.getHeight());
+        assertTrue(result.getColorModel().hasAlpha());
+        assertEquals(source.getRGB(0, 0), result.getRGB(99, 49));
+    }
+
+    @Test
+    void testCreateRotatedNonQuadrantHasAlpha() {
+        BufferedImage source = createImage(100, 50, BufferedImage.TYPE_INT_RGB);
+
+        BufferedImage result = ImageUtil.createRotated(source, Math.toRadians(45));
+
+        // Corners are not covered by source pixels, and should be transparent
+        assertTrue(result.getColorModel().hasAlpha(), "Non-quadrant rotation needs alpha for uncovered corners");
+        assertEquals(0, result.getRGB(0, 0) >>> 24, "Corner should be transparent");
+    }
 }

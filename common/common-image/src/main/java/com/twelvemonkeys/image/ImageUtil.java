@@ -721,8 +721,17 @@ public final class ImageUtil {
         AffineTransform transform = AffineTransform.getTranslateInstance((newW - w) / 2.0, (newH - h) / 2.0);
         transform.rotate(pAngle, w / 2.0, h / 2.0);
 
-        // TODO: Figure out if this is correct
-        BufferedImage dest = createTransparent(newW, newH);
+        // A quadrant rotation is completely covered by source pixels,
+        // so the destination can keep the source's color model.
+        // Other angles leave uncovered corners, which should be transparent.
+        BufferedImage dest;
+        if (fast) {
+            ColorModel cm = pSource.getColorModel();
+            dest = new BufferedImage(cm, cm.createCompatibleWritableRaster(newW, newH), cm.isAlphaPremultiplied(), null);
+        }
+        else {
+            dest = createTransparent(newW, newH);
+        }
 
         // See: http://weblogs.java.net/blog/campbell/archive/2007/03/java_2d_tricker_1.html
         Graphics2D g = dest.createGraphics();
