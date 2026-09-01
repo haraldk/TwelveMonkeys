@@ -57,7 +57,7 @@ final class PSDUnicodeAlphaNames extends PSDImageResource {
         while (left > 0) {
             String name = PSDUtil.readUnicodeString(pInput);
             names.add(name);
-            left -= name.length() * 2 + 4;
+            left -= name.length() * 2L + 4L;
         }
     }
 
