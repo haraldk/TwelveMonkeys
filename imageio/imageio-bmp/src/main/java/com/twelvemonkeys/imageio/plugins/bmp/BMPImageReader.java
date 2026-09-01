@@ -69,6 +69,13 @@ import java.util.Iterator;
  * @see ICOImageReader
  */
 public final class BMPImageReader extends ImageReaderBase {
+
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for BMP,
+     * used to bound the allocation against the input length.
+     */
+    private static final int MAX_EXPANSION_RATIO = 128;
+
     private long pixelOffset;
     private DIBHeader header;
     private int[] colors;
@@ -281,6 +288,7 @@ public final class BMPImageReader extends ImageReaderBase {
         int height = getHeight(imageIndex);
 
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
+        validateSourceSize(rawType, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
         BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
 
         ColorModel colorModel = destination.getColorModel();

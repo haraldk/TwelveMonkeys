@@ -39,6 +39,7 @@ import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.io.IOException;
 
+import static com.twelvemonkeys.imageio.ImageReaderBase.validateSourceSize;
 import static com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
 import static com.twelvemonkeys.imageio.plugins.pict.QuickTime.VENDOR_APPLE;
 
@@ -75,14 +76,7 @@ final class QTRAWDecompressor extends QTDecompressor {
                     "Corrupt QuickTime RAW: data size %d too small for %dx%d at depth %d",
                     description.dataSize, description.width, description.height, description.depth));
         }
-
-        // TODO: Replace with destination size check from ImageReaderBase when API is done
-        if (stream.length() < 0 && imageDataSize > 512L * 1024 * 1024) {
-            throw new IIOException(String.format("Image dimensions imply an allocation of %d bytes, exceeding 512 MB", imageDataSize));
-        }
-        else if (stream.length() >= 0 && imageDataSize > stream.length() - stream.getStreamPosition()) {
-            throw new IIOException(String.format("Image dimensions imply an allocation of %d bytes, exceeding %s available bytes", imageDataSize, stream.length() - stream.getStreamPosition()));
-        }
+        validateSourceSize(imageDataSize, stream.length(), 1);
 
         byte[] data = new byte[(int) imageDataSize];
         stream.readFully(data, 0, data.length);

@@ -168,7 +168,8 @@ public final class SGIImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
-        BufferedImage destination = getDestination(param, imageTypes, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        validateSourceSize(rawType, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage destination = getDestination(param, imageTypes, width, height);
 
         Rectangle srcRegion = new Rectangle();
         Rectangle destRegion = new Rectangle();

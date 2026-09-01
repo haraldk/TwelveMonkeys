@@ -179,7 +179,8 @@ final class TGAImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
-        BufferedImage destination = getDestination(param, imageTypes, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        validateSourceSize(rawType, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage destination = getDestination(param, imageTypes, width, height);
 
         Rectangle srcRegion = new Rectangle();
         Rectangle destRegion = new Rectangle();
@@ -496,7 +497,8 @@ final class TGAImageReader extends ImageReaderBase {
         // For thumbnail, always read entire image
         Rectangle srcRegion = new Rectangle(width, height);
 
-        BufferedImage destination = getDestination(null, imageTypes, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        validateSourceSize(rawType, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage destination = getDestination(null, imageTypes, width, height);
         WritableRaster destRaster = destination.getRaster();
         WritableRaster rowRaster = rawType.createBufferedImage(width, 1).getRaster();
 

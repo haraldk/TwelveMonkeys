@@ -57,6 +57,12 @@ import java.util.Iterator;
 public final class HDRImageReader extends ImageReaderBase {
     // Specs: http://radsite.lbl.gov/radiance/refer/filefmts.pdf
 
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for HDR,
+     * used to bound the allocation against the input length.
+     */
+    private static final int MAX_EXPANSION_RATIO = 16;
+
     private HDRHeader header;
 
     HDRImageReader(final ImageReaderSpi provider) {
@@ -111,6 +117,7 @@ public final class HDRImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
+        validateSourceSize(getRawImageType(imageIndex), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
         BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
 
         Rectangle srcRegion = new Rectangle();

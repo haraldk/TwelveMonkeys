@@ -33,22 +33,23 @@ package com.twelvemonkeys.imageio;
 import com.twelvemonkeys.image.BufferedImageIcon;
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.*;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.swing.*;
+import javax.swing.colorchooser.AbstractColorChooserPanel;
 import java.awt.*;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.Transferable;
 import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.event.*;
-import java.awt.image.BufferedImage;
-import java.awt.image.DataBuffer;
-import java.awt.image.IndexColorModel;
+import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -72,7 +73,7 @@ public abstract class ImageReaderBase extends ImageReader {
      */
     private static final String MAX_IMAGE_BYTES_PROPERTY = "com.twelvemonkeys.imageio.maxImageBytes";
 
-    private static final long MAX_IMAGE_BYTES = defaultMaxImageBytes();
+    private static final long MAX_IMAGE_BYTES = resolveMaxImageBytes();
 
     /**
      * For convenience. Only set if the input is an {@code ImageInputStream}.
@@ -237,52 +238,13 @@ public abstract class ImageReaderBase extends ImageReader {
      * specified by {@code param} does not match any of the legal
      * ones from {@code types}.
      * @throws IllegalArgumentException if {@code types}
-     * is {@code null} or empty, or if an object not of type
-     * {@code ImageTypeSpecifier} is retrieved from it.
+     * is {@code null} or empty, or if an object not of type {@code ImageTypeSpecifier} is retrieved from it.
      * Or, if the resulting image would have a width or height less than 1,
      * or if the product of {@code width} and {@code height} of the resulting image is greater than
      * {@code Integer.MAX_VALUE}.
-     *
-     * @deprecated Use {@link #getDestination(ImageReadParam, Iterator, int, int, long, int)}, which additionally
-     * guards against unbounded allocation driven by the declared dimensions.
      */
-    @Deprecated
     public static BufferedImage getDestination(final ImageReadParam param, final Iterator<ImageTypeSpecifier> types,
                                                final int width, final int height) throws IIOException {
-        return getDestination(param, types, width, height, -1L, 0);
-    }
-
-    /**
-     * As {@link #getDestination(ImageReadParam, Iterator, int, int)}, but additionally guards against
-     * uncontrolled memory allocation driven by the declared image dimensions.
-     * <p>
-     * The guard is opt-in and applies only when {@code maxExpansionRatio > 0}. When active and the input length
-     * is known, the destination is rejected if the implied allocation in bytes exceeds
-     * {@code inputLength * maxExpansionRatio} (the largest plausible expansion of the actual input for the given
-     * format). When active but the input length is unknown, the best-effort ceiling from the
-     * {@value #MAX_IMAGE_BYTES_PROPERTY} system property is applied instead. A non-positive
-     * {@code maxExpansionRatio} disables the guard entirely, leaving the original behavior unchanged.
-     * </p>
-     *
-     * @param param an {@code ImageReadParam} used to get the destination image or type, or {@code null}.
-     * @param types an {@code Iterator} of legal {@code ImageTypeSpecifier}s, with the default first.
-     * @param width the true width of the image or tile being decoded.
-     * @param height the true height of the image or tile being decoded.
-     * @param inputLength the number of bytes available from the input, or a negative value if unknown.
-     * @param maxExpansionRatio the maximum plausible decoded-to-input size ratio for the format,
-     *                          or a non-positive value to disable the size guard.
-     *
-     * @return the {@code BufferedImage} to which decoded pixel data should be written.
-     *
-     * @exception IIOException if the destination from {@code param} does not match {@code types}, or if the
-     * declared dimensions would require an allocation larger than the guard allows.
-     * @throws IllegalArgumentException if {@code types} is {@code null} or empty, or contains an object that is
-     * not an {@code ImageTypeSpecifier}, or if the resulting image would have a width or height less than 1, or
-     * if the product of {@code width} and {@code height} (times samples per pixel) exceeds {@code Integer.MAX_VALUE}.
-     */
-    public static BufferedImage getDestination(final ImageReadParam param, final Iterator<ImageTypeSpecifier> types,
-                                               final int width, final int height,
-                                               final long inputLength, final int maxExpansionRatio) throws IIOException {
         // Adapted from http://java.net/jira/secure/attachment/29712/TIFFImageReader.java.patch,
         // to allow reading parts/tiles of huge images.
 
@@ -367,16 +329,10 @@ public abstract class ImageReaderBase extends ImageReader {
             throw new IIOException(String.format("destination width * height > Integer.MAX_VALUE: %d", dimension));
         }
 
-        long size = dimension * imageType.getSampleModel().getNumDataElements();
-        if (size > Integer.MAX_VALUE) {
-            throw new IIOException(String.format("destination width * height * samplesPerPixel > Integer.MAX_VALUE: %d", size));
-        }
-
-        // A tiny input must not be able to force a multi-gigabyte raster before any pixel data has been read.
-        // The size check is opt-in (maxExpansionRatio > 0); the OutOfMemoryError backstop always applies.
-        long declaredBytes = size * (DataBuffer.getDataTypeSize(imageType.getSampleModel().getDataType()) / 8);
-        if (maxExpansionRatio > 0) {
-            checkDestinationSize(declaredBytes, inputLength, maxExpansionRatio, MAX_IMAGE_BYTES);
+        SampleModel sampleModel = imageType.getSampleModel();
+        long numberOfSamples = dimension * sampleModel.getNumDataElements();
+        if (numberOfSamples > Integer.MAX_VALUE) {
+            throw new IIOException(String.format("destination width * height * samplesPerPixel > Integer.MAX_VALUE: %d", numberOfSamples));
         }
 
         try {
@@ -386,18 +342,90 @@ public abstract class ImageReaderBase extends ImageReader {
             // The check above bounds the request when active, but a generous ratio (or the legacy path) can
             // still exceed the heap. Surface it as an IIOException so callers treat it as a read error rather
             // than a fatal Error.
-            throw new IIOException(String.format("Unable to allocate destination image of %d bytes", declaredBytes), e);
+            throw new IIOException("Unable to allocate destination image, out of memory", e);
         }
     }
 
-    static void checkDestinationSize(final long declaredBytes, final long inputLength, final int maxExpansionRatio, final long maxImageBytes) throws IIOException {
+    static long computeByteSize(ImageTypeSpecifier specifier,  int width, int height) {
+        Validate.notNull(specifier, "specifier");
+        Validate.isTrue(width > 0 &&  height > 0, "width > 0, height > 0");
+
+        SampleModel sampleModel = specifier.getSampleModel();
+        int dataTypeSize = DataBuffer.getDataTypeSize(sampleModel.getDataType());
+        int bytesPerSample = dataTypeSize / 8;
+
+        if (sampleModel instanceof ComponentSampleModel) {
+            // Interleaved or Banded
+            int samplesPerPixel = sampleModel.getNumDataElements();
+
+            return (long) height * width * samplesPerPixel * bytesPerSample;
+        }
+        else if (sampleModel instanceof SinglePixelPackedSampleModel) {
+            return (long) height * width * bytesPerSample;
+        }
+        else if (sampleModel instanceof MultiPixelPackedSampleModel) {
+            // Compute the scanline stride without createCompatibleSampleModel,
+            // as the MultiPixelPackedSampleModel constructor will overflow
+            // for large numbers and create negative strides... :-/
+            MultiPixelPackedSampleModel packedModel = (MultiPixelPackedSampleModel) sampleModel;
+            long scanlineStride = ((long) width * packedModel.getPixelBitStride() + dataTypeSize - 1) / dataTypeSize;
+
+            return (long) height * scanlineStride * bytesPerSample;
+        }
+
+        throw new AssertionError("Unknown SampleModel type: " + sampleModel.getClass());
+    }
+
+    /**
+     * Validates that the source image size, based on the image type specifier and dimensions,
+     * is reasonable compared to (ie. not larger than) the input length multiplied by a format specific expansion ratio.
+     * If the input length is unknown, the source size is compared to a best-effort ceiling from the
+     * {@value #MAX_IMAGE_BYTES_PROPERTY} system property instead.
+     *
+     * @param rawType the type which most closely represents the "raw" internal format of the source image.
+     * @param width the width of the source image.
+     * @param height the height of the source image.
+     * @param inputLength the length of the input, if known, {@code -1} otherwise.
+     * @param maxExpansionRatio the maximum reasonable expansion ratio for the format.
+     *                          This typically depends on the compression being used.
+     * @throws IIOException if the computed byte size exceeds the allowed size
+     *
+     * @see ImageReader#getRawImageType(int)
+     */
+    public static void validateSourceSize(final ImageTypeSpecifier rawType, int width, int height, final long inputLength, final int maxExpansionRatio) throws IIOException {
+        Validate.isTrue(maxExpansionRatio >= 1, "maxExpansionRatio must be >= 1");
+
+        long declaredByteSize = computeByteSize(rawType, width, height);
+        validateSourceSize(declaredByteSize, inputLength, maxExpansionRatio);
+    }
+
+    /**
+     * Validates that the declared byte size of a source image
+     * (typically computed as width * height * samples per pixel * bytes per sample)
+     * is reasonable compared to (ie. not larger than) the input length multiplied by a format specific expansion ratio.
+     * If the input length is unknown, the source size is compared to a best-effort ceiling from the
+     * {@value #MAX_IMAGE_BYTES_PROPERTY} system property instead.
+     *
+     * @param declaredByteSize the declared size of the image.
+     * @param inputLength the length of the input, if known, {@code -1} otherwise.
+     * @param maxExpansionRatio the maximum reasonable expansion ratio for the format.
+     *                          This typically depends on the compression being used.
+     * @throws IIOException if the computed byte size exceeds the allowed size
+     */
+    public static void validateSourceSize(final long declaredByteSize, final long inputLength, final int maxExpansionRatio) throws IIOException {
+        validateSourceSize(declaredByteSize, inputLength, maxExpansionRatio, MAX_IMAGE_BYTES);
+    }
+
+    static void validateSourceSize(final long declaredBytes, final long inputLength, final int maxExpansionRatio, final long maxImageBytes) throws IIOException {
         long limit;
         String detail;
 
         if (inputLength >= 0) {
             // Known input length: scale the allowance with the actual amount of data.
             limit = saturatedMultiply(inputLength, maxExpansionRatio);
-            detail = String.format("%d bytes of input at a maximum expansion ratio of %d:1", inputLength, maxExpansionRatio);
+            detail = maxExpansionRatio == 1
+                    ? String.format("%d bytes of input", inputLength)
+                    : String.format("%d bytes of input at a maximum expansion ratio of %d:1", inputLength, maxExpansionRatio);
         }
         else {
             // Unknown input length: fall back to a best-effort, overridable ceiling.
@@ -410,23 +438,24 @@ public abstract class ImageReaderBase extends ImageReader {
         }
     }
 
-    static long defaultMaxImageBytes() {
+    private static long resolveMaxImageBytes() {
         // Resolved once into MAX_IMAGE_BYTES at class init; the property is read at launch, not per call.
         long override = Long.getLong(MAX_IMAGE_BYTES_PROPERTY, -1L);
-        if (override > 0) {
-            return override;
-        }
 
+        return override > 0 ? override : defaultMaxImageBytes();
+    }
+
+    static long defaultMaxImageBytes() {
         // Best-effort default for inputs of unknown length (e.g. streamed input, whose length is not known).
         // Bounded by an absolute cap so it does not scale with the heap: on a large-heap server, half the heap
         // would let a tiny streamed input drive a multi-gigabyte transient allocation. Floored at 64 MB so a
         // modest image still decodes on a tiny heap.
         long maxHeap = Runtime.getRuntime().maxMemory();
+
         long cap = 512L * 1024 * 1024;
         long floor = 64L * 1024 * 1024;
-        long heapBound = maxHeap == Long.MAX_VALUE ? cap : Math.min(cap, maxHeap / 2);
 
-        return Math.max(floor, heapBound);
+        return Math.max(floor, Math.min(cap, maxHeap / 2));
     }
 
     private static long saturatedMultiply(final long a, final long b) {
@@ -512,7 +541,6 @@ public abstract class ImageReaderBase extends ImageReader {
             SwingUtilities.invokeAndWait(new Runnable() {
                 public void run() {
                     JFrame frame = new JFrame(pTitle);
-
                     frame.getRootPane().getActionMap().put("window-close", new AbstractAction() {
                         public void actionPerformed(ActionEvent e) {
                             Window window = SwingUtilities.getWindowAncestor((Component) e.getSource());
@@ -750,7 +778,7 @@ public abstract class ImageReaderBase extends ImageReader {
                     public void paintIcon(Component c, Graphics pGraphics, int x, int y) {
                         Graphics g = pGraphics.create();
                         g.setColor((Color) paint);
-                        g.fillRect(x, y, 16, 16);
+                        g.fillRoundRect(x, y, 16, 16, 3, 3);
                         g.dispose();
                     }
 
@@ -766,11 +794,47 @@ public abstract class ImageReaderBase extends ImageReader {
 
             @Override
             public void actionPerformed(ActionEvent e) {
-                Color selected = JColorChooser.showDialog(ImageLabel.this, "Choose background", (Color) paint);
+                JColorChooser colorChooser = new JColorChooser((Color) paint);
+                colorChooser.setOpaque(false); // To play well with some LAFs (VAqua)
+
+                // Re-order panels, put swatches to the back of list
+                for (AbstractColorChooserPanel chooserPanel : colorChooser.getChooserPanels()) {
+                    if (chooserPanel.getClass().getSimpleName().contains("Swatch")) {
+                        colorChooser.removeChooserPanel(chooserPanel);
+                        colorChooser.addChooserPanel(chooserPanel);
+                    }
+                }
+
+                ColorTracker color = new ColorTracker(colorChooser);
+
+                JDialog dialog = JColorChooser.createDialog(ImageLabel.this, "Choose background", true, colorChooser, color, null);
+                dialog.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+                dialog.setVisible(true);
+
+                Color selected = color.getColor();
+
                 if (selected != null) {
                     paint = selected;
+                    colorChooser.setColor(selected);
                     super.actionPerformed(e);
                 }
+            }
+        }
+
+        static class ColorTracker implements ActionListener, Serializable {
+            JColorChooser chooser;
+            Color color;
+
+            public ColorTracker(JColorChooser c) {
+                chooser = c;
+            }
+
+            public void actionPerformed(ActionEvent e) {
+                color = chooser.getColor();
+            }
+
+            public Color getColor() {
+                return color;
             }
         }
 

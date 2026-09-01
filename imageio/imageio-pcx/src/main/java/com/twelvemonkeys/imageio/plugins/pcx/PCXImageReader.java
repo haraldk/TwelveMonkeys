@@ -68,6 +68,13 @@ public final class PCXImageReader extends ImageReaderBase {
     /** 8 bit ImageTypeSpecifer used for reading bitplane images. */
     private static final ImageTypeSpecifier GRAYSCALE = ImageTypeSpecifiers.createGrayscale(8, DataBuffer.TYPE_BYTE);
 
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for PCX, used to bound the allocation
+     * against the input length. PCX is uncompressed or run-length encoded; 128:1 leaves margin above RLE's
+     * maximum (~64:1 for 8-bit pixels), so no valid image is rejected.
+     */
+    private static final int MAX_EXPANSION_RATIO = 128;
+
     private PCXHeader header;
     private boolean readPalette;
     private IndexColorModel vgaPalette;
@@ -176,6 +183,7 @@ public final class PCXImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
+        validateSourceSize(rawType, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
         BufferedImage destination = getDestination(param, imageTypes, width, height);
 
         Rectangle srcRegion = new Rectangle();

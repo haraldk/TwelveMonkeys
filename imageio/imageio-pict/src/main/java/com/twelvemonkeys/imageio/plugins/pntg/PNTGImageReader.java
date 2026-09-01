@@ -60,6 +60,11 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
  * @version $Id: PNTGImageReader.java,v 1.0 23/03/2021 haraldk Exp$
  */
 public final class PNTGImageReader extends ImageReaderBase {
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for PNTG,
+     * used to bound the allocation against the input length.
+     */
+    private static final int MAX_EXPANSION_RATIO = 8;
 
     private static final Set<ImageTypeSpecifier> IMAGE_TYPES =
             Collections.singleton(ImageTypeSpecifiers.createIndexed(new int[] {-1, 0}, false, -1, 1, DataBuffer.TYPE_BYTE));
@@ -101,6 +106,7 @@ public final class PNTGImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
+        validateSourceSize(getRawImageType(imageIndex), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
         BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
         int[] destBands = param != null ? param.getDestinationBands() : null;
 

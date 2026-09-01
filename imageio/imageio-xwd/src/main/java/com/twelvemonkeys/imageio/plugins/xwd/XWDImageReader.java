@@ -124,6 +124,7 @@ final class XWDImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
         readHeader();
 
+        validateSourceSize(getRawImageType(imageIndex), header.width, header.height, imageInput.length(), 1);
         BufferedImage destination = getDestination(param, getImageTypes(imageIndex), header.width, header.height);
         WritableRaster raster = destination.getRaster();
         checkReadParamBandSettings(param, header.numComponents(), raster.getNumBands());

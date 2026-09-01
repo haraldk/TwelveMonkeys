@@ -433,7 +433,9 @@ final class WebPImageReader extends ImageReaderBase {
     public BufferedImage read(final int imageIndex, final ImageReadParam param) throws IOException {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
-        BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+
+        validateSourceSize(getRawImageType(imageIndex), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
 
         processImageStarted(imageIndex);
 

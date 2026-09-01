@@ -56,6 +56,11 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
 public final class DDSImageReader extends ImageReaderBase {
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for DDS,
+     * used to bound the allocation against the input length.
+     */
+    private static final int MAX_EXPANSION_RATIO = 128;
 
     private DDSHeader header;
 
@@ -128,6 +133,7 @@ public final class DDSImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
+        validateSourceSize(getRawImageType(imageIndex), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
         BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
 
         Rectangle srcRegion = new Rectangle();

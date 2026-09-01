@@ -383,8 +383,9 @@ public final class PSDImageReader extends ImageReaderBase {
             return readLayerData(imageIndex - 1, param);
         }
 
-        BufferedImage image = getDestination(param, getImageTypes(imageIndex), header.width, header.height, imageInput.length(), MAX_EXPANSION_RATIO);
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
+        validateSourceSize(rawType, header.width, header.height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage image = getDestination(param, getImageTypes(imageIndex), header.width, header.height);
         checkReadParamBandSettings(param, rawType.getNumBands(), image.getSampleModel().getNumBands());
 
         final Rectangle source = new Rectangle();
@@ -1086,7 +1087,8 @@ public final class PSDImageReader extends ImageReaderBase {
 
         // Even if raw/imageType has no alpha, the layers may still have alpha...
         ImageTypeSpecifier imageType = getRawImageTypeForLayer(layerIndex);
-        BufferedImage layer = getDestination(param, getImageTypes(layerIndex + 1), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        validateSourceSize(imageType, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage layer = getDestination(param, getImageTypes(layerIndex + 1), width, height);
 
         imageInput.seek(findLayerStartPos(layerIndex));
 

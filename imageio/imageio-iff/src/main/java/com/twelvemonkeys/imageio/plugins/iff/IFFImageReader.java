@@ -114,6 +114,12 @@ public final class IFFImageReader extends ImageReaderBase {
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.iff.debug"));
 
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for IFF,
+     * used to bound the allocation against the input length.
+     */
+    private static final int MAX_EXPANSION_RATIO = 128;
+
     private Form header;
     private DataInputStream byteRunStream;
 
@@ -279,7 +285,10 @@ public final class IFFImageReader extends ImageReaderBase {
         init(imageIndex);
         processImageStarted(imageIndex);
 
-        BufferedImage result = getDestination(param, getImageTypes(imageIndex), getWidth(imageIndex), getHeight(imageIndex));
+        int width = getWidth(imageIndex);
+        int height = getHeight(imageIndex);
+        validateSourceSize(getRawImageType(imageIndex), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage result = getDestination(param, getImageTypes(imageIndex), width, height);
         readBody(param, result);
 
         processImageComplete();

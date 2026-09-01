@@ -168,6 +168,12 @@ public final class TIFFImageReader extends ImageReaderBase {
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.tiff.debug"));
 
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for TIFF,
+     * used to bound the allocation against the input length.
+     */
+    private static final int MAX_EXPANSION_RATIO = 512;
+
     // NOTE: DO NOT MODIFY OR EXPOSE THIS ARRAY OUTSIDE PACKAGE!
     static final double[] CCIR_601_1_COEFFICIENTS = new double[] {299.0 / 1000.0, 587.0 / 1000.0, 114.0 / 1000.0};
     static final double[] REFERENCE_BLACK_WHITE_YCC_DEFAULT = new double[] {0, 255, 128, 255, 128, 255};
@@ -953,8 +959,9 @@ public final class TIFFImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
-        BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
+        validateSourceSize(rawType, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
         checkReadParamBandSettings(param, rawType.getNumBands(), destination.getSampleModel().getNumBands());
 
         final Rectangle srcRegion = new Rectangle();
