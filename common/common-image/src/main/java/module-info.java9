@@ -1,0 +1,11 @@
+module com.twelvemonkeys.common.image {
+    requires com.twelvemonkeys.common.io;
+    requires com.twelvemonkeys.common.lang;
+
+    requires transitive java.desktop;
+    requires static jmagick; //Optional, assumed not transitive.
+
+    exports com.twelvemonkeys.image;
+
+}
+

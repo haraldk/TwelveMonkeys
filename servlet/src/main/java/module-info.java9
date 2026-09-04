@@ -1,0 +1,8 @@
+module com.twelvemonkeys.servlet {
+    requires java.desktop;
+
+    requires servlet.api; // Assumed non-transitive
+
+    exports com.twelvemonkeys.servlet.image;
+
+}

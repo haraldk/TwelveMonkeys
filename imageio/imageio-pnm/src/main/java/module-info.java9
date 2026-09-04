@@ -1,0 +1,19 @@
+module com.twelvemonkeys.imageio.pnm {
+    requires com.twelvemonkeys.common.io;
+    requires com.twelvemonkeys.common.lang;
+    requires java.xml;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive java.desktop;
+
+    exports com.twelvemonkeys.imageio.plugins.pnm;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.pnm.PNMImageReaderSpi,
+        com.twelvemonkeys.imageio.plugins.pnm.PAMImageReaderSpi;
+    provides javax.imageio.spi.ImageWriterSpi with
+        com.twelvemonkeys.imageio.plugins.pnm.PNMImageWriterSpi,
+        com.twelvemonkeys.imageio.plugins.pnm.PAMImageWriterSpi;
+
+}
+

@@ -1,0 +1,18 @@
+module com.twelvemonkeys.imageio.jpeg {
+    requires com.twelvemonkeys.common.io;
+    requires com.twelvemonkeys.common.lang;
+    requires com.twelvemonkeys.imageio.metadata;
+    requires java.xml;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive java.desktop;
+
+    exports com.twelvemonkeys.imageio.plugins.jpeg;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageReaderSpi;
+    provides javax.imageio.spi.ImageWriterSpi with
+        com.twelvemonkeys.imageio.plugins.jpeg.JPEGImageWriterSpi;
+
+}
+

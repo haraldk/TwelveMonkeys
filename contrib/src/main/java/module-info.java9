@@ -1,0 +1,14 @@
+module com.twelvemonkeys.contrib {
+    requires com.twelvemonkeys.common.image;
+    requires com.twelvemonkeys.common.lang;
+    requires com.twelvemonkeys.imageio.core;
+    requires com.twelvemonkeys.imageio.metadata;
+    requires java.xml;
+
+    requires transitive java.desktop;
+
+    exports com.twelvemonkeys.contrib.exif;
+    exports com.twelvemonkeys.contrib.tiff;
+
+}
+
