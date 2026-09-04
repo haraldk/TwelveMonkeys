@@ -1422,6 +1422,218 @@ public class TIFFImageWriterTest extends ImageWriterAbstractTest<TIFFImageWriter
         }
     }
 
+    // Strip and tile support
+
+    private static void fillGradient(final BufferedImage image) {
+        WritableRaster raster = image.getRaster();
+        int maxSample = (1 << Math.min(16, raster.getSampleModel().getSampleSize(0))) - 1;
+
+        for (int y = 0; y < image.getHeight(); y++) {
+            for (int x = 0; x < image.getWidth(); x++) {
+                for (int b = 0; b < raster.getNumBands(); b++) {
+                    raster.setSample(x, y, b, ((x * 7 + y * 13 + b * 29) * 71) % (maxSample + 1));
+                }
+            }
+        }
+    }
+
+    private byte[] writeSingle(final RenderedImage image, final ImageWriteParam param) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+
+        try (ImageOutputStream output = ImageIO.createImageOutputStream(bytes)) {
+            TIFFImageWriter writer = createWriter();
+            writer.setOutput(output);
+            writer.write(null, new IIOImage(image, null, null), param);
+            writer.dispose();
+        }
+
+        return bytes.toByteArray();
+    }
+
+    private BufferedImage readSingle(final byte[] data) throws IOException {
+        try (ImageInputStream input = new ByteArrayImageInputStream(data)) {
+            ImageReader reader = ImageIO.getImageReaders(input).next();
+
+            try {
+                reader.setInput(input);
+
+                return reader.read(0);
+            }
+            finally {
+                reader.dispose();
+            }
+        }
+    }
+
+    private static long[] longs(final Entry entry) {
+        assertNotNull(entry);
+        Object value = entry.getValue();
+
+        if (value instanceof Number) {
+            return new long[] {((Number) value).longValue()};
+        }
+        if (value instanceof long[]) {
+            return (long[]) value;
+        }
+        if (value instanceof int[]) {
+            int[] ints = (int[]) value;
+            long[] longs = new long[ints.length];
+            for (int i = 0; i < longs.length; i++) {
+                longs[i] = ints[i] & 0xffffffffL;
+            }
+            return longs;
+        }
+        if (value instanceof short[]) {
+            short[] shorts = (short[]) value;
+            long[] longs = new long[shorts.length];
+            for (int i = 0; i < longs.length; i++) {
+                longs[i] = shorts[i] & 0xffffL;
+            }
+            return longs;
+        }
+
+        throw new AssertionError("Unexpected value type: " + value.getClass());
+    }
+
+    @Test
+    public void testWriteMultipleStrips() throws IOException {
+        BufferedImage image = new BufferedImage(300, 200, BufferedImage.TYPE_BYTE_GRAY);
+        fillGradient(image);
+
+        byte[] data = writeSingle(image, null);
+
+        Directory ifd = new TIFFReader().read(new ByteArrayImageInputStream(data));
+
+        int rowsPerStrip = (int) longs(ifd.getEntryById(TIFF.TAG_ROWS_PER_STRIP))[0];
+        assertTrue(rowsPerStrip < 200, "Expected multiple strips of ~8K (RowsPerStrip < height), was: " + rowsPerStrip);
+
+        int expectedStrips = (200 + rowsPerStrip - 1) / rowsPerStrip;
+        long[] stripOffsets = longs(ifd.getEntryById(TIFF.TAG_STRIP_OFFSETS));
+        long[] stripByteCounts = longs(ifd.getEntryById(TIFF.TAG_STRIP_BYTE_COUNTS));
+        assertEquals(expectedStrips, stripOffsets.length);
+        assertEquals(expectedStrips, stripByteCounts.length);
+
+        long total = 0;
+        for (int i = 0; i < stripByteCounts.length; i++) {
+            total += stripByteCounts[i];
+
+            if (i > 0) {
+                assertEquals(stripOffsets[i - 1] + stripByteCounts[i - 1], stripOffsets[i], "Uncompressed strips should be contiguous");
+            }
+        }
+        assertEquals(300L * 200, total, "Sum of StripByteCounts should match image data size");
+
+        assertImageEquals("Multi-strip image differs", image, readSingle(data), 0);
+    }
+
+    @Test
+    public void testWriteMultipleStripsCompressed() throws IOException {
+        for (String compression : Arrays.asList("LZW", "Deflate", "PackBits", "ZLib")) {
+            BufferedImage image = new BufferedImage(300, 200, BufferedImage.TYPE_3BYTE_BGR);
+            fillGradient(image);
+
+            TIFFImageWriter writer = createWriter();
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setCompressionType(compression);
+            writer.dispose();
+
+            byte[] data = writeSingle(image, param);
+
+            Directory ifd = new TIFFReader().read(new ByteArrayImageInputStream(data));
+            int rowsPerStrip = (int) longs(ifd.getEntryById(TIFF.TAG_ROWS_PER_STRIP))[0];
+            int expectedStrips = (200 + rowsPerStrip - 1) / rowsPerStrip;
+
+            assertTrue(expectedStrips > 1, "Expected multiple strips for " + compression);
+            assertEquals(expectedStrips, longs(ifd.getEntryById(TIFF.TAG_STRIP_OFFSETS)).length);
+            assertEquals(expectedStrips, longs(ifd.getEntryById(TIFF.TAG_STRIP_BYTE_COUNTS)).length);
+
+            assertImageEquals("Multi-strip " + compression + " image differs", image, readSingle(data), 0);
+        }
+    }
+
+    @Test
+    public void testWriteTiled() throws IOException {
+        for (String compression : Arrays.asList("None", "LZW", "Deflate", "PackBits")) {
+            BufferedImage image = new BufferedImage(200, 100, BufferedImage.TYPE_3BYTE_BGR);
+            fillGradient(image);
+
+            TIFFImageWriter writer = createWriter();
+            ImageWriteParam param = writer.getDefaultWriteParam();
+            param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setCompressionType(compression);
+            param.setTilingMode(ImageWriteParam.MODE_EXPLICIT);
+            param.setTiling(64, 48, 0, 0);
+            writer.dispose();
+
+            byte[] data = writeSingle(image, param);
+
+            Directory ifd = new TIFFReader().read(new ByteArrayImageInputStream(data));
+
+            assertEquals(64, (int) longs(ifd.getEntryById(TIFF.TAG_TILE_WIDTH))[0]);
+            assertEquals(48, (int) longs(ifd.getEntryById(TIFF.TAG_TILE_HEIGTH))[0]);
+            assertNull(ifd.getEntryById(TIFF.TAG_ROWS_PER_STRIP), "Tiled files should not contain strip tags");
+            assertNull(ifd.getEntryById(TIFF.TAG_STRIP_OFFSETS), "Tiled files should not contain strip tags");
+
+            int expectedTiles = ((200 + 63) / 64) * ((100 + 47) / 48);
+            assertEquals(expectedTiles, longs(ifd.getEntryById(TIFF.TAG_TILE_OFFSETS)).length);
+            assertEquals(expectedTiles, longs(ifd.getEntryById(TIFF.TAG_TILE_BYTE_COUNTS)).length);
+
+            assertImageEquals("Tiled " + compression + " image differs", image, readSingle(data), 0);
+        }
+    }
+
+    @Test
+    public void testWriteTiledBilevelCCITT() throws IOException {
+        BufferedImage image = new BufferedImage(200, 100, BufferedImage.TYPE_BYTE_BINARY);
+        Graphics2D g2d = image.createGraphics();
+        try {
+            g2d.setColor(Color.WHITE);
+            g2d.fillRect(30, 20, 120, 60);
+            g2d.setColor(Color.BLACK);
+            g2d.fillOval(50, 30, 60, 40);
+        }
+        finally {
+            g2d.dispose();
+        }
+
+        TIFFImageWriter writer = createWriter();
+        ImageWriteParam param = writer.getDefaultWriteParam();
+        param.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
+        param.setCompressionType("CCITT T.6");
+        param.setTilingMode(ImageWriteParam.MODE_EXPLICIT);
+        param.setTiling(64, 48, 0, 0);
+        writer.dispose();
+
+        byte[] data = writeSingle(image, param);
+
+        Directory ifd = new TIFFReader().read(new ByteArrayImageInputStream(data));
+        assertEquals(TIFFExtension.COMPRESSION_CCITT_T6, (int) longs(ifd.getEntryById(TIFF.TAG_COMPRESSION))[0]);
+        assertEquals(((200 + 63) / 64) * ((100 + 47) / 48), longs(ifd.getEntryById(TIFF.TAG_TILE_OFFSETS)).length);
+
+        assertImageEquals("Tiled CCITT T.6 image differs", image, readSingle(data), 0);
+    }
+
+    @Test
+    public void testWriteTileSizeRoundedToMultipleOf16() throws IOException {
+        BufferedImage image = new BufferedImage(100, 80, BufferedImage.TYPE_BYTE_GRAY);
+        fillGradient(image);
+
+        TIFFImageWriter writer = createWriter();
+        ImageWriteParam param = writer.getDefaultWriteParam();
+        param.setTilingMode(ImageWriteParam.MODE_EXPLICIT);
+        param.setTiling(60, 40, 0, 0);
+        writer.dispose();
+
+        byte[] data = writeSingle(image, param);
+
+        Directory ifd = new TIFFReader().read(new ByteArrayImageInputStream(data));
+        assertEquals(64, (int) longs(ifd.getEntryById(TIFF.TAG_TILE_WIDTH))[0], "Tile width should be rounded up to multiple of 16");
+        assertEquals(48, (int) longs(ifd.getEntryById(TIFF.TAG_TILE_HEIGTH))[0], "Tile length should be rounded up to multiple of 16");
+
+        assertImageEquals("Tiled image differs", image, readSingle(data), 0);
+    }
+
     private static class ImageInfo {
         final int width;
         final int height;
