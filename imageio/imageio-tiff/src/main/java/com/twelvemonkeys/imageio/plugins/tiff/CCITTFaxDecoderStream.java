@@ -305,13 +305,13 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                             break;
 
                         case VALUE_PASSMODE:
-                            int pChangingElement = getNextChangingElement(index, white, atImaginaryA0) + 1;
+                            int pChangingElement = getNextChangingElement(index, white, atImaginaryA0);
 
-                            if (pChangingElement == 0 || pChangingElement >= changesReferenceRowCount) {
+                            if (pChangingElement == -1 || pChangingElement + 1 >= changesReferenceRowCount) {
                                 index = columns;
                             }
                             else {
-                                index = changesReferenceRow[pChangingElement];
+                                index = changesReferenceRow[pChangingElement + 1];
                             }
 
                             break;
@@ -319,16 +319,16 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                         default:
                             // Vertical mode (-3 to 3)
                             int vChangingElement = getNextChangingElement(index, white, atImaginaryA0);
+
                             int vTarget;
-                            if (vChangingElement >= changesReferenceRowCount || vChangingElement == -1) {
+                            if (vChangingElement == -1 || vChangingElement >= changesReferenceRowCount) {
                                 vTarget = columns + n.value;
                             }
                             else {
                                 vTarget = changesReferenceRow[vChangingElement] + n.value;
                             }
 
-                            // Clamp target to [0, columns] — some encoders emit V modes past the image
-                            // boundary as an end-of-row sentinel. Clamping prevents reference cascade.
+                            // Clamp target as some encoders emit V modes past the image boundary as end-of-row marker
                             index = Math.min(Math.max(vTarget, 0), columns);
 
                             changesCurrentRow[changesCurrentRowCount++] = index;
