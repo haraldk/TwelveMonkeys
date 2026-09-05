@@ -39,9 +39,9 @@
             <artifactId>imageio-metadata</artifactId>
         </dependency>
         <dependency>
-            <groupId>openize</groupId>
+            <groupId>com.aspose</groupId>
             <artifactId>openize-heic</artifactId>
-            <version>25.6</version>
+            <version>26.5</version>
         </dependency>
     </dependencies>
 

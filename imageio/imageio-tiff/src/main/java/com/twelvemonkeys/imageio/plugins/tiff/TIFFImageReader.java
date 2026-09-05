@@ -2869,6 +2869,7 @@ public final class TIFFImageReader extends ImageReaderBase {
                 }
 
                 int numImages = reader.getNumImages(true);
+                System.out.println("numImages = " + numImages);
                 for (int imageNo = 0; imageNo < numImages; imageNo++) {
                     //            if (args.length > 1) {
                     //                int sub = Integer.parseInt(args[1]);

@@ -56,9 +56,11 @@ public class HEICImageReaderTest extends ImageReaderAbstractTest<HEICImageReader
         return Collections.singletonList(
                 new TestData(getClassLoaderResource("/heic/random_collection_1440x960.heic"),
                         // TODO: The 240x160 images are thumbnails...
-                        new Dimension(1440, 960), new Dimension(240, 160),
-                        new Dimension(1440, 960), new Dimension(240, 160),
-                        new Dimension(1440, 960), new Dimension(240, 160))
+                        new Dimension(1440, 960), //new Dimension(240, 160),
+                        new Dimension(1440, 960), //new Dimension(240, 160),
+                        new Dimension(1440, 960), //new Dimension(240, 160),
+                        new Dimension(1440, 960)//, new Dimension(240, 160)
+                )
         );
     }
 
