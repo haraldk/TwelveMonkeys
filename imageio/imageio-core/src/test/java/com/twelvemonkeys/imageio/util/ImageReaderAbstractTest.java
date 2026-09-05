@@ -558,10 +558,13 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
                 int expectedRGB = expected.getRGB(x, y);
                 int actualRGB = actual.getRGB(x, y);
 
-                assertEquals((expectedRGB >> 24) & 0xff, (actualRGB >> 24) & 0xff, 5, String.format("%s alpha at (%d, %d)", message, x, y));
-                assertEquals((expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, 5, String.format("%s red at (%d, %d)", message, x, y));
-                assertEquals((expectedRGB >> 8) & 0xff, (actualRGB >> 8) & 0xff, 5, String.format("%s green at (%d, %d)", message, x, y));
-                assertEquals(expectedRGB & 0xff, actualRGB & 0xff, 5, String.format("%s blue at (%d, %d)", message, x, y));
+                if (actualRGB != expectedRGB) {
+                    // String formatting is expensive, skip assert if ARGB is equal...
+                    assertEquals((expectedRGB >>> 24) & 0xff, (actualRGB >>> 24) & 0xff, 5, String.format("%s alpha at (%d, %d)", message, x, y));
+                    assertEquals((expectedRGB >> 16) & 0xff, (actualRGB >> 16) & 0xff, 5, String.format("%s red at (%d, %d)", message, x, y));
+                    assertEquals((expectedRGB >> 8) & 0xff, (actualRGB >> 8) & 0xff, 5, String.format("%s green at (%d, %d)", message, x, y));
+                    assertEquals(expectedRGB & 0xff, actualRGB & 0xff, 5, String.format("%s blue at (%d, %d)", message, x, y));
+                }
             }
         }
     }
