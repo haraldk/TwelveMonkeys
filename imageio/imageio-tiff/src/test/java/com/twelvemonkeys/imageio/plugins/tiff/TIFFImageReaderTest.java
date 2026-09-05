@@ -122,6 +122,7 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d_fill.tif"), new Dimension(6, 4)), // B/W, CCITT T4 2D
                 new TestData(getClassLoaderResource("/tiff/ccitt/group3_2d_lsb2msb.tif"), new Dimension(6, 4)), // B/W, CCITT T4 2D, LSB
                 new TestData(getClassLoaderResource("/tiff/ccitt/group4.tif"), new Dimension(6, 4)), // B/W, CCITT T6 1D
+                new TestData(getClassLoaderResource("/tiff/ccitt/testfax4.tiff"), new Dimension(2453, 3369)), // B/W, CCITT T6, from libtiff test suite
                 new TestData(getClassLoaderResource("/tiff/ccitt_tolessrows.tif"), new Dimension(6, 6)), // CCITT, metadata claiming 6 rows, stream contains only 4
                 new TestData(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif"), new Dimension(2480, 3518)), // B/W, CCITT T4
                 new TestData(getClassLoaderResource("/tiff/CCITTgetNextChangingElement.tif"), new Dimension(2402,195)),
@@ -1034,6 +1035,24 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                         String.format("Raster %s index %s has wrong height: %s", data.getInput(), i, raster.getHeight())
                 );
             }
+        }
+    }
+
+    @Test
+    void testVerifiedPNGvsCCITT()  throws IOException {
+        BufferedImage verified = ImageIO.read(getClassLoaderResource("/tiff/ccitt/testfax4.png"));
+
+        ImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/ccitt/testfax4.tiff"))) {
+            reader.setInput(stream);
+
+            BufferedImage actual = reader.read(0);
+
+            assertImageDataEquals("Image data differs", verified, actual);
+        }
+        finally {
+            reader.dispose();
         }
     }
 }
