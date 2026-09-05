@@ -159,7 +159,7 @@ class CCITTFaxDecoderStreamTest {
         byte[] bytes = new byte[imageData.length];
 
         DataInputStream dataInputStream = new DataInputStream(stream);
-        dataInputStream.readFully(bytes);
+        assertDoesNotThrow(() -> dataInputStream.readFully(bytes));
         assertArrayEquals(imageData, bytes);
 
         assertEquals(-1, dataInputStream.read());
@@ -175,7 +175,7 @@ class CCITTFaxDecoderStreamTest {
         byte[] bytes = new byte[imageData.length];
 
         DataInputStream dataInputStream = new DataInputStream(stream);
-        dataInputStream.readFully(bytes);
+        assertDoesNotThrow(() -> dataInputStream.readFully(bytes));
         assertArrayEquals(imageData, bytes);
 
         assertEquals(-1, dataInputStream.read());
@@ -330,24 +330,26 @@ class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    void testDecodeType4ByteAligned() throws IOException {
+    void testDecodeType4ByteAligned(){
         CCITTFaxDecoderStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G4_ALIGNED), 6,
                 TIFFExtension.COMPRESSION_CCITT_T6, 0L, true);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
-        new DataInputStream(stream).readFully(bytes);
+
+        assertDoesNotThrow(() -> new DataInputStream(stream).readFully(bytes));
         assertArrayEquals(imageData, bytes);
     }
 
     @Test
-    void testDecodeType2NotByteAligned() throws IOException {
+    void testDecodeType2NotByteAligned() {
         CCITTFaxDecoderStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_RLE_UNALIGNED), 6,
                 TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 0L, false);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
-        new DataInputStream(stream).readFully(bytes);
+
+        assertDoesNotThrow(() -> new DataInputStream(stream).readFully(bytes));
         assertArrayEquals(imageData, bytes);
     }
 
@@ -369,7 +371,7 @@ class CCITTFaxDecoderStreamTest {
                 1728, TIFFExtension.COMPRESSION_CCITT_T4, TIFFExtension.GROUP3OPT_FILLBITS);
 
         byte[] bytes = new byte[216 * 1168]; // 1728 x 1168 pixel, 1 bpp => 216 bytes * 1168
-        new DataInputStream(stream).readFully(bytes);
+        assertDoesNotThrow(() -> new DataInputStream(stream).readFully(bytes));
     }
 
     @SuppressWarnings("StatementWithEmptyBody")

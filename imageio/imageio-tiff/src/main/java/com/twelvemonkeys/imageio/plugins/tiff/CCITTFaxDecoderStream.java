@@ -203,14 +203,6 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         if (decodedPos >= decodedLength) {
             decodedLength = 0;
 
-//            // rowsLeft == 0: an explicit row count was given and all rows have been decoded.
-//            // Avoid reading into trailing EOFB or padding bytes which would cause spurious decode errors.
-//            if (rowsLeft == 0) {
-//                decodedLength = -1;
-//                decodedPos = 0;
-//                return;
-//            }
-
             try {
                 decodeRow();
             }
@@ -339,7 +331,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
                     continue mode;
                 }
-                // else continue inner while (true) loop
+                // Otherwise continue the inner while (true) loop
             }
         }
     }
