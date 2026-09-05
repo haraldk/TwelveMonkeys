@@ -272,12 +272,8 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         changesReferenceRow = tmp;
 
         boolean white = true;
-        int index = 0;
         // T.6 §4.2.1: a0 starts at the imaginary position −1 before the first column.
-        // This flag tracks whether we are still at that imaginary position. It becomes
-        // false after the first mode code is processed (including Pass mode, which does
-        // not record a changing element and would otherwise leave the state unchanged).
-        boolean atImaginaryA0 = true;
+        int index = -1;
         changesCurrentRowCount = 0;
 
         mode: while (index < columns) {
@@ -294,6 +290,10 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                 else if (n.isLeaf) {
                     switch (n.value) {
                         case VALUE_HMODE:
+                            if (index < 0) {
+                                index = 0;
+                            }
+
                             int runLength;
                             runLength = decodeRun(white ? whiteRunTree : blackRunTree);
                             index += runLength;
@@ -305,7 +305,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                             break;
 
                         case VALUE_PASSMODE:
-                            int pChangingElement = getNextChangingElement(index, white, atImaginaryA0);
+                            int pChangingElement = getNextChangingElement(index, white);
 
                             if (pChangingElement == -1 || pChangingElement + 1 >= changesReferenceRowCount) {
                                 index = columns;
@@ -318,7 +318,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
                         default:
                             // Vertical mode (-3 to 3)
-                            int vChangingElement = getNextChangingElement(index, white, atImaginaryA0);
+                            int vChangingElement = getNextChangingElement(index, white);
 
                             int vTarget;
                             if (vChangingElement == -1 || vChangingElement >= changesReferenceRowCount) {
@@ -337,26 +337,22 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                             break;
                     }
 
-                    atImaginaryA0 = false;
                     continue mode;
                 }
+                // else continue inner while (true) loop
             }
         }
     }
 
-    private int getNextChangingElement(final int a0, final boolean white, final boolean atImaginaryA0) {
+    private int getNextChangingElement(final int a0, final boolean white) {
         int start = (lastChangingElement & 0xFFFF_FFFE) + (white ? 0 : 1);
         if (start > 2) {
             start -= 2;
         }
 
         // T.6 §4.2.1: the imaginary initial a0 is at position −1 (before column 0), so
-        // position 0 in the reference is a valid b1 at true row start. The loop uses
-        // coded a0=0 and the condition 0<0=false would wrongly skip position 0.
-        // atImaginaryA0 must be used here rather than changesCurrentRowCount==0 because
-        // Pass mode does not record a changing element, so the count would stay 0 through
-        // multiple stuck Pass modes at row start if the reference has a zero-length pair.
-        if (a0 == 0 && (atImaginaryA0 || start >= changesReferenceRowCount || changesReferenceRow[start] > 0)) {
+        // position 0 in the reference is a valid b1 at true row start
+        if (a0 == -1) {
             return start;
         }
 
