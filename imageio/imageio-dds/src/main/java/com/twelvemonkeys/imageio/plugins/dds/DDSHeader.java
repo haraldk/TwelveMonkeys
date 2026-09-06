@@ -53,6 +53,8 @@ import java.util.Arrays;
  */
 final class DDSHeader {
 
+    private static final double LOG2 = Math.log(2);
+
     private int flags;
 
     private int mipMapCount;
@@ -94,6 +96,11 @@ final class DDSHeader {
         // 0 = (unused) or 1 = (1 level), but still one 'base' image
         header.mipMapCount = Math.max(1, imageInput.readInt()); // [28,31]
 
+        int maxMipMapCount = Math.min(24, (int) log2(Math.max(dwWidth, dwHeight)) + 1); // Max possible levels based on input, capped at 24
+        if (header.mipMapCount > maxMipMapCount) {
+            throw new IIOException(String.format("Invalid DDS mipmap count (expected <= %d): %d", maxMipMapCount, header.mipMapCount));
+        }
+
         // build dimensions list
         header.addDimensions(dwWidth, dwHeight);
 
@@ -126,6 +133,11 @@ final class DDSHeader {
         }
 
         return header;
+    }
+
+    // Possible util method...
+    private static double log2(int v) {
+        return Math.log(v) / LOG2;
     }
 
     private void addDimensions(int width, int height) {
