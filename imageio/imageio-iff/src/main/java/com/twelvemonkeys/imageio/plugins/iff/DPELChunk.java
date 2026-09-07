@@ -51,6 +51,9 @@ UWORD cType;
     void readChunk(final DataInput input) throws IOException {
         int components = input.readInt(); // Strictly, it's unsigned, but that many components is unlikely...
 
+        if (components > 16) {
+            throw new IIOException("Unsupported number of DPEL components: " + components);
+        }
         if (chunkLength != 4 + components * 4) {
             throw new IIOException("Unsupported DPEL chunk length: " + chunkLength);
         }

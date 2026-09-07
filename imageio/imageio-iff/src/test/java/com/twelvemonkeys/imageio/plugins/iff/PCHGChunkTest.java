@@ -30,18 +30,19 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import org.junit.jupiter.api.Test;
 
+import javax.imageio.IIOException;
 import java.awt.image.ColorModel;
 import java.awt.image.DataBuffer;
 import java.awt.image.IndexColorModel;
-import java.io.ByteArrayInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class PCHGChunkTest {
 
@@ -51,7 +52,7 @@ class PCHGChunkTest {
 
     private static PCHGChunk parse(final byte[] body) throws IOException {
         PCHGChunk chunk = new PCHGChunk(body.length);
-        chunk.readChunk(new DataInputStream(new ByteArrayInputStream(body)));
+        chunk.readChunk(new ByteArrayImageInputStream(body));
         return chunk;
     }
 
@@ -77,14 +78,19 @@ class PCHGChunkTest {
     }
 
     @Test
-    void negativeRegisterIsIgnored() throws IOException {
-        // reg 0xfffe reads back as a negative short; adjustColorMap must not index the palette with it
-        PCHGChunk chunk = parse(chunkWithRegister(0xfffe));
+    void specialIngoreRegisterIsIgnored() throws IOException {
+        // reg 0xffff reads back as a negative short -1; adjustColorMap must not index the palette with it
+        PCHGChunk chunk = parse(chunkWithRegister(0xffff));
         IndexColorModel base = base();
 
         ColorModel palette = assertDoesNotThrow(() -> chunk.getColorModel(base, 1, false));
 
         assertNotNull(palette);
+    }
+    @Test
+    void parseNegativeRegisterThrows() {
+        // reg 0xfffe reads back as a negative short -2; adjustColorMap must not index the palette with it
+        assertThrows(IIOException.class, () -> parse(chunkWithRegister(0xfffe)));
     }
 
     @Test

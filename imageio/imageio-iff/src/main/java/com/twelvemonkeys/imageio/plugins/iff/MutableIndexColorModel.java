@@ -74,23 +74,14 @@ final class MutableIndexColorModel extends ColorModel {
     }
 
     public void adjustColorMap(final PaletteChange[] changes) {
-        for (int i = 0; i < changes.length; i++) {
-            int index = changes[i].index;
+        for (PaletteChange change : changes) {
+            int index = change.index;
 
             if (index == MP_REG_IGNORE) {
                 continue;
             }
 
-            // TODO: Move validation to chunk (when reading)
-            if (index < 0 || index >= rgbs.length) {
-                // TODO: Issue IIO warning
-                System.err.println("warning - palette change register out of range");
-                System.err.printf("    change structure %d  index=%d (max %d)\n", i, index, getMapSize() - 1);
-                System.err.println("    ignoring it... colors might get messed up from here");
-            }
-            else {
-                updateRGB(index, ((changes[i].r & 0xff) << 16) | ((changes[i].g & 0xff) << 8) | (changes[i].b & 0xff));
-            }
+            updateRGB(index, ((change.r & 0xff) << 16) | ((change.g & 0xff) << 8) | (change.b & 0xff));
         }
     }
 
@@ -123,16 +114,24 @@ final class MutableIndexColorModel extends ColorModel {
         rgbs[index] = rgb;
     }
 
+    @SuppressWarnings("unused")
     public int getMapSize() {
         return rgbs.length;
     }
 
-    static class PaletteChange {
+    static final class PaletteChange {
         /* palette index to change */
-        public int index;
+        final int index;
         /* new colors for index */
-        public byte r;
-        public byte g;
-        public byte b;
+        final byte r;
+        final byte g;
+        final byte b;
+
+        public PaletteChange(int index, byte r, byte g, byte b) {
+            this.index = index;
+            this.r = r;
+            this.g = g;
+            this.b = b;
+        }
     }
 }

@@ -43,9 +43,13 @@
  */
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import com.twelvemonkeys.imageio.plugins.iff.MutableIndexColorModel.PaletteChange;
+
 import javax.imageio.IIOException;
 import java.io.DataInput;
 import java.io.IOException;
+
+import static com.twelvemonkeys.imageio.plugins.iff.MutableIndexColorModel.MP_REG_IGNORE;
 
 /**
  * PCHGChunk
@@ -119,15 +123,14 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
                 throw new IIOException("Unknown PCHG compression: " + compression);
         }
 
-        changes = new MutableIndexColorModel.PaletteChange[startLine + lineCount][];
+        changes = new PaletteChange[startLine + lineCount][];
 
         if (startLine < 0) {
             int numChanges = maxReg - minReg + 1;
 
-            initialChanges = new MutableIndexColorModel.PaletteChange[numChanges];
+            initialChanges = new PaletteChange[numChanges];
         }
 
-        // TODO: Postpone conversion to when the data is actually needed
         parseChanges(data, flags);
     }
 
@@ -179,8 +182,8 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
         }
         else if ((flags & PCHGF_32BIT) != 0) {
             if ((flags & PCHGF_USE_ALPHA) != 0) {
-                // TODO: Warning, or actually implement
-                new IIOException("Alpha currently not supported.").printStackTrace();
+                // TODO: Warning, rather than exception here would be nice...
+                throw new IIOException("Alpha currently not supported.");
             }
 
             small = false;
@@ -242,23 +245,33 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
                         dataIdx += 2;
                         dataBytesLeft -= 2;
                         int reg = ((smallChange & 0xf000) >> 12) + (i >= changeCount16 ? 16 : 0);
-                        initialChanges[reg - minReg] = new MutableIndexColorModel.PaletteChange();
-                        initialChanges[reg - minReg].index = reg;
-                        initialChanges[reg - minReg].r = (byte) (((smallChange & 0x0f00) >> 8) * FACTOR_4BIT);
-                        initialChanges[reg - minReg].g = (byte) (((smallChange & 0x00f0) >> 4) * FACTOR_4BIT);
-                        initialChanges[reg - minReg].b = (byte) (((smallChange & 0x000f)     ) * FACTOR_4BIT);
+
+                        initialChanges[reg - minReg] = new PaletteChange(
+                                reg,
+                                (byte) (((smallChange & 0x0f00) >> 8) * FACTOR_4BIT),
+                                (byte) (((smallChange & 0x00f0) >> 4) * FACTOR_4BIT),
+                                (byte) (((smallChange & 0x000f)     ) * FACTOR_4BIT)
+                        );
                     }
                     else {
                         int reg = toShort(data, dataIdx);
                         dataIdx += 2;
-                        initialChanges[reg - minReg] = new MutableIndexColorModel.PaletteChange();
-                        initialChanges[reg - minReg].index = reg;
-                        dataIdx++; /* skip alpha */
-                        initialChanges[reg - minReg].r = data[dataIdx++];
-                        initialChanges[reg - minReg].b = data[dataIdx++];    /* yes, RBG */
-                        initialChanges[reg - minReg].g = data[dataIdx++];
-                        dataBytesLeft -= 6;
 
+                        if (reg < 0 && reg != MP_REG_IGNORE) {
+                            throw new IIOException("Illegal index register: " + reg);
+                        }
+
+                        dataIdx++; // Skip alpha
+
+                        initialChanges[reg - minReg] = new PaletteChange(
+                                reg,
+                                data[dataIdx],
+                                data[dataIdx + 2], // RBG order...
+                                data[dataIdx + 1]
+                        );
+
+                        dataIdx+=3;
+                        dataBytesLeft -= 6;
                     }
 
                     ++totalchanges;
@@ -298,7 +311,7 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
                 }
                 dataBytesLeft -= 2;
 
-                changes[row] = new MutableIndexColorModel.PaletteChange[changeCount];
+                changes[row] = new PaletteChange[changeCount];
 
                 for (int i = 0; i < changeCount; i++) {
                     if (totalchanges >= this.totalChanges) {
@@ -315,26 +328,31 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
                         dataBytesLeft -= 2;
                         int reg = ((smallChange & 0xf000) >> 12) + (i >= changeCount16 ? 16 : 0);
 
-                        MutableIndexColorModel.PaletteChange paletteChange = new MutableIndexColorModel.PaletteChange();
-                        paletteChange.index = reg;
-                        paletteChange.r = (byte) (((smallChange & 0x0f00) >> 8) * FACTOR_4BIT);
-                        paletteChange.g = (byte) (((smallChange & 0x00f0) >> 4) * FACTOR_4BIT);
-                        paletteChange.b = (byte) (((smallChange & 0x000f)     ) * FACTOR_4BIT);
-
-                        changes[row][i] = paletteChange;
+                        changes[row][i] = new PaletteChange(
+                                reg,
+                                (byte) (((smallChange & 0x0f00) >> 8) * FACTOR_4BIT),
+                                (byte) (((smallChange & 0x00f0) >> 4) * FACTOR_4BIT),
+                                (byte) (((smallChange & 0x000f)     ) * FACTOR_4BIT)
+                        );
                     }
                     else {
                         int reg = toShort(data, dataIdx);
                         dataIdx += 2;
 
-                        MutableIndexColorModel.PaletteChange paletteChange = new MutableIndexColorModel.PaletteChange();
-                        paletteChange.index = reg;
-                        dataIdx++; /* skip alpha */
-                        paletteChange.r = data[dataIdx++];
-                        paletteChange.b = data[dataIdx++];    /* yes, RBG */
-                        paletteChange.g = data[dataIdx++];
-                        changes[row][i] = paletteChange;
+                        if (reg < 0 && reg != MP_REG_IGNORE) {
+                            throw new IIOException("Illegal index register: " + reg);
+                        }
 
+                        dataIdx++; // Skip alpha
+
+                        changes[row][i] = new PaletteChange(
+                                reg,
+                                data[dataIdx],
+                                data[dataIdx + 2], // RBG order...
+                                data[dataIdx + 1]
+                        );
+
+                        dataIdx+=3;
                         dataBytesLeft -= 6;
                     }
 
@@ -349,8 +367,8 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
         }
 
         if (totalchanges != this.totalChanges) {
-            // TODO: Issue IIO warning
-            new IIOException(String.format("Got %d change structures, chunk header reports %d", totalchanges, this.totalChanges)).printStackTrace();
+            // TODO: Issue IIO warning instead?
+            throw new IIOException(String.format("Got %d change structures, chunk header reports %d", totalchanges, this.totalChanges));
         }
     }
 

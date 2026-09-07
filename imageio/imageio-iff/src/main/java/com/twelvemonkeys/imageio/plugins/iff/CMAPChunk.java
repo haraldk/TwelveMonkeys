@@ -124,8 +124,8 @@ final class CMAPChunk extends IFFChunk {
             if (header.isEHB()) {
                 if (numColors == 32) {
                     reds = Arrays.copyOf(reds,  numColors * 2);
-                    blues = Arrays.copyOf(blues,  numColors * 2);
                     greens = Arrays.copyOf(greens,  numColors * 2);
+                    blues = Arrays.copyOf(blues,  numColors * 2);
                 }
                 else if (numColors != 64) {
                     throw new IIOException("Unknown number of colors for EHB: " + numColors);
@@ -147,7 +147,7 @@ final class CMAPChunk extends IFFChunk {
             int transparent = header.transparentIndex();
             int bitplanes = header.bitplanes() == 25 ? 8 : header.bitplanes();
 
-            model = new IndexColorModel(bitplanes, reds.length, reds, greens, blues, transparent); // https://github.com/haraldk/TwelveMonkeys/issues/15
+            model = new IndexColorModel(bitplanes, reds.length, reds, greens, blues, transparent);
         }
 
         return model;
