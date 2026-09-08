@@ -31,12 +31,64 @@
 package com.twelvemonkeys.imageio.plugins.heic;
 
 import com.twelvemonkeys.imageio.StandardImageMetadataSupport;
+import openize.heic.decoder.ExifData;
+import openize.heic.decoder.ExifDirectoryType;
+import openize.heic.decoder.HeicImageFrame;
 
 import javax.imageio.ImageTypeSpecifier;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.TimeZone;
 
 final class HEICImageMetadata extends StandardImageMetadataSupport {
-    // TODO: Pull out what we can from the apropriate boxes...
-    HEICImageMetadata(ImageTypeSpecifier type, String compressionName) {
-        super(builder(type).withCompressionTypeName(compressionName));
+    // TODO: Pull out more info from the appropriate boxes/EXIF as needed...
+
+    private static final int TAG_DATE_TIME_ORIGINAL = 0x9003;
+    private static final int TAG_DATE_TIME = 0x0132;
+
+    HEICImageMetadata(ImageTypeSpecifier type, HeicImageFrame frame) {
+        super(withFrameValues(builder(type), frame));
+    }
+
+    private static Builder withFrameValues(Builder builder, HeicImageFrame frame) {
+        builder.withCompressionTypeName("HEVC")
+               .withCompressionLossless(false);
+        // NOTE: Orientation is left as Normal, the decoder
+        // already applies 'irot'/'imir' transforms while decoding
+
+        Calendar creationTime = creationTime(frame.Exif);
+        if (creationTime != null) {
+            builder.withDocumentCreationTime(creationTime);
+        }
+
+        return builder;
+    }
+
+    private static Calendar creationTime(ExifData exif) {
+        if (exif == null) {
+            return null;
+        }
+
+        try {
+            String dateTime = exif.getExifString(ExifDirectoryType.ExifSubIfdDirectory, TAG_DATE_TIME_ORIGINAL);
+            if (dateTime == null) {
+                dateTime = exif.getExifString(ExifDirectoryType.ExifIfd0Directory, TAG_DATE_TIME);
+            }
+
+            if (dateTime != null && dateTime.matches("\\d{4}:\\d{2}:\\d{2} \\d{2}:\\d{2}:\\d{2}")) {
+                DateFormat format = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
+                format.setTimeZone(TimeZone.getTimeZone("UTC")); // EXIF date/time has no zone info
+                Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+                calendar.setTime(format.parse(dateTime));
+
+                return calendar;
+            }
+        }
+        catch (Exception ignore) {
+            // Bad or unparseable EXIF should never prevent reading metadata
+        }
+
+        return null;
     }
 }

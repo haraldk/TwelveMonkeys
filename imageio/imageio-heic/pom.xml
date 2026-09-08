@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-heic</artifactId>
     <name>TwelveMonkeys :: ImageIO :: HEIC plugin</name>
@@ -13,13 +13,17 @@
     </description>
 
     <properties>
-        <project.jpms.module.name>com.twelvemonkeys.imageio.plugins</project.jpms.module.name>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.heic</project.jpms.module.name>
     </properties>
 
     <repositories>
         <repository>
-            <id>aspose-maven-repository</id>
-            <url>https://repository.aspose.com/repo/</url>
+            <id>AsposeJavaAPI</id>
+            <name>Aspose Java API</name>
+            <url>https://releases.aspose.com/java/repo/</url>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
         </repository>
     </repositories>
 

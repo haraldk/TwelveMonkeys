@@ -45,7 +45,7 @@ final class HEICProviderInfo extends ReaderWriterProviderInfo {
                 HEICProviderInfo.class,
                 new String[]{"heic", "HEIC"},
                 new String[]{"heic"},
-                new String[]{"image/x-heic"},
+                new String[]{"image/heic", "image/x-heic"},
                 "com.twelvemonkeys.imageio.plugins.heic.HEICImageReader",
                 new String[] {"com.twelvemonkeys.imageio.plugins.heic.HEICImageReaderSpi"},
                 null,

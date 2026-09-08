@@ -55,11 +55,11 @@ public class HEICImageReaderTest extends ImageReaderAbstractTest<HEICImageReader
     protected List<TestData> getTestData() {
         return Collections.singletonList(
                 new TestData(getClassLoaderResource("/heic/random_collection_1440x960.heic"),
-                        // TODO: The 240x160 images are thumbnails...
-                        new Dimension(1440, 960), //new Dimension(240, 160),
-                        new Dimension(1440, 960), //new Dimension(240, 160),
-                        new Dimension(1440, 960), //new Dimension(240, 160),
-                        new Dimension(1440, 960)//, new Dimension(240, 160)
+                        // NOTE: The 240x160 thumbnails are exposed through the thumbnail API
+                        new Dimension(1440, 960),
+                        new Dimension(1440, 960),
+                        new Dimension(1440, 960),
+                        new Dimension(1440, 960)
                 )
         );
     }
@@ -76,8 +76,8 @@ public class HEICImageReaderTest extends ImageReaderAbstractTest<HEICImageReader
 
     @Override
     protected List<String> getMIMETypes() {
-        return Collections.singletonList(
-                "image/x-heic"
+        return Arrays.asList(
+                "image/heic", "image/x-heic"
         );
     }
 }

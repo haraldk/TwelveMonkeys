@@ -142,8 +142,8 @@ final class ImageInputStreamIOStreamAdapter implements IOStream {
     }
 
     @Override
-    public void close() throws IOException {
-        // TODO: Maybe not?
-        input.close();
+    public void close() {
+        // No-op: Per ImageIO convention, the client owns the stream,
+        // the reader should never close a stream it didn't create
     }
 }
