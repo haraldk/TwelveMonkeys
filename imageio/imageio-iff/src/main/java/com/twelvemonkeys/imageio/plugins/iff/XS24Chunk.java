@@ -9,7 +9,7 @@ import java.io.DataOutput;
 import java.io.IOException;
 
 /**
- * XS24Chunk.
+ * XS24Chunk, used for TVPaint thumbnail.
  *
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @author last modified by $Author: haraldk$

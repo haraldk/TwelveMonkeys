@@ -56,6 +56,12 @@ import java.util.Iterator;
 import java.util.List;
 
 public final class SGIImageReader extends ImageReaderBase {
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for SGI, used to bound the destination allocation
+     * against the input length. SGI is uncompressed or run-length encoded; 128:1 leaves margin above RLE's
+     * maximum (~64:1 for 8-bit pixels), so no valid image is rejected.
+     */
+    private static final int MAX_EXPANSION_RATIO = 128;
 
     private SGIHeader header;
 
@@ -162,6 +168,7 @@ public final class SGIImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
+        validateSourceSize(rawType, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
         BufferedImage destination = getDestination(param, imageTypes, width, height);
 
         Rectangle srcRegion = new Rectangle();
@@ -328,10 +335,11 @@ public final class SGIImageReader extends ImageReaderBase {
     private void normalize(final byte[] rowData, final int start, final int length) {
         int minValue = header.getMinValue();
         int maxValue = header.getMaxValue();
-        if (minValue != 0 && maxValue != 0xff) {
+
+        if (minValue != 0 || maxValue != 0xff) {
             // Normalize
             for (int i = start; i < length; i++) {
-                rowData[i] = (byte) (((rowData[i] - minValue) * 0xff) / maxValue);
+                rowData[i] = (byte) ((((rowData[i] & 0xff) - minValue) * 0xff) / (maxValue - minValue));
             }
         }
     }
@@ -339,10 +347,11 @@ public final class SGIImageReader extends ImageReaderBase {
     private void normalize(final short[] rowData, final int start, final int length) {
         int minValue = header.getMinValue();
         int maxValue = header.getMaxValue();
-        if (minValue != 0 && maxValue != 0xff) {
+
+        if (minValue != 0 || maxValue != 0xffff) {
             // Normalize
             for (int i = start; i < length; i++) {
-                rowData[i] = (byte) (((rowData[i] - minValue) * 0xff) / maxValue);
+                rowData[i] = (short) ((((rowData[i] & 0xffff) - minValue) * 0xffff) / (maxValue - minValue));
             }
         }
     }

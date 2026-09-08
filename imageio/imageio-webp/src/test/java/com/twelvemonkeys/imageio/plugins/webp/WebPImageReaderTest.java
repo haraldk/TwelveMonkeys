@@ -1,3 +1,4 @@
+
 package com.twelvemonkeys.imageio.plugins.webp;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
@@ -11,6 +12,8 @@ import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.*;
 import java.awt.image.*;
 import java.io.IOException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
 import static java.util.Arrays.asList;
@@ -43,6 +46,7 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
                 new TestData(getClassLoaderResource("/webp/1_webp_ll.webp"), new Dimension(400, 301)),
                 new TestData(getClassLoaderResource("/webp/2_webp_ll.webp"), new Dimension(386, 395)),
                 new TestData(getClassLoaderResource("/webp/2_webp_ll_alt.webp"), new Dimension(386, 395)),
+                new TestData(getClassLoaderResource("/webp/2_webp_ll_noalpha.webp"), new Dimension(386, 395)),
                 new TestData(getClassLoaderResource("/webp/3_webp_ll.webp"), new Dimension(800, 600)),
                 new TestData(getClassLoaderResource("/webp/4_webp_ll.webp"), new Dimension(421, 163)),
                 new TestData(getClassLoaderResource("/webp/5_webp_ll.webp"), new Dimension(300, 300)),
@@ -187,5 +191,177 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
         finally {
             reader.dispose();
         }
+    }
+
+    @Test
+    public void testLosslessSourceRegionSubsampling() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/2_webp_ll_noalpha.webp"))) {
+            reader.setInput(stream);
+
+            // We'll read a small portion of the image using a subsampling factor of 2
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceRegion(new Rectangle(100, 20, 200, 200));
+            param.setSourceSubsampling(2, 2, 0, 0);
+
+            BufferedImage image = reader.read(0, param);
+
+            for (int x = 0; x < 23; x++) {
+                assertRGBEquals("Expected white at (" + x + ", 0)", 0xFFFFFFFF, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 24; x < 29; x++) {
+                assertRGBEquals("Expected black at (" + x + ", 0)", 0xFF000000, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 30; x < 64; x++) {
+                assertRGBEquals("Expected grey at (" + x + ", 0)", 0xFFF1F1F1, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 66; x < 69; x++) {
+                assertRGBEquals("Expected black at (" + x + ", 0)", 0xFF000000, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 70; x < 100; x++) {
+                assertRGBEquals("Expected white at (" + x + ", 0)", 0xFFFFFFFF, image.getRGB(x, 0), 0);
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testLosslessSourceRegionNoSubsampling() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/2_webp_ll_noalpha.webp"))) {
+            reader.setInput(stream);
+
+            // We'll read a small portion of the image without using subsampling
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceRegion(new Rectangle(100, 20, 200, 200));
+
+            BufferedImage image = reader.read(0, param);
+
+            for (int x = 0; x < 45; x++) {
+                assertRGBEquals("Expected white at (" + x + ", 0)", 0xFFFFFFFF, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 48; x < 58; x++) {
+                assertRGBEquals("Expected black at (" + x + ", 0)", 0xFF000000, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 60; x < 128; x++) {
+                assertRGBEquals("Expected grey at (" + x + ", 0)", 0xFFF1F1F1, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 131; x < 138; x++) {
+                assertRGBEquals("Expected black at (" + x + ", 0)", 0xFF000000, image.getRGB(x, 0), 0);
+            }
+
+            for (int x = 140; x < 200; x++) {
+                assertRGBEquals("Expected white at (" + x + ", 0)", 0xFFFFFFFF, image.getRGB(x, 0), 0);
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    void testSubsampleLargeVP8FromRepositorySample() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/alpha_filter.webp"))) {
+            reader.setInput(stream);
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceSubsampling(8, 8, 0, 0);
+
+            BufferedImage image = reader.read(0, param);
+
+            assertEquals(200, image.getWidth());
+            assertEquals(200, image.getHeight());
+            assertEquals(Transparency.TRANSLUCENT, image.getTransparency());
+            assertRGBEquals("Expected transparent area to stay transparent after subsampling", 0x00000000, image.getRGB(25, 66) & 0xFF000000, 8);
+            assertRGBEquals("Expected opaque area to stay opaque after subsampling", 0xFF000000, image.getRGB(166, 111) & 0xFF000000, 8);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    /**
+     * This test compares alpha channel information that is decoded by the WebPImageReader with the known "good" alpha 
+     * channel information. To generate the known "good" alpha channel information, we use the command line and libwebp,
+     * e.g.
+     * 
+     * <pre>{@code
+     * dwebp imageio/imageio-webp/src/test/resources/webp/lossless.transparent.webp -o /tmp/lossless.transparent.png
+     * magick /tmp/lossless.transparent.png -alpha extract -depth 8 gray:/tmp/lossless.transparent-alpha.raw
+     * shasum -a 256 /tmp/lossless.transparent-alpha.raw
+     * }</pre>
+     * 
+     * @throws IOException
+     */
+    @Test
+    public void testReadWriteTransparentWebP() throws IOException {
+        WebPImageReader reader = createReader();
+  
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/lossless.transparent.webp"))) {
+            reader.setInput(stream);
+
+            // Read dimensions
+            int width = reader.getWidth(0);
+            int height = reader.getHeight(0);
+            assertEquals(1920, width, "Expected width of 1920");
+            assertEquals(1477, height, "Expected height of 1477");
+
+            // Read the full image and validate alpha output (exercises long LZ77 back-references).
+            BufferedImage image = reader.read(0);
+            assertNotNull(image, "Image should not be null");
+            assertEquals(width, image.getWidth(), "Image width should match");
+            assertEquals(height, image.getHeight(), "Image height should match");
+            assertTrue(image.getColorModel().hasAlpha(), "Image should have alpha channel");
+            assertEquals("79ffff20392a9cef308b317cbac9d3e57f78e26a4f49fb38b3f3b4dbc4e63c50",
+                    sha256Alpha(image), "Alpha plane hash mismatch");
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static String sha256Alpha(BufferedImage image) {
+        WritableRaster alphaRaster = image.getAlphaRaster();
+        assertNotNull(alphaRaster, "Image should have alpha raster");
+
+        int width = alphaRaster.getWidth();
+        int height = alphaRaster.getHeight();
+        int[] samples = alphaRaster.getSamples(0, 0, width, height, 0, (int[]) null);
+
+        MessageDigest digest;
+        try {
+            digest = MessageDigest.getInstance("SHA-256");
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new AssertionError("SHA-256 not available", e);
+        }
+
+        for (int sample : samples) {
+            digest.update((byte) sample);
+        }
+
+        return toHex(digest.digest());
+    }
+
+    private static String toHex(byte[] bytes) {
+        StringBuilder builder = new StringBuilder(bytes.length * 2);
+        for (byte b : bytes) {
+            builder.append(Character.forDigit((b >>> 4) & 0x0f, 16));
+            builder.append(Character.forDigit(b & 0x0f, 16));
+        }
+        return builder.toString();
     }
 }

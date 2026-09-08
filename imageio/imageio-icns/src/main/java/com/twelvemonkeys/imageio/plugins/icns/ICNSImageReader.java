@@ -66,6 +66,12 @@ import java.util.List;
  * @see <a href="http://en.wikipedia.org/wiki/Apple_Icon_Image_format">Apple Icon Image format (Wikipedia)</a>
  */
 public final class ICNSImageReader extends ImageReaderBase {
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for ICNS,
+     * used to bound the allocation against the input length.
+     */
+    private static final int MAX_EXPANSION_RATIO = 128;
+
     // TODO: Subsampled reading for completeness, even if never used?
     private final List<IconResource> icons = new ArrayList<>();
     private final List<IconResource> masks = new ArrayList<>();
@@ -203,8 +209,9 @@ public final class ICNSImageReader extends ImageReaderBase {
         int width = size.width;
         int height = size.height;
 
-        BufferedImage image = getDestination(param, getImageTypes(imageIndex), width, height);
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
+        validateSourceSize(rawType, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage image = getDestination(param, getImageTypes(imageIndex), width, height);
 
         if (rawType.getColorModel() instanceof IndexColorModel && rawType.getBufferedImageType() != image.getType()) {
             checkReadParamBandSettings(param, 4, image.getSampleModel().getNumBands());

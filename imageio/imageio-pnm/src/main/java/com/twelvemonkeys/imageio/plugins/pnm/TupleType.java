@@ -111,6 +111,7 @@ enum TupleType {
 
     static TupleType forPAM(Raster raster) {
         SampleModel sampleModel = raster.getSampleModel();
+
         switch (sampleModel.getTransferType()) {
             case DataBuffer.TYPE_BYTE:
             case DataBuffer.TYPE_USHORT:
@@ -145,7 +146,11 @@ enum TupleType {
                     return TupleType.RGB;
                 }
                 else if (bands == 4) {
+                    // Ambiguous, could also be CMYK...
                     return TupleType.RGB_ALPHA;
+                }
+                else if (bands == 5) {
+                    return TupleType.CMYK_ALPHA;
                 }
                 // ...else fall through...
         }
@@ -154,7 +159,7 @@ enum TupleType {
     }
     
     static TupleType forPAM(ImageTypeSpecifier type) {
-        // Support only 1 bit b/w, 8-16 bit gray and 8-16 bit/sample RGB
+        // Support only 1 bit b/w, 8-16 bit gray, 8-16 bit/sample RGB and 8-16 bit/sample CMYK
         switch (type.getBufferedImageType()) {
             // 1 bit b/w  or b/w + a
             case BufferedImage.TYPE_BYTE_BINARY:

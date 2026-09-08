@@ -62,6 +62,13 @@ public final class PNMImageReader extends ImageReaderBase {
     // TODO: Allow reading unknown tuple types as Raster!
     // TODO: readAsRenderedImage?
 
+    /**
+     * Maximum decoded-to-input expansion ratio for PNM, which really is 1.
+     */
+    // TODO: Fix this so we can set the ratio to 1.
+    //  Requires the size calculation to be done against the raw image type, not the destination type...
+    private static final int MAX_EXPANSION_RATIO = 2;
+
     private PNMHeader header;
 
     PNMImageReader(final ImageReaderSpi provider) {
@@ -203,6 +210,7 @@ public final class PNMImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
+        validateSourceSize(rawType, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
         BufferedImage destination = getDestination(param, imageTypes, width, height);
 
         Rectangle srcRegion = new Rectangle();

@@ -17,13 +17,16 @@ jobs:
       fail-fast: false
       matrix:
         os: [ ubuntu-latest, windows-latest, macos-latest ]
-        java: [ 11, 17, 21, 23 ]
+        java: [ 8, 11, 17, 21, 25 ]
+        exclude:
+          - os: macos-latest
+            java: 8
     runs-on: ${{ matrix.os }}
     permissions:
       checks: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: 'temurin'
           java-version: ${{ matrix.java }}
@@ -32,33 +35,29 @@ jobs:
       - name: Run Tests
         run: mvn --batch-mode --no-transfer-progress test
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@a83fd2b5d58d4fc702e690c1ea688d702d28d281 # v5
+        uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v5
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
           check_name: Unit Test Results for OpenJDK ${{ matrix.java }} on ${{ matrix.os }}
 
-  test-jdk8:
-    name: Test OpenJDK ${{ matrix.java }} on ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: [ ubuntu-latest, windows-latest, macos-13 ]
-    runs-on: ${{ matrix.os }}
+  test-jdk8-macos:
+    name: Test OpenJDK 8 on macos-14
+    runs-on: macos-14
     permissions:
       checks: write
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
-          distribution: 'temurin'
+          distribution: 'zulu'
           java-version: '8'
           java-package: jdk
           cache: 'maven'
       - name: Run Tests
         run: mvn --batch-mode --no-transfer-progress test
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@a83fd2b5d58d4fc702e690c1ea688d702d28d281 # v5
+        uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v5
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
@@ -73,11 +72,11 @@ jobs:
       matrix:
         kcms: [ true, false ]
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - run: |
           download_url="https://javadl.oracle.com/webapps/download/AutoDL?BundleId=245038_d3c52aa6bfa54d3ca74e617f18309292"
           wget -O $RUNNER_TEMP/java_package.tar.gz $download_url
-      - uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with:
           distribution: 'jdkfile'
           jdkFile: ${{ runner.temp }}/java_package.tar.gz
@@ -92,26 +91,43 @@ jobs:
       - name: Run Tests
         run: mvn --batch-mode --no-transfer-progress test
       - name: Publish Test Report
-        uses: mikepenz/action-junit-report@a83fd2b5d58d4fc702e690c1ea688d702d28d281 # v5
+        uses: mikepenz/action-junit-report@a9170d5795813c01ab4901ffb045b52bab4ab09d # v5
         if: ${{ !cancelled() }}
         with:
           report_paths: "**/target/surefire-reports/TEST*.xml"
           check_name: Unit Test Results for Oracle JDK 8 with KCMS=${{ matrix.kcms }}
 
+  javadoc:
+    name: Build JavaDoc on OpenJDK ${{ matrix.java }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        java: [8, 11, 25 ] # We only need a few versions here
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: 'temurin'
+          java-version: ${{ matrix.java }}
+          java-package: jdk
+          cache: 'maven'
+      - name: Create JavaDoc
+        run: mvn --batch-mode --no-transfer-progress -DskipTests package javadoc:javadoc
+
   release:
     name: Deploy
-    needs: [ test, test-jdk8, test-oracle ]
+    needs: [ test, test-jdk8-macos, test-oracle, javadoc ]
     if: github.ref == 'refs/heads/master' # only perform on latest master
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Set up Maven Central
-        uses: actions/setup-java@c5195efecf7bdfc987ee8bae7a71cb8b11521c00 # v4.7.1
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
         with: # running setup-java again overwrites the settings.xml
           distribution: 'temurin'
           java-version: '8'
           java-package: jdk
-          server-id: ossrh # Value of the distributionManagement/repository/id field of the pom.xml
+          server-id: central # Value of the distributionManagement/repository/id field of the pom.xml
           server-username: MAVEN_CENTRAL_USERNAME # env variable for username in deploy (1)
           server-password: MAVEN_CENTRAL_PASSWORD # env variable for token in deploy (2)
       - name: Get Project Version
@@ -121,7 +137,7 @@ jobs:
         if: ${{ endsWith(env.PROJECT_VERSION, '-SNAPSHOT') }}
         run: mvn --batch-mode --no-transfer-progress deploy -P release -DskipTests -Dgpg.signer=bc
         env:
-          MAVEN_CENTRAL_USERNAME: ${{ secrets.SONATYPE_USERNAME }} # must be the same env variable name as (1)
-          MAVEN_CENTRAL_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }} # must be the same env variable name as (2)
+          MAVEN_CENTRAL_USERNAME: ${{ secrets.CENTRAL_USERNAME }} # must be the same env variable name as (1)
+          MAVEN_CENTRAL_PASSWORD: ${{ secrets.CENTRAL_PASSWORD }} # must be the same env variable name as (2)
           MAVEN_GPG_KEY: ${{ secrets.GPG_KEY }}                    # Value of the GPG private key to import
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}

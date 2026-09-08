@@ -4,10 +4,10 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-sgi</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: SGI plugin</name>
+    <name>TwelveMonkeys » ImageIO » SGI plugin</name>
     <description>
         ImageIO plugin for Silicon Graphics Image Format (SGI)
     </description>

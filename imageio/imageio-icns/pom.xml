@@ -4,10 +4,10 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-icns</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: ICNS plugin</name>
+    <name>TwelveMonkeys » ImageIO » ICNS plugin</name>
     <description>ImageIO plugin for Apple Icon Image (ICNS) format.</description>
 
     <properties>

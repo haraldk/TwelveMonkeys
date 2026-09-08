@@ -31,10 +31,12 @@
 package com.twelvemonkeys.imageio.plugins.pict;
 
 import com.twelvemonkeys.imageio.plugins.pict.QuickTime.ImageDesc;
+import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 import com.twelvemonkeys.io.LittleEndianDataOutputStream;
 
 import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
@@ -49,6 +51,7 @@ import java.nio.charset.StandardCharsets;
  * @version $Id: QTBMPDecompressor.java,v 1.0 Feb 16, 2009 9:18:28 PM haraldk Exp$
  */
 final class QTBMPDecompressor extends QTDecompressor {
+    @Override
     public boolean canDecompress(final ImageDesc description) {
         return QuickTime.VENDOR_APPLE.equals(description.compressorVendor)
                 && "WRLE".equals(description.compressorIdentifer)
@@ -59,8 +62,11 @@ final class QTBMPDecompressor extends QTDecompressor {
         return new String(data, offset, 4, StandardCharsets.US_ASCII);
     }
 
-    public BufferedImage decompress(final ImageDesc description, final InputStream stream) throws IOException {
-        return ImageIO.read(new SequenceInputStream(fakeBMPHeader(description), stream));
+    @Override
+    public BufferedImage decompress(final ImageDesc description, final ImageInputStream stream) throws IOException {
+        try (InputStream input = new SequenceInputStream(fakeBMPHeader(description), IIOUtil.createStreamAdapter(stream))) {
+            return ImageIO.read(input);
+        }
     }
 
     private InputStream fakeBMPHeader(final ImageDesc description) throws IOException {

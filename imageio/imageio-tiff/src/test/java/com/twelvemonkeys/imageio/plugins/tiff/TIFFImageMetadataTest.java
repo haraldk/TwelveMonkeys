@@ -189,6 +189,102 @@ public class TIFFImageMetadataTest {
     }
 
     @Test
+    public void testMetadataStandardFormat_CCITT300dpi() throws IOException {
+        IIOMetadata metadata = createMetadata("/tiff/CCITT-G4-300dpi-StripByteCounts0.tif");
+        Node root = metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+
+        // Root: "javax_imageio_1.0"
+        assertNotNull(root);
+        assertEquals(IIOMetadataFormatImpl.standardMetadataFormatName, root.getNodeName());
+        assertEquals(5, root.getChildNodes().getLength());
+
+        // "Chroma"
+        Node chroma = root.getFirstChild();
+        assertEquals("Chroma", chroma.getNodeName());
+
+        assertEquals(3, chroma.getChildNodes().getLength());
+
+        Node colorSpaceType = chroma.getFirstChild();
+        assertEquals("ColorSpaceType", colorSpaceType.getNodeName());
+        assertEquals("GRAY", ((Element) colorSpaceType).getAttribute("name"));
+
+        Node numChannels = colorSpaceType.getNextSibling();
+        assertEquals("NumChannels", numChannels.getNodeName());
+        assertEquals("1", ((Element) numChannels).getAttribute("value"));
+
+        Node blackIsZero = numChannels.getNextSibling();
+        assertEquals("BlackIsZero", blackIsZero.getNodeName());
+        assertEquals("FALSE", ((Element) blackIsZero).getAttribute("value"));
+
+        // "Compression"
+        Node compression = chroma.getNextSibling();
+        assertEquals("Compression", compression.getNodeName());
+        assertEquals(2, compression.getChildNodes().getLength());
+
+        Node compressionTypeName = compression.getFirstChild();
+        assertEquals("CompressionTypeName", compressionTypeName.getNodeName());
+        assertEquals("CCITT T.6", ((Element) compressionTypeName).getAttribute("value"));
+
+        Node lossless = compressionTypeName.getNextSibling();
+        assertEquals("Lossless", lossless.getNodeName());
+        assertEquals(0, lossless.getAttributes().getLength());
+
+        // "Data"
+        Node data = compression.getNextSibling();
+        assertEquals("Data", data.getNodeName());
+        assertEquals(4, data.getChildNodes().getLength());
+
+        Node planarConfiguration = data.getFirstChild();
+        assertEquals("PlanarConfiguration", planarConfiguration.getNodeName());
+        assertEquals("PixelInterleaved", ((Element) planarConfiguration).getAttribute("value"));
+
+        Node sampleFormat = planarConfiguration.getNextSibling();
+        assertEquals("SampleFormat", sampleFormat.getNodeName());
+        assertEquals("UnsignedIntegral", ((Element) sampleFormat).getAttribute("value"));
+
+        Node bitsPerSample = sampleFormat.getNextSibling();
+        assertEquals("BitsPerSample", bitsPerSample.getNodeName());
+        assertEquals("1", ((Element) bitsPerSample).getAttribute("value"));
+
+        Node sampleMSB = bitsPerSample.getNextSibling();
+        assertEquals("SampleMSB", sampleMSB.getNodeName());
+        assertEquals("0", ((Element) sampleMSB).getAttribute("value"));
+
+        // "Dimension"
+        Node dimension = data.getNextSibling();
+        assertEquals("Dimension", dimension.getNodeName());
+        assertEquals(4, dimension.getChildNodes().getLength());
+
+        Node pixelAspectRatio = dimension.getFirstChild();
+        assertEquals("PixelAspectRatio", pixelAspectRatio.getNodeName());
+        assertEquals("1.0", ((Element) pixelAspectRatio).getAttribute("value"));
+
+        Node imageOrientation = pixelAspectRatio.getNextSibling();
+        assertEquals("ImageOrientation", imageOrientation.getNodeName());
+        assertEquals("Normal", ((Element) imageOrientation).getAttribute("value"));
+
+        Node horizontalPixelSize = imageOrientation.getNextSibling();
+        assertEquals("HorizontalPixelSize", horizontalPixelSize.getNodeName());
+        assertEquals("0.08466666666666667", ((Element) horizontalPixelSize).getAttribute("value"));
+
+        Node verticalPixelSize = horizontalPixelSize.getNextSibling();
+        assertEquals("VerticalPixelSize", verticalPixelSize.getNodeName());
+        assertEquals("0.08466666666666667", ((Element) verticalPixelSize).getAttribute("value"));
+
+        // "Document"
+        Node document = dimension.getNextSibling();
+        assertEquals("Document", document.getNodeName());
+        assertEquals(1, document.getChildNodes().getLength());
+
+        Node formatVersion = document.getFirstChild();
+        assertEquals("FormatVersion", formatVersion.getNodeName());
+        assertEquals("6.0", ((Element) formatVersion).getAttribute("value"));
+
+        // No more elements
+        assertNull(document.getNextSibling());
+    }
+
+    @Test
     public void testMetadataNativeFormat() throws IOException {
         IIOMetadata metadata = createMetadata("/tiff/quad-lzw.tif");
         Node root = metadata.getAsTree(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);

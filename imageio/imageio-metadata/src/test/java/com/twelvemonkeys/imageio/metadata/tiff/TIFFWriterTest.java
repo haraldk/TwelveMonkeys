@@ -30,14 +30,23 @@
 
 package com.twelvemonkeys.imageio.metadata.tiff;
 
-import com.twelvemonkeys.imageio.metadata.*;
+import com.twelvemonkeys.imageio.metadata.AbstractDirectory;
+import com.twelvemonkeys.imageio.metadata.AbstractEntry;
+import com.twelvemonkeys.imageio.metadata.CompoundDirectory;
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.MetadataWriterAbstractTest;
+import com.twelvemonkeys.imageio.metadata.exif.EXIF;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.io.FastByteArrayOutputStream;
 
+import org.junit.jupiter.api.Test;
 
 import javax.imageio.ImageIO;
+import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import javax.imageio.stream.ImageOutputStreamImpl;
+import javax.imageio.stream.MemoryCacheImageOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -46,8 +55,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertInstanceOf;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * TIFFWriterTest
@@ -272,7 +283,7 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
         Directory read = new TIFFReader().read(new ByteArrayImageInputStream(data));
 
         assertNotNull(read.getEntryById(TIFF.TAG_SOFTWARE));
-        assertTrue(read.getEntryById(TIFF.TAG_SOFTWARE).getValue() instanceof String[], "value not an string array");
+        assertInstanceOf(String[].class, read.getEntryById(TIFF.TAG_SOFTWARE).getValue(), "value not an string array");
         assertArrayEquals(strings, (String[]) read.getEntryById(TIFF.TAG_SOFTWARE).getValue());
     }
 
@@ -285,7 +296,7 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
         TIFFEntry subSubIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(subSubSubIFD)));
         TIFFEntry subIFD = new TIFFEntry(TIFF.TAG_SUB_IFD, TIFF.TYPE_LONG, new IFD(Collections.singletonList(subSubIFD)));
 
-        List<Entry> entries = Collections.<Entry>singletonList(subIFD);
+        List<Entry> entries = Collections.singletonList(subIFD);
 
         TIFFWriter writer = createWriter();
 
@@ -296,24 +307,67 @@ public class TIFFWriterTest extends MetadataWriterAbstractTest {
         assertEquals(96, stream.getStreamPosition()); // 96 = 4 + 5 * (2 + 12) + 22
     }
 
-    private static class NullImageOutputStream extends ImageOutputStreamImpl {
+    @Test
+    void testWriteNestedExifIFD() throws IOException {
+        String expectedUserComment = "This ia the expected user comment";
+        String expectedDateTime = "2026:01:01 00:00:01";
+
+        List<Entry> entries = new ArrayList<>();
+        List<Entry> subDirectoryEntries = new ArrayList<>();
+        subDirectoryEntries.add(new TIFFEntry(EXIF.TAG_USER_COMMENT, TIFF.TYPE_ASCII, expectedUserComment));
+        entries.add(new TIFFEntry(TIFF.TAG_DATE_TIME, expectedDateTime));
+        entries.add(new TIFFEntry(TIFF.TAG_EXIF_IFD, TIFF.TYPE_IFD, new IFD(subDirectoryEntries)));
+        // NOTE! For the test, it is important that this tag is > Exif IFD and inside IDF0 (even if this is an Exif tag)
+        entries.add(new TIFFEntry(EXIF.TAG_DATE_TIME_ORIGINAL, TIFF.TYPE_ASCII, expectedDateTime));
+
+        IFD expectedSub = new IFD(subDirectoryEntries);
+        IFD expected = new IFD(entries);
+
+        try (ByteArrayOutputStream bytes = new ByteArrayOutputStream()) {
+            // Write the TIFF w/Exif sub IFD
+            try (ImageOutputStream stream = new MemoryCacheImageOutputStream(bytes)) {
+                new TIFFWriter().write(expected, stream);
+            }
+
+            try (ImageInputStream stream = new ByteArrayImageInputStream(bytes.toByteArray())) {
+                // Read the TIFF back, and compare content
+                Directory directory = new TIFFReader().read(stream);
+
+                Entry dateTimeEntry = directory.getEntryById(EXIF.TAG_DATE_TIME_ORIGINAL);
+                assertNotNull(dateTimeEntry);
+                assertEquals(expectedDateTime, dateTimeEntry.getValue());
+
+                Entry exifEntry = directory.getEntryById(TIFF.TAG_EXIF_IFD);
+                IFD exifIFD = (IFD) exifEntry.getValue();
+
+                Entry userCommentEntry = exifIFD.getEntryById(EXIF.TAG_USER_COMMENT);
+                assertNotNull(userCommentEntry);
+
+                assertEquals(expectedUserComment, userCommentEntry.getValue());
+                assertEquals(expectedSub, exifIFD);
+                assertEquals(expected, ((CompoundDirectory) directory).getDirectory(0));
+            }
+        }
+    }
+
+    private static final class NullImageOutputStream extends ImageOutputStreamImpl {
         @Override
-        public void write(int b) throws IOException {
+        public void write(int b) {
             streamPos++;
         }
 
         @Override
-        public void write(byte[] b, int off, int len) throws IOException {
+        public void write(byte[] b, int off, int len) {
             streamPos += len;
         }
 
         @Override
-        public int read() throws IOException {
+        public int read() {
             throw new UnsupportedOperationException("Method read not implemented");
         }
 
         @Override
-        public int read(byte[] b, int off, int len) throws IOException {
+        public int read(byte[] b, int off, int len) {
             throw new UnsupportedOperationException("Method read not implemented");
         }
     }

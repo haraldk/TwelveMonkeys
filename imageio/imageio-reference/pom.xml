@@ -4,10 +4,10 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-reference</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: JDK Reference Tests</name>
+    <name>TwelveMonkeys » ImageIO » JDK Reference Tests</name>
     <description>
         Test cases for the JRE provided ImageReader implementations for reference.
     </description>

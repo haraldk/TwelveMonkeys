@@ -162,7 +162,7 @@ public final class ImageUtil {
 
     /**
      * The sharpen kernel. Uses the following 3 by 3 matrix:
-     * <table border="1" cellspacing="0">
+     * <table border="1">
      *     <caption>Sharpen Kernel Matrix</caption>
      *     <tr><td>0.0</td><td>-0.3</td><td>0.0</td></tr>
      *     <tr><td>-0.3</td><td>2.2</td><td>-0.3</td></tr>
@@ -721,8 +721,17 @@ public final class ImageUtil {
         AffineTransform transform = AffineTransform.getTranslateInstance((newW - w) / 2.0, (newH - h) / 2.0);
         transform.rotate(pAngle, w / 2.0, h / 2.0);
 
-        // TODO: Figure out if this is correct
-        BufferedImage dest = createTransparent(newW, newH);
+        // A quadrant rotation is completely covered by source pixels,
+        // so the destination can keep the source's color model.
+        // Other angles leave uncovered corners, which should be transparent.
+        BufferedImage dest;
+        if (fast) {
+            ColorModel cm = pSource.getColorModel();
+            dest = new BufferedImage(cm, cm.createCompatibleWritableRaster(newW, newH), cm.isAlphaPremultiplied(), null);
+        }
+        else {
+            dest = createTransparent(newW, newH);
+        }
 
         // See: http://weblogs.java.net/blog/campbell/archive/2007/03/java_2d_tricker_1.html
         Graphics2D g = dest.createGraphics();
@@ -1078,7 +1087,7 @@ public final class ImageUtil {
     /**
      * Sharpens an image using a convolution matrix.
      * The sharpen kernel used, is defined by the following 3 by 3 matrix:
-     * <table border="1" cellspacing="0">
+     * <table border="1">
      *     <caption>Sharpen Kernel Matrix</caption>
      *     <tr><td>0.0</td><td>-0.3</td><td>0.0</td></tr>
      *     <tr><td>-0.3</td><td>2.2</td><td>-0.3</td></tr>
@@ -1100,7 +1109,7 @@ public final class ImageUtil {
     /**
      * Sharpens an image using a convolution matrix.
      * The sharpen kernel used, is defined by the following 3 by 3 matrix:
-     * <table border="1" cellspacing="0">
+     * <table border="1">
      *     <caption>Sharpen Kernel Matrix</caption>
      *     <tr><td>0.0</td><td>-{@code pAmount}</td><td>0.0</td></tr>
      *     <tr><td>-{@code pAmount}</td>

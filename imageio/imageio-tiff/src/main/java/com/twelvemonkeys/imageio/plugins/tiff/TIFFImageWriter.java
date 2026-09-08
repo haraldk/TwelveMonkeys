@@ -42,6 +42,7 @@ import com.twelvemonkeys.imageio.stream.SubImageOutputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
+import com.twelvemonkeys.imageio.util.SequenceSupport;
 import com.twelvemonkeys.io.enc.EncoderStream;
 import com.twelvemonkeys.io.enc.PackBitsEncoder;
 import com.twelvemonkeys.lang.Validate;
@@ -110,12 +111,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
     // Support storing multiple images in one stream (multi-page TIFF)
     // Support more of the ImageIO metadata (ie. compression from metadata, etc)
 
-    /**
-     * Flag for active sequence writing
-     */
-    private boolean writingSequence = false;
-
-    private int sequenceIndex = 0;
+    private final SequenceSupport sequence = new SequenceSupport();
 
     /**
      * Metadata writer for sequence writing
@@ -751,7 +747,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             ifd = ((TIFFImageMetadata) inData).getIFD();
         }
         else {
-            TIFFImageMetadata outData = new TIFFImageMetadata(Collections.<Entry>emptySet());
+            TIFFImageMetadata outData = new TIFFImageMetadata(Collections.emptySet());
 
             try {
                 if (Arrays.asList(inData.getMetadataFormatNames()).contains(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME)) {
@@ -766,7 +762,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 }
             }
             catch (IIOInvalidTreeException e) {
-                processWarningOccurred(sequenceIndex, "Could not convert image meta data: " + e.getMessage());
+                processWarningOccurred(sequence.current(), "Could not convert image meta data: " + e.getMessage());
             }
 
             ifd = outData.getIFD();
@@ -966,14 +962,11 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
     @Override
     public void prepareWriteSequence(final IIOMetadata streamMetadata) throws IOException {
-        if (writingSequence) {
-            throw new IllegalStateException("sequence writing has already been started!");
-        }
+        sequence.start();
 
         assertOutput();
         configureStreamByteOrder(streamMetadata, imageOutput);
 
-        writingSequence = true;
         sequenceTIFFWriter = new TIFFWriter(isBigTIFF() ? 8 : 4);
         sequenceTIFFWriter.writeTIFFHeader(imageOutput);
         sequenceLastIFDPos = imageOutput.getStreamPosition();
@@ -985,26 +978,20 @@ public final class TIFFImageWriter extends ImageWriterBase {
 
     @Override
     public void writeToSequence(final IIOImage image, final ImageWriteParam param) throws IOException {
-        if (!writingSequence) {
-            throw new IllegalStateException("prepareWriteSequence() must be called before writeToSequence()!");
-        }
+        int sequenceIndex = sequence.advance();
 
         if (sequenceIndex > 0) {
             imageOutput.flushBefore(sequenceLastIFDPos);
             imageOutput.seek(imageOutput.length());
         }
 
-        sequenceLastIFDPos = writePage(sequenceIndex++, image, param, sequenceTIFFWriter, sequenceLastIFDPos);
+        sequenceLastIFDPos = writePage(sequenceIndex, image, param, sequenceTIFFWriter, sequenceLastIFDPos);
     }
 
     @Override
     public void endWriteSequence() throws IOException {
-        if (!writingSequence) {
-            throw new IllegalStateException("prepareWriteSequence() must be called before endWriteSequence()!");
-        }
+        sequence.end();
 
-        writingSequence = false;
-        sequenceIndex = 0;
         sequenceTIFFWriter = null;
         sequenceLastIFDPos = -1;
         imageOutput.flush();
@@ -1014,8 +1001,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
     protected void resetMembers() {
         super.resetMembers();
 
-        writingSequence = false;
-        sequenceIndex = 0;
+        sequence.reset();
         sequenceTIFFWriter = null;
         sequenceLastIFDPos = -1;
     }

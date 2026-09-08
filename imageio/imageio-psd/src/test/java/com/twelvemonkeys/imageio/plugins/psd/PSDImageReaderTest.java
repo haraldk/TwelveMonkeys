@@ -30,11 +30,13 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
 
 import org.w3c.dom.NodeList;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
@@ -51,6 +53,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -69,6 +72,25 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     @Override
     protected ImageReaderSpi createProvider() {
         return new PSDImageReaderSpi();
+    }
+
+    @Test
+    public void readTinyInputDeclaringHugeDimensionsIsRejectedBeforeAllocation() throws IOException {
+        // GHSA-7c3w-m9qh-j2vj: a 40-byte PSD header declaring huge dimensions allocated ~2.75 GB before this guard.
+        byte[] poc = Base64.getDecoder().decode("OEJQUwABAAAAAAAAAC8AADpBAAA92QAgAAMAAAAAAAAAAAAAAAAAAA==");
+
+        ImageReader reader = createReader();
+        try (ImageInputStream input = new ByteArrayImageInputStream(poc)) {
+            reader.setInput(input);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            // "exceeding" is unique to the size-guard message, confirming rejection in the guard (before
+            // allocation), not a later EOF/parse error after a large buffer was committed.
+            assertTrue(exception.getMessage().contains("exceeding"), exception.getMessage());
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Override

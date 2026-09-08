@@ -56,7 +56,7 @@ public class SVGImageReaderSpiTest {
             "/svg/Android_robot.svg", // Minimal, no xml dec, no namespace
             "/svg/batikLogo.svg",     // xml dec, comments, namespace
             "/svg/blue-square.svg",   // xml dec, namespace
-            "/svg/red-square.svg",
+            "/svg/red-square.svg",    // prefixed namespace
     };
 
     private static final String[] INVALID_INPUTS = {
@@ -70,7 +70,22 @@ public class SVGImageReaderSpiTest {
         "<!-- ", // #275 Infinite loop issue
         "<?123?>", // #275 Infinite loop issue
         "<svg",
+        "<ns0:svg>", // namespace prefix undefined
+        "<ns0:svg xmlns:ns0=\"foo\">", // not the official svg namespace
+        "<ns0:svg xmlns:ns1=\"http://www.w3.org/2000/svg\">", // mismatching prefix
+        // Prefix is used to build a regex, a crafted one must not cause catastrophic backtracking
+        "<(a{0,100}){0,100}:svg xmlns:" + repeat("a", 900) + "=>",
+        "<(a*){50}:svg xmlns:" + repeat("a", 900) + "=>",
+        "<((((a*)*)*)*)*:svg xmlns:" + repeat("a", 900) + "=>",
     };
+
+    private static String repeat(String s, int count) {
+        StringBuilder builder = new StringBuilder(s.length() * count);
+        for (int i = 0; i < count; i++) {
+            builder.append(s);
+        }
+        return builder.toString();
+    }
 
     static {
         IIORegistry.getDefaultInstance().registerServiceProvider(new URLImageInputStreamSpi());

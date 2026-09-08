@@ -57,6 +57,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
 import java.io.*;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.*;
@@ -237,6 +238,56 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
         finally {
             reader.dispose();
         }
+    }
+
+    @Test
+    public void testICCChunkIndexOutOfBounds() throws IOException {
+        // Crafted file with two 'ICC_PROFILE' APP2 segments, where the first segment claims to be
+        // chunk 200 of 2. The bogus chunk index must not be used to index the chunk array
+        // (was: ArrayIndexOutOfBoundsException from getEmbeddedICCProfile).
+        byte[] data = jpegWithICCChunks(new int[] {200, 2}, new int[] {2, 2});
+
+        JPEGImageReader reader = createReader();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0);
+
+            assertNotNull(image);
+            assertEquals(16, image.getWidth());
+            assertEquals(16, image.getHeight());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static byte[] jpegWithICCChunks(final int[] chunkNumbers, final int[] chunkCounts) throws IOException {
+        ByteArrayOutputStream base = new ByteArrayOutputStream();
+        assertTrue(ImageIO.write(new BufferedImage(16, 16, BufferedImage.TYPE_3BYTE_BGR), "JPEG", base));
+        byte[] bytes = base.toByteArray();
+
+        byte[] identifier = "ICC_PROFILE".getBytes(StandardCharsets.US_ASCII);
+
+        ByteArrayOutputStream merged = new ByteArrayOutputStream();
+        merged.write(bytes, 0, 2); // SOI
+
+        for (int i = 0; i < chunkNumbers.length; i++) {
+            int length = identifier.length + 1 /* null-terminator */ + 2 /* chunk number + count */ + 1 /* one byte profile data */ + 2 /* length field */;
+            merged.write(0xFF);
+            merged.write(0xE2); // APP2
+            merged.write((length >> 8) & 0xFF);
+            merged.write(length & 0xFF);
+            merged.write(identifier);
+            merged.write(0x00); // null-terminator
+            merged.write(chunkNumbers[i] & 0xFF);
+            merged.write(chunkCounts[i] & 0xFF);
+            merged.write(0x00);
+        }
+
+        merged.write(bytes, 2, bytes.length - 2); // Rest of the JPEG
+
+        return merged.toByteArray();
     }
 
     @Test
@@ -2032,5 +2083,66 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
                 }
             }
         });
+    }
+    
+    @Test
+    public void testReadLosslessJPEGGradient() throws IOException {
+    	 JPEGImageReader reader = createReader();
+
+         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jpeg-lossless/gradient_ls.jpg"))) {
+             reader.setInput(stream);
+
+             assertEquals(256, reader.getWidth(0));
+             assertEquals(256, reader.getHeight(0));
+             
+             BufferedImage image = reader.read(0, null);
+
+             assertNotNull(image);
+             assertEquals(256, image.getWidth());
+             assertEquals(256, image.getHeight());
+             assertEquals(16, image.getColorModel().getComponentSize(0));
+             
+             for (int y = 0; y < 256; y++) {
+            	 for (int x = 0; x < 256; x++) {
+            		 assertEquals((y << 8) | x, image.getRaster().getSample(x, y, 0));
+            	 }
+             }
+         }
+         finally {
+             reader.dispose();
+         }
+    }
+    
+    @Test
+    public void testReadLosslessJPEGGradientWithPointTransform() throws IOException {
+    	 JPEGImageReader reader = createReader();
+
+         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jpeg-lossless/gradient_ls_pt.jpg"))) {
+             reader.setInput(stream);
+
+             assertEquals(256, reader.getWidth(0));
+             assertEquals(256, reader.getHeight(0));
+
+             BufferedImage image = reader.read(0, null);
+
+             assertNotNull(image);
+             assertEquals(256, image.getWidth());
+             assertEquals(256, image.getHeight());
+             assertEquals(16, image.getColorModel().getComponentSize(0));
+             
+             for (int y = 0; y < 256; y++) {
+            	 for (int x = 0; x < 256; x++) {
+            		 int expected = (y << 8) | x;
+            		 
+            		 // Simulate effect of precision loss due to point transform = 4
+            		 expected = (expected >> 4) << 4;
+            		 
+            		 assertEquals(expected, image.getRaster().getSample(x, y, 0));
+            	 }
+             }
+         }
+         finally {
+             reader.dispose();
+         }
     }
 }

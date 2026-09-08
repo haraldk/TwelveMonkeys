@@ -30,16 +30,31 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.A1R5G5B5_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.A4R4G4B4_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.A8B8G8R8_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.A8R8G8B8_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.R5G6B5_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.R8G8B8_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.X1R5G5B5_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.X4R4G4B4_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.X8B8G8R8_MASKS;
+import static com.twelvemonkeys.imageio.plugins.dds.DDSReader.X8R8G8B8_MASKS;
+
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.Dimension;
 import java.io.IOException;
-import java.math.BigInteger;
 import java.util.Arrays;
 
+/**
+ * @see <a href="https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header">DDS_HEADER structure</a>
+ * @see <a href="https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dx-graphics-dds-pguide">Programming Guide for DDS</a>
+ */
 final class DDSHeader {
 
-    // https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dx-graphics-dds-pguide
+    private static final double LOG2 = Math.log(2);
+
     private int flags;
 
     private int mipMapCount;
@@ -53,19 +68,12 @@ final class DDSHeader {
     private int blueMask;
     private int alphaMask;
 
+    DXT10Header dxt10Header;
+
     @SuppressWarnings("unused")
     static DDSHeader read(final ImageInputStream imageInput) throws IOException {
         DDSHeader header = new DDSHeader();
 
-        // Read MAGIC bytes [0,3]
-        byte[] magic = new byte[DDS.MAGIC.length];
-        imageInput.readFully(magic);
-        if (!Arrays.equals(DDS.MAGIC, magic)) {
-            throw new IIOException(String.format("Not a DDS file. Expected DDS magic 0x%08x', read 0x%08x", new BigInteger(DDS.MAGIC), new BigInteger(magic)));
-        }
-
-        // DDS_HEADER structure
-        // https://learn.microsoft.com/en-us/windows/win32/direct3ddds/dds-header
         int dwSize = imageInput.readInt(); // [4,7]
         if (dwSize != DDS.HEADER_SIZE) {
             throw new IIOException(String.format("Invalid DDS header size (expected %d): %d", DDS.HEADER_SIZE, dwSize));
@@ -73,11 +81,9 @@ final class DDSHeader {
 
         // Verify flags
         header.flags = imageInput.readInt(); // [8,11]
-        if (!header.getFlag(DDS.FLAG_CAPS
-                | DDS.FLAG_HEIGHT
-                | DDS.FLAG_WIDTH
-                | DDS.FLAG_PIXELFORMAT)) {
-            throw new IIOException("Required DDS Flag missing in header: " + Integer.toBinaryString(header.flags));
+        if (!header.hasFlag(DDS.FLAG_CAPS | DDS.FLAG_HEIGHT | DDS.FLAG_WIDTH | DDS.FLAG_PIXELFORMAT)) {
+            // NOTE: The Microsoft DDS documentation mention that readers should not rely on these flags...
+            throw new IIOException("Required DDS flag missing in header: " + Integer.toBinaryString(header.flags));
         }
 
         // Read Height & Width
@@ -90,14 +96,21 @@ final class DDSHeader {
         // 0 = (unused) or 1 = (1 level), but still one 'base' image
         header.mipMapCount = Math.max(1, imageInput.readInt()); // [28,31]
 
+        int maxMipMapCount = Math.min(24, (int) log2(Math.max(dwWidth, dwHeight)) + 1); // Max possible levels based on input, capped at 24
+        if (header.mipMapCount > maxMipMapCount) {
+            throw new IIOException(String.format("Invalid DDS mipmap count (expected <= %d): %d", maxMipMapCount, header.mipMapCount));
+        }
+
         // build dimensions list
         header.addDimensions(dwWidth, dwHeight);
 
-        byte[] dwReserved1 = new byte[11 * 4];  // [32,75]
-        imageInput.readFully(dwReserved1);
+        imageInput.skipBytes(44);
 
         // DDS_PIXELFORMAT structure
         int px_dwSize = imageInput.readInt(); // [76,79]
+        if (px_dwSize != DDS.PIXELFORMAT_SIZE) {
+            throw new IIOException(String.format("Invalid DDS pixel format structure size (expected %d): %d", DDS.PIXELFORMAT_SIZE, dwSize));
+        }
 
         header.pixelFormatFlags = imageInput.readInt(); // [80,83]
         header.fourCC = imageInput.readInt(); // [84,87]
@@ -114,7 +127,17 @@ final class DDSHeader {
 
         int dwReserved2 = imageInput.readInt(); // [124,127]
 
+        if (header.fourCC == DDSType.DXT10.fourCC()) {
+            // If DXT10, the DXT10 header will follow immediately
+            header.dxt10Header = DXT10Header.read(imageInput);
+        }
+
         return header;
+    }
+
+    // Possible util method...
+    private static double log2(int v) {
+        return Math.log(v) / LOG2;
     }
 
     private void addDimensions(int width, int height) {
@@ -129,8 +152,8 @@ final class DDSHeader {
         }
     }
 
-    private boolean getFlag(int mask) {
-        return (flags & mask) != 0;
+    private boolean hasFlag(int mask) {
+        return (flags & mask) == mask;
     }
 
     int getWidth(int imageIndex) {
@@ -147,31 +170,101 @@ final class DDSHeader {
         return mipMapCount;
     }
 
-    int getBitCount() {
-        return bitCount;
+    DDSType getType() throws IIOException {
+        if (dxt10Header != null) {
+            return dxt10Header.getType();
+        }
+
+        return getRawType();
     }
 
-    int getFourCC() {
-        return fourCC;
+    DDSType getRawType() throws IIOException {
+        if ((pixelFormatFlags & DDS.PIXEL_FORMAT_FLAG_FOURCC) != 0) {
+            // DXT
+            return DDSType.fromFourCC(fourCC);
+        }
+        else if ((pixelFormatFlags & DDS.PIXEL_FORMAT_FLAG_RGB) != 0) {
+            // RGB
+            int alphaMask = ((pixelFormatFlags & 0x01) != 0) ? this.alphaMask : 0; // 0x01 alpha
+
+            if (bitCount == 16) {
+                if (redMask == A1R5G5B5_MASKS[0] && greenMask == A1R5G5B5_MASKS[1] && blueMask == A1R5G5B5_MASKS[2] && alphaMask == A1R5G5B5_MASKS[3]) {
+                    // A1R5G5B5
+                    return DDSType.A1R5G5B5;
+                }
+                else if (redMask == X1R5G5B5_MASKS[0] && greenMask == X1R5G5B5_MASKS[1] && blueMask == X1R5G5B5_MASKS[2] && alphaMask == X1R5G5B5_MASKS[3]) {
+                    // X1R5G5B5
+                    return DDSType.X1R5G5B5;
+                }
+                else if (redMask == A4R4G4B4_MASKS[0] && greenMask == A4R4G4B4_MASKS[1] && blueMask == A4R4G4B4_MASKS[2] && alphaMask == A4R4G4B4_MASKS[3]) {
+                    // A4R4G4B4
+                    return DDSType.A4R4G4B4;
+                }
+                else if (redMask == X4R4G4B4_MASKS[0] && greenMask == X4R4G4B4_MASKS[1] && blueMask == X4R4G4B4_MASKS[2] && alphaMask == X4R4G4B4_MASKS[3]) {
+                    // X4R4G4B4
+                    return DDSType.X4R4G4B4;
+                }
+                else if (redMask == R5G6B5_MASKS[0] && greenMask == R5G6B5_MASKS[1] && blueMask == R5G6B5_MASKS[2] && alphaMask == R5G6B5_MASKS[3]) {
+                    // R5G6B5
+                    return DDSType.R5G6B5;
+                }
+
+                throw new IIOException("Unsupported 16bit RGB image.");
+            }
+            else if (bitCount == 24) {
+                if (redMask == R8G8B8_MASKS[0] && greenMask == R8G8B8_MASKS[1] && blueMask == R8G8B8_MASKS[2] && alphaMask == R8G8B8_MASKS[3]) {
+                    // R8G8B8
+                    return DDSType.R8G8B8;
+                }
+
+                throw new IIOException("Unsupported 24bit RGB image.");
+            }
+            else if (bitCount == 32) {
+                if (redMask == A8B8G8R8_MASKS[0] && greenMask == A8B8G8R8_MASKS[1] && blueMask == A8B8G8R8_MASKS[2] && alphaMask == A8B8G8R8_MASKS[3]) {
+                    // A8B8G8R8
+                    return DDSType.A8B8G8R8;
+                }
+                else if (redMask == X8B8G8R8_MASKS[0] && greenMask == X8B8G8R8_MASKS[1] && blueMask == X8B8G8R8_MASKS[2] && alphaMask == X8B8G8R8_MASKS[3]) {
+                    // X8B8G8R8
+                    return DDSType.X8B8G8R8;
+                }
+                else if (redMask == A8R8G8B8_MASKS[0] && greenMask == A8R8G8B8_MASKS[1] && blueMask == A8R8G8B8_MASKS[2] && alphaMask == A8R8G8B8_MASKS[3]) {
+                    // A8R8G8B8
+                    return DDSType.A8R8G8B8;
+                }
+                else if (redMask == X8R8G8B8_MASKS[0] && greenMask == X8R8G8B8_MASKS[1] && blueMask == X8R8G8B8_MASKS[2] && alphaMask == X8R8G8B8_MASKS[3]) {
+                    // X8R8G8B8
+                    return DDSType.X8R8G8B8;
+                }
+
+                throw new IIOException("Unsupported 32bit RGB image.");
+            }
+
+            throw new IIOException("Unsupported bit count: " + bitCount);
+        }
+
+        throw new IIOException("Unsupported YUV or LUMINANCE image.");
     }
 
-    int getPixelFormatFlags() {
-        return pixelFormatFlags;
+    @Override
+    public String toString() {
+        return "DDSHeader{" +
+            "flags=" + Integer.toBinaryString(flags) +
+            ", mipMapCount=" + mipMapCount +
+            ", dimensions=" + Arrays.toString(Arrays.stream(dimensions)
+                                                    .map(DDSHeader::dimensionToString)
+                                                    .toArray(String[]::new)) +
+            ", pixelFormatFlags=" + Integer.toBinaryString(pixelFormatFlags) +
+            ", fourCC=" + fourCC +
+            ", bitCount=" + bitCount +
+            ", redMask=" + redMask +
+            ", greenMask=" + greenMask +
+            ", blueMask=" + blueMask +
+            ", alphaMask=" + alphaMask +
+            '}';
     }
 
-    int getRedMask() {
-        return redMask;
-    }
-
-    int getGreenMask() {
-        return greenMask;
-    }
-
-    int getBlueMask() {
-        return blueMask;
-    }
-
-    int getAlphaMask() {
-        return alphaMask;
+    private static String dimensionToString(Dimension dimension) {
+        return String.format("%dx%d", dimension.width, dimension.height);
     }
 }

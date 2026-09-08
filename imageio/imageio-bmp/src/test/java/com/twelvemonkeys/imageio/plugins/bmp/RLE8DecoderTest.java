@@ -127,6 +127,22 @@ public class RLE8DecoderTest {
         assertArrayEquals(DECODED, Arrays.copyOfRange(buffer.array(), 0, count));
     }
 
+    @Test
+    public void decodeDeltaBeyondRowDoesNotOverrun() {
+        // Delta opcode (00 02 dx dy) with an x displacement that runs past the row,
+        // followed by end-of-bitmap. The stream-supplied displacement must not
+        // write past the decoded row (previously threw ArrayIndexOutOfBoundsException).
+        byte[] rle = {
+                0x00, 0x02, (byte) 0xFF, 0x00, // delta dx=255, dy=0
+                0x00, 0x01,                    // end of bitmap
+        };
+
+        Decoder decoder = new RLE8Decoder(4); // row length 4 bytes
+        ByteBuffer buffer = ByteBuffer.allocate(64);
+
+        assertDoesNotThrow(() -> decoder.decode(new ByteArrayInputStream(rle), buffer));
+    }
+
 //    @Test
 //    public void decodeExampleW28to31() throws IOException {
 //        for (int i = 28; i < 32; i++) {

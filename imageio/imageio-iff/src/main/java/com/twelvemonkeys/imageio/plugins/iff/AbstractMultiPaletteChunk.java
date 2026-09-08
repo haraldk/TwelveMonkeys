@@ -44,6 +44,8 @@
 
 package com.twelvemonkeys.imageio.plugins.iff;
 
+import com.twelvemonkeys.imageio.plugins.iff.MutableIndexColorModel.PaletteChange;
+
 import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
 import java.io.DataInput;
@@ -62,8 +64,8 @@ abstract class AbstractMultiPaletteChunk extends IFFChunk implements MultiPalett
     /* scale factor maxval 15 -> maxval 255 */
     static final int FACTOR_4BIT = 17;
 
-    protected MutableIndexColorModel.PaletteChange[] initialChanges;
-    protected MutableIndexColorModel.PaletteChange[][] changes;
+    protected PaletteChange[] initialChanges;
+    protected PaletteChange[][] changes;
 
     protected int lastRow;
     protected WeakReference<IndexColorModel> originalPalette;
@@ -81,22 +83,20 @@ abstract class AbstractMultiPaletteChunk extends IFFChunk implements MultiPalett
 
         int rows = chunkLength / 32;    /* sizeof(word) * 16 */
 
-        changes = new MutableIndexColorModel.PaletteChange[rows][];
+        changes = new PaletteChange[rows][];
 
         for (int row = 0; row < rows; row++) {
-            changes[row] = new MutableIndexColorModel.PaletteChange[16];
+            changes[row] = new PaletteChange[16];
 
             for (int i = 0; i < 16; i++) {
-                changes[row][i] = new MutableIndexColorModel.PaletteChange();
-            }
-
-            for (int i = 0; i < 16; i++ ) {
                 int data = input.readUnsignedShort();
 
-                changes[row][i].index = i;
-                changes[row][i].r = (byte) (((data & 0x0f00) >> 8) * FACTOR_4BIT);
-                changes[row][i].g = (byte) (((data & 0x00f0) >> 4) * FACTOR_4BIT);
-                changes[row][i].b = (byte) (((data & 0x000f)     ) * FACTOR_4BIT);
+                changes[row][i] = new PaletteChange(
+                        i,
+                        (byte) (((data & 0x0f00) >> 8) * FACTOR_4BIT),
+                        (byte) (((data & 0x00f0) >> 4) * FACTOR_4BIT),
+                        (byte) (((data & 0x000f)     ) * FACTOR_4BIT)
+                );
             }
         }
     }

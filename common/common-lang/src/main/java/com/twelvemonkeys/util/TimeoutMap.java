@@ -51,6 +51,7 @@ import java.util.*;
  *      when iterating the collection views).</li>
  * </ul>
  *
+ * @deprecated This class has serious design flaws and will be removed.
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  * @version $Id: //depot/branches/personal/haraldk/twelvemonkeys/release-2/twelvemonkeys-core/src/main/java/com/twelvemonkeys/util/TimeoutMap.java#2 $
  */
@@ -60,14 +61,20 @@ import java.util.*;
  //  and next expiry time would be the time of the first element.
  // TODO: Consider running the removeExpiredEntries method in a separate (deamon) thread
  // TODO: - or document why it is not such a good idea.
+@Deprecated
 public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements ExpiringMap<K, V>, Serializable, Cloneable {
+    // Hack to avoid undeterministic expiry during creating due to bad design
+    // (We rely on public, non-final methods in the super-constructor,
+    // which again would trigger expiry without the expiryTime field being set...)
+    private boolean initialized;
+
     /**
      * Expiry time
      */
     protected long expiryTime = 60000L;  // 1 minute
 
     //////////////////////
-    private volatile long nextExpiryTime = Long.MAX_VALUE;
+    private volatile long nextExpiryTime;
     //////////////////////
 
     /**
@@ -112,6 +119,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
     public TimeoutMap(long pExpiryTime) {
         this();
         expiryTime = pExpiryTime;
+        initialized = true;
     }
 
     /**
@@ -131,6 +139,7 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
     public TimeoutMap(Map<K, Map.Entry<K, V>> pBacking, Map<? extends K, ? extends V> pContents, long pExpiryTime) {
         super(pBacking, pContents);
         expiryTime = pExpiryTime;
+        initialized = true;
     }
 
     /**
@@ -292,6 +301,10 @@ public class TimeoutMap<K, V> extends AbstractDecoratedMap<K, V> implements Expi
      * Removes any expired mappings.
      */
     protected void removeExpiredEntries() {
+        if (!initialized) {
+            return;
+        }
+
         // Remove any expired elements
         long now = System.currentTimeMillis();
         if (now > nextExpiryTime) {

@@ -30,6 +30,8 @@
 
 package com.twelvemonkeys.util;
 
+import org.junit.jupiter.api.Nested;
+
 import java.beans.IntrospectionException;
 import java.io.Serializable;
 import java.util.Map;
@@ -172,4 +174,16 @@ public class BeanMapTest extends MapAbstractTest {
     }
 
     static class NullBean implements Serializable { }
+
+    @Nested
+    public class TestBeanMapEntrySet extends TestMapEntrySet {
+    }
+
+    @Nested
+    public class TestBeanMapKeySet extends TestMapKeySet {
+    }
+
+    @Nested
+    public class TestBeanMapValues extends TestMapValues {
+    }
 }

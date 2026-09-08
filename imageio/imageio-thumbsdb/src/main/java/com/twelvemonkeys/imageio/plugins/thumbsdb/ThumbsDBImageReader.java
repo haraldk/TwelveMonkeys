@@ -65,6 +65,12 @@ import java.util.SortedSet;
  * @see <a href="http://en.wikipedia.org/wiki/Thumbs.db">Wikipedia: Thumbs.db</a>
  */
 public final class ThumbsDBImageReader extends ImageReaderBase {
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for thumbdb,
+     * used to bound the allocation against the input length.
+     */
+    private static final int MAX_EXPANSION_RATIO = 16;
+
     private static final int THUMBNAIL_OFFSET = 12;
     private Entry root;
     private Catalog catalog;
@@ -105,7 +111,7 @@ public final class ThumbsDBImageReader extends ImageReaderBase {
     }
 
     /**
-     * Instructs the reader wether it should read and cache alle thumbnails
+     * Instructs the reader whether it should read and cache all thumbnails
      * in sequence, during the first read operation.
      * <p>
      * This is useful mainly if you need to read all the thumbnails, and you

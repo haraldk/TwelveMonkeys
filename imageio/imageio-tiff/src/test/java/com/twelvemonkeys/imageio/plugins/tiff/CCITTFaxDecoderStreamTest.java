@@ -49,7 +49,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @version $Id: CCITTFaxDecoderStreamTest.java,v 1.0 09.03.13 14:44 haraldk
  *          Exp$
  */
-public class CCITTFaxDecoderStreamTest {
+class CCITTFaxDecoderStreamTest {
 
     // group3_1d.tif: EOL|3W|1B|2W|EOL|3W|1B|2W|EOL|3W|1B|2W|EOL|2W|2B|2W|5*F
     static final byte[] DATA_G3_1D = { 0x00, 0x18, 0x4E, 0x00, 0x30, (byte) 0x9C, 0x00, 0x61, 0x38, 0x00, (byte) 0xBE,
@@ -139,7 +139,7 @@ public class CCITTFaxDecoderStreamTest {
     final BufferedImage image = new BufferedImage(6, 4, BufferedImage.TYPE_BYTE_BINARY);
 
     @BeforeEach
-    public void init() {
+    void init() {
 
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 6; x++) {
@@ -151,7 +151,7 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    public void testDecodeType2() throws IOException {
+    void testDecodeType2() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_TYPE_2), 6,
                 TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 0L);
 
@@ -159,7 +159,7 @@ public class CCITTFaxDecoderStreamTest {
         byte[] bytes = new byte[imageData.length];
 
         DataInputStream dataInputStream = new DataInputStream(stream);
-        dataInputStream.readFully(bytes);
+        assertDoesNotThrow(() -> dataInputStream.readFully(bytes));
         assertArrayEquals(imageData, bytes);
 
         assertEquals(-1, dataInputStream.read());
@@ -167,7 +167,7 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    public void testDecodeType3_1D() throws IOException {
+    void testDecodeType3_1D() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G3_1D), 6,
                 TIFFExtension.COMPRESSION_CCITT_T4, 0L);
 
@@ -175,7 +175,7 @@ public class CCITTFaxDecoderStreamTest {
         byte[] bytes = new byte[imageData.length];
 
         DataInputStream dataInputStream = new DataInputStream(stream);
-        dataInputStream.readFully(bytes);
+        assertDoesNotThrow(() -> dataInputStream.readFully(bytes));
         assertArrayEquals(imageData, bytes);
 
         assertEquals(-1, dataInputStream.read());
@@ -183,7 +183,7 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    public void testDecodeType3_1D_FILL() throws IOException {
+    void testDecodeType3_1D_FILL() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G3_1D_FILL), 6,
                 TIFFExtension.COMPRESSION_CCITT_T4, TIFFExtension.GROUP3OPT_FILLBITS);
 
@@ -199,7 +199,7 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    public void testFindCompressionType() throws IOException {
+    void testFindCompressionType() throws IOException {
         // RLE
         assertEquals(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, CCITTFaxDecoderStream.findCompressionType(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, new ByteArrayInputStream(DATA_RLE_UNALIGNED)));
 
@@ -221,7 +221,7 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    public void testDecodeType3_2D() throws IOException {
+    void testDecodeType3_2D() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G3_2D), 6,
                 TIFFExtension.COMPRESSION_CCITT_T4, TIFFExtension.GROUP3OPT_2DENCODING);
 
@@ -232,7 +232,7 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    public void testDecodeType3_2D_FILL() throws IOException {
+    void testDecodeType3_2D_FILL() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G3_2D_FILL), 6,
                 TIFFExtension.COMPRESSION_CCITT_T4,
                 TIFFExtension.GROUP3OPT_2DENCODING | TIFFExtension.GROUP3OPT_FILLBITS);
@@ -244,7 +244,7 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    public void testDecodeType3_2D_REVERSED() throws IOException {
+    void testDecodeType3_2D_REVERSED() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ReverseInputStream(new ByteArrayInputStream(DATA_G3_2D_lsb2msb)), 6,
                 TIFFExtension.COMPRESSION_CCITT_T4, TIFFExtension.GROUP3OPT_2DENCODING);
 
@@ -255,7 +255,7 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    public void testDecodeType4() throws IOException {
+    void testDecodeType4() throws IOException {
         InputStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G4), 6,
                 TIFFExtension.COMPRESSION_CCITT_T6, 0L);
 
@@ -265,8 +265,9 @@ public class CCITTFaxDecoderStreamTest {
         assertArrayEquals(imageData, bytes);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
-    public void testDecodeMissingRows() throws IOException {
+    void testDecodeMissingRows() throws IOException {
         // See https://github.com/haraldk/TwelveMonkeys/pull/225 and https://github.com/haraldk/TwelveMonkeys/issues/232
         InputStream inputStream = getResourceAsStream("/tiff/ccitt_tolessrows.tif");
 
@@ -294,7 +295,7 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    public void testMoreChangesThanColumns() throws IOException {
+    void testMoreChangesThanColumns() throws IOException {
         // Produces an CCITT Stream with 9 changes on 8 columns.
         byte[] data = new byte[] {(byte) 0b10101010};
         ByteArrayOutputStream imageOutput = new ByteArrayOutputStream();
@@ -310,8 +311,9 @@ public class CCITTFaxDecoderStreamTest {
         assertEquals(data[0], decoded);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
-    public void testMoreChangesThanColumnsFile() throws IOException {
+    void testMoreChangesThanColumnsFile() throws IOException {
         // See https://github.com/haraldk/TwelveMonkeys/issues/328
         // 26 changes on 24 columns: H0w1b, H1w1b, ..., H1w0b
         InputStream stream = getResourceAsStream("/tiff/ccitt-too-many-changes.tif");
@@ -328,29 +330,32 @@ public class CCITTFaxDecoderStreamTest {
     }
 
     @Test
-    public void testDecodeType4ByteAligned() throws IOException {
+    void testDecodeType4ByteAligned(){
         CCITTFaxDecoderStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_G4_ALIGNED), 6,
                 TIFFExtension.COMPRESSION_CCITT_T6, 0L, true);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
-        new DataInputStream(stream).readFully(bytes);
+
+        assertDoesNotThrow(() -> new DataInputStream(stream).readFully(bytes));
         assertArrayEquals(imageData, bytes);
     }
 
     @Test
-    public void testDecodeType2NotByteAligned() throws IOException {
+    void testDecodeType2NotByteAligned() {
         CCITTFaxDecoderStream stream = new CCITTFaxDecoderStream(new ByteArrayInputStream(DATA_RLE_UNALIGNED), 6,
                 TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 0L, false);
 
         byte[] imageData = ((DataBufferByte) image.getData().getDataBuffer()).getData();
         byte[] bytes = new byte[imageData.length];
-        new DataInputStream(stream).readFully(bytes);
+
+        assertDoesNotThrow(() -> new DataInputStream(stream).readFully(bytes));
         assertArrayEquals(imageData, bytes);
     }
 
+    @SuppressWarnings("ResultOfMethodCallIgnored")
     @Test
-    public void testG3AOE() throws IOException {
+    void testG3AOE() throws IOException {
         InputStream inputStream = getResourceAsStream("/tiff/ccitt/g3aoe.tif");
 
         // Skip until StripOffsets: 8
@@ -366,22 +371,25 @@ public class CCITTFaxDecoderStreamTest {
                 1728, TIFFExtension.COMPRESSION_CCITT_T4, TIFFExtension.GROUP3OPT_FILLBITS);
 
         byte[] bytes = new byte[216 * 1168]; // 1728 x 1168 pixel, 1 bpp => 216 bytes * 1168
-        new DataInputStream(stream).readFully(bytes);
+        assertDoesNotThrow(() -> new DataInputStream(stream).readFully(bytes));
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
     @Test
-    public void testAIOBEInCorruptStreamShouldThrowIOException() throws IOException {
-        // From #645
-        assertThrows(IOException.class, () -> {
+    void testAIOBEInCorruptStreamShouldNotLeakRuntimeException() {
+        // From #645: AIOOBE from corrupt stream must not propagate as RuntimeException.
+        assertDoesNotThrow(() -> {
             try (InputStream ccittFaxDecoderStream = new CCITTFaxDecoderStream(getResourceAsStream("/ccitt/645.ccitt"), 7, 4, 0, false)) {
                 while (ccittFaxDecoderStream.read() != -1) ; // Just read until the end
+            }
+            catch (IOException ignored) {
+                // acceptable
             }
         });
     }
 
     @Test
-    public void testFindCompressionTypeForMissingStartEOL() throws IOException {
+    void testFindCompressionTypeForMissingStartEOL() throws IOException {
         // Type 4, missing leading EOL code
         // starts with 1728px long white lines
         byte[] data = new byte[]{

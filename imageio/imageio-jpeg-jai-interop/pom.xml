@@ -4,10 +4,10 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-jpeg-jai-interop</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: JPEG/JAI TIFF Interop</name>
+    <name>TwelveMonkeys » ImageIO » JPEG/JAI TIFF Interop</name>
     <description>
         Test JPEG plugin and JAI TIFF plugin interoperability
     </description>

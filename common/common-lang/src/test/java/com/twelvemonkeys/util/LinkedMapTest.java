@@ -201,4 +201,16 @@ public class LinkedMapTest extends MapAbstractTest {
     public void tearDown() throws Exception {
         labRat = null;
     }
+
+    @Nested
+    public class TestLinkedMapEntrySet extends TestMapEntrySet {
+    }
+
+    @Nested
+    public class TestLinkedMapKeySet extends TestMapKeySet {
+    }
+
+    @Nested
+    public class TestLinkedMapValues extends TestMapValues {
+    }
 }

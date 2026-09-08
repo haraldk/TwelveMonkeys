@@ -70,6 +70,11 @@ import static java.lang.Math.min;
  */
 final class WebPImageReader extends ImageReaderBase {
 
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for WebP
+     */
+    private static final int MAX_EXPANSION_RATIO = 2048;
+
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.webp.debug"));
 
     private LSBBitReader lsbBitReader;
@@ -428,6 +433,8 @@ final class WebPImageReader extends ImageReaderBase {
     public BufferedImage read(final int imageIndex, final ImageReadParam param) throws IOException {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
+
+        validateSourceSize(getRawImageType(imageIndex), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
         BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
 
         processImageStarted(imageIndex);
@@ -565,7 +572,7 @@ final class WebPImageReader extends ImageReaderBase {
                 readVP8Lossless(tempRaster, null, width, height);
 
                 // Copy from green (band 1) in temp to alpha in destination
-                WritableRaster alphaChannel = tempRaster.createWritableChild(0, 0, tempRaster.getWidth(), tempRaster.getHeight(), 0, 0, new int[]{1});
+                WritableRaster alphaChannel = tempRaster.createWritableChild(0, 0, width, height, 0, 0, new int[]{1});
                 alphaFilter(alphaChannel, filtering);
                 copyIntoRasterWithParams(alphaChannel, alphaRaster, param);
                 break;

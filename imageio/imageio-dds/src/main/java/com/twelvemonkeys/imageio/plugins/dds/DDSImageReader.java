@@ -30,18 +30,16 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
-import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
-
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
-
-import java.awt.*;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -49,7 +47,20 @@ import java.nio.ByteOrder;
 import java.util.Collections;
 import java.util.Iterator;
 
+import static com.twelvemonkeys.imageio.util.IIOUtil.subsampleRow;
+
+/**
+ * ImageReader implementation for Microsoft DirectDraw Surface (DDS) format.
+ *
+ * @author Paul Allen
+ * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
+ */
 public final class DDSImageReader extends ImageReaderBase {
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for DDS,
+     * used to bound the allocation against the input length.
+     */
+    private static final int MAX_EXPANSION_RATIO = 128;
 
     private DDSHeader header;
 
@@ -91,7 +102,16 @@ public final class DDSImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
         readHeader();
 
-        // TODO: Implement for the specific formats...
+        DDSType type = header.getType();
+        if (!type.isBlockCompression() && type.rgbaMasks[3] == 0) {
+            return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_RGB);
+        }
+
+        // TODO: DXT1 can have 1 bit alpha, usually don't...
+        //  DXT3/5 have alpha
+        //  DXT2/4 ...?
+
+
         return ImageTypeSpecifiers.createFromBufferedImageType(BufferedImage.TYPE_INT_ARGB);
     }
 
@@ -113,6 +133,7 @@ public final class DDSImageReader extends ImageReaderBase {
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
+        validateSourceSize(getRawImageType(imageIndex), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
         BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
 
         Rectangle srcRegion = new Rectangle();
@@ -147,14 +168,19 @@ public final class DDSImageReader extends ImageReaderBase {
     public IIOMetadata getImageMetadata(int imageIndex) throws IOException {
         ImageTypeSpecifier imageType = getRawImageType(imageIndex);
 
-        return new DDSMetadata(imageType, header);
+        return new DDSImageMetadata(imageType, header.getType());
     }
 
     private void readHeader() throws IOException {
         if (header == null) {
             imageInput.setByteOrder(ByteOrder.LITTLE_ENDIAN);
-            header = DDSHeader.read(imageInput);
 
+            int magic = imageInput.readInt();
+            if (magic != DDS.MAGIC) {
+                throw new IIOException(String.format("Not a DDS file. Expected DDS magic 0x%8x', read 0x%8x", DDS.MAGIC, magic));
+            }
+
+            header = DDSHeader.read(imageInput);
             imageInput.flushBefore(imageInput.getStreamPosition());
         }
 

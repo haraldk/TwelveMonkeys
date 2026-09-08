@@ -83,6 +83,13 @@ public final class PSDImageReader extends ImageReaderBase {
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.psd.debug"));
 
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for PSD, used to bound the destination allocation
+     * against the input length. PSD image data may be raw, PackBits/RLE, or ZIP/deflate compressed; 2048:1
+     * leaves margin above DEFLATE's theoretical maximum (~1032:1), so no valid image is rejected.
+     */
+    private static final int MAX_EXPANSION_RATIO = 2048;
+
     private PSDHeader header;
     private ICC_ColorSpace colorSpace;
     private PSDMetadata metadata;
@@ -376,8 +383,9 @@ public final class PSDImageReader extends ImageReaderBase {
             return readLayerData(imageIndex - 1, param);
         }
 
-        BufferedImage image = getDestination(param, getImageTypes(imageIndex), header.width, header.height);
         ImageTypeSpecifier rawType = getRawImageType(imageIndex);
+        validateSourceSize(rawType, header.width, header.height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage image = getDestination(param, getImageTypes(imageIndex), header.width, header.height);
         checkReadParamBandSettings(param, rawType.getNumBands(), image.getSampleModel().getNumBands());
 
         final Rectangle source = new Rectangle();
@@ -1079,6 +1087,7 @@ public final class PSDImageReader extends ImageReaderBase {
 
         // Even if raw/imageType has no alpha, the layers may still have alpha...
         ImageTypeSpecifier imageType = getRawImageTypeForLayer(layerIndex);
+        validateSourceSize(imageType, width, height, imageInput.length(), MAX_EXPANSION_RATIO);
         BufferedImage layer = getDestination(param, getImageTypes(layerIndex + 1), width, height);
 
         imageInput.seek(findLayerStartPos(layerIndex));

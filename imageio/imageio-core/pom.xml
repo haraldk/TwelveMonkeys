@@ -4,10 +4,10 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-core</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: Core</name>
+    <name>TwelveMonkeys » ImageIO » Core</name>
     <description>
         TwelveMonkeys ImageIO core support classes.
     </description>

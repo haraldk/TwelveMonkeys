@@ -145,7 +145,7 @@ abstract class LZWDecoder implements Decoder {
     }
 
     private void addStringToTable(final LZWString string) throws IOException {
-        if (tableLength > table.length) {
+        if (tableLength >= table.length) {
             throw new DecodeException(String.format("TIFF LZW with more than %d bits per code encountered (table overflow)", MAX_BITS));
         }
 

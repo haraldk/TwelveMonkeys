@@ -1765,12 +1765,11 @@ public final class StringUtil {
      * expression.
      * <p>
      * An invocation of this method of the form
-     * <tt>matches(<i>str</i>, <i>regex</i>)</tt> yields exactly the
+     * {@code matches(str, regex)} yields exactly the
      * same result as the expression
      * </p>
-     * <blockquote><tt> {@link Pattern}.
-     * {@link Pattern#matches(String, CharSequence) matches}
-     * (<i>regex</i>, <i>str</i>)</tt></blockquote>
+     * <blockquote>{@link Pattern}.
+     * {@link Pattern#matches(String, CharSequence) matches(regex, str)}</blockquote>
      *
      * @param pString the string
      * @param pRegex  the regular expression to which this string is to be matched
@@ -1789,16 +1788,14 @@ public final class StringUtil {
      * regular expression with the given pReplacement.
      * <p>
      * An invocation of this method of the form
-     * <tt>
-     *     replaceFirst(<i>str</i>, <i>regex</i>, <i>repl</i>)
-     * </tt>
+     * {@code replaceFirst(str, regex, repl)}
      * yields exactly the same result as the expression:
      * </p>
-     * <blockquote><tt>
-     * {@link Pattern}.{@link Pattern#compile(String) compile}(<i>regex</i>).
-     * {@link Pattern#matcher matcher}(<i>str</i>).
-     * {@link java.util.regex.Matcher#replaceFirst replaceFirst}(<i>repl</i>)
-     * </tt></blockquote>
+     * <blockquote>
+     * {@link Pattern#compile(String) Pattern.compile(regex)}
+     * {@link Pattern#matcher .matcher(str)}
+     * {@link java.util.regex.Matcher#replaceFirst .replaceFirst(repl)}
+     * </blockquote>
      *
      * @param pString      the string
      * @param pRegex       the regular expression to which this string is to be matched
@@ -1817,14 +1814,14 @@ public final class StringUtil {
      * regular expression with the given pReplacement.
      * <p>
      * An invocation of this method of the form
-     * <tt>replaceAll(<i>str</i>, <i>pRegex</i>, <i>repl</i>)</tt>
+     * {@code replaceAll(str, pRegex, repl)}
      * yields exactly the same result as the expression
      * </p>
-     * <blockquote><tt>
-     * {@link Pattern}.{@link Pattern#compile(String) compile}(<i>pRegex</i>).
-     * {@link Pattern#matcher matcher}(<i>str</i>{@code ).
-     * {@link java.util.regex.Matcher#replaceAll replaceAll}(}<i>repl</i>{@code )}
-     * </tt></blockquote>
+     * <blockquote>
+     * {@link Pattern#compile(String) Pattern.compile(pRegex)}
+     * {@link Pattern#matcher .matcher(str)}
+     * {@link java.util.regex.Matcher#replaceAll .replaceAll(repl)}
+     * </blockquote>
      *
      * @param pString      the string
      * @param pRegex       the regular expression to which this string is to be matched
@@ -1862,12 +1859,12 @@ public final class StringUtil {
      * </p>
      * <p>
      * An invocation of this method of the form
-     * <tt>split(<i>str</i>, <i>regex</i>, <i>n</i>)</tt>
+     * {@code split(str, regex, n)}
      * yields the same result as the expression:
      * </p>
      * <blockquote>{@link Pattern}.
-     * {@link Pattern#compile(String) compile}<tt>(<i>regex</i>).
-     * {@link Pattern#split(CharSequence,int) split}(<i>str</i>, <i>n</i>)</tt>
+     * {@link Pattern#compile(String) compile(regex)}.
+     * {@link Pattern#split(CharSequence,int) split(str, n)}
      * </blockquote>
      *
      * @param pString the string

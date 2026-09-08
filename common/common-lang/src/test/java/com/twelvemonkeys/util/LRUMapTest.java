@@ -212,5 +212,17 @@ public class LRUMapTest extends LinkedMapTest {
             list.add(pEntry.getKey());
         }
     }
+
+    @Nested
+    public class TestLRUMapEntrySet extends TestMapEntrySet {
+    }
+
+    @Nested
+    public class TestLRUMapKeySet extends TestMapKeySet {
+    }
+
+    @Nested
+    public class TestLRUMapValues extends TestMapValues {
+    }
 }
 

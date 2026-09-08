@@ -4,10 +4,10 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-jpeg</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: JPEG plugin</name>
+    <name>TwelveMonkeys » ImageIO » JPEG plugin</name>
     <description>
         ImageIO plugin for Joint Photographer Expert Group images (JPEG/JFIF).
     </description>

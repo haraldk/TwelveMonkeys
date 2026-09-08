@@ -55,7 +55,9 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
     private final boolean optionG32D;
     // Leading zeros for aligning EOL
+    @SuppressWarnings({"FieldCanBeLocal", "unused"})
     private final boolean optionG3Fill;
+    @SuppressWarnings("FieldCanBeLocal")
     private final boolean optionUncompressed;
     private final boolean optionByteAligned;
 
@@ -262,7 +264,8 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         changesReferenceRow = tmp;
 
         boolean white = true;
-        int index = 0;
+        // T.6 §4.2.1: a0 starts at the imaginary position −1 before the first column.
+        int index = -1;
         changesCurrentRowCount = 0;
 
         mode: while (index < columns) {
@@ -270,7 +273,8 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
             Node n = codeTree.root;
 
             while (true) {
-                n = n.walk(readBit());
+                boolean modeBit = readBit();
+                n = n.walk(modeBit);
 
                 if (n == null) {
                     continue mode;
@@ -278,24 +282,28 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                 else if (n.isLeaf) {
                     switch (n.value) {
                         case VALUE_HMODE:
+                            if (index < 0) {
+                                index = 0;
+                            }
+
                             int runLength;
                             runLength = decodeRun(white ? whiteRunTree : blackRunTree);
                             index += runLength;
-                            changesCurrentRow[changesCurrentRowCount++] = index;
+                            changesCurrentRow[changesCurrentRowCount++] = Math.min(index, columns);
 
                             runLength = decodeRun(white ? blackRunTree : whiteRunTree);
                             index += runLength;
-                            changesCurrentRow[changesCurrentRowCount++] = index;
+                            changesCurrentRow[changesCurrentRowCount++] = Math.min(index, columns);
                             break;
 
                         case VALUE_PASSMODE:
-                            int pChangingElement = getNextChangingElement(index, white) + 1;
+                            int pChangingElement = getNextChangingElement(index, white);
 
-                            if (pChangingElement >= changesReferenceRowCount) {
+                            if (pChangingElement == -1 || pChangingElement + 1 >= changesReferenceRowCount) {
                                 index = columns;
                             }
                             else {
-                                index = changesReferenceRow[pChangingElement];
+                                index = changesReferenceRow[pChangingElement + 1];
                             }
 
                             break;
@@ -304,15 +312,18 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
                             // Vertical mode (-3 to 3)
                             int vChangingElement = getNextChangingElement(index, white);
 
-                            if (vChangingElement >= changesReferenceRowCount || vChangingElement == -1) {
-                                index = columns + n.value;
+                            int vTarget;
+                            if (vChangingElement == -1 || vChangingElement >= changesReferenceRowCount) {
+                                vTarget = columns + n.value;
                             }
                             else {
-                                index = changesReferenceRow[vChangingElement] + n.value;
+                                vTarget = changesReferenceRow[vChangingElement] + n.value;
                             }
 
-                            changesCurrentRow[changesCurrentRowCount] = index;
-                            changesCurrentRowCount++;
+                            // Clamp target as some encoders emit V modes past the image boundary as end-of-row marker
+                            index = Math.min(Math.max(vTarget, 0), columns);
+
+                            changesCurrentRow[changesCurrentRowCount++] = index;
                             white = !white;
 
                             break;
@@ -320,6 +331,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
 
                     continue mode;
                 }
+                // Otherwise continue the inner while (true) loop
             }
         }
     }
@@ -330,7 +342,9 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
             start -= 2;
         }
 
-        if (a0 == 0) {
+        // T.6 §4.2.1: the imaginary initial a0 is at position −1 (before column 0), so
+        // position 0 in the reference is a valid b1 at true row start
+        if (a0 == -1) {
             return start;
         }
 
@@ -481,7 +495,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
         }
     }
 
-    private void resetBuffer() throws IOException {
+    private void resetBuffer() {
         bufferPos = -1;
     }
 
@@ -637,6 +651,7 @@ final class CCITTFaxDecoderStream extends FilterInputStream {
             }
         }
 
+        @SuppressWarnings("SameParameterValue")
         void fill(final int depth, final int path, final Node node) throws IOException {
             Node current = root;
 

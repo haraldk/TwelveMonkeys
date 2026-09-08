@@ -668,5 +668,17 @@ public class TimeoutMapTest extends MapAbstractTest {
         assertFalse(timeoutMap.containsKey("xyz"));
         assertNull(timeoutMap.get("xyz"));
     }
+
+    @Nested
+    public class TestTimeoutMapEntrySet extends TestMapEntrySet {
+    }
+
+    @Nested
+    public class TestTimeoutMapKeySet extends TestMapKeySet {
+    }
+
+    @Nested
+    public class TestTimeoutMapValues extends TestMapValues {
+    }
 }
 

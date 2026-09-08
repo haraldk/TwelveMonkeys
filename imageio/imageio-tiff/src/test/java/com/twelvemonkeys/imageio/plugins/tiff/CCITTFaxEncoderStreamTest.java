@@ -56,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.*;
  * @author last modified by $Author$
  * @version $Id$
  */
-public class CCITTFaxEncoderStreamTest {
+class CCITTFaxEncoderStreamTest {
 
     // Image should be (6 x 4):
     // 1 1 1 0 1 1 x x
@@ -66,7 +66,7 @@ public class CCITTFaxEncoderStreamTest {
     BufferedImage image;
 
     @BeforeEach
-    public void init() {
+    void init() {
         image = new BufferedImage(6, 4, BufferedImage.TYPE_BYTE_BINARY);
         for (int y = 0; y < 4; y++) {
             for (int x = 0; x < 6; x++) {
@@ -78,32 +78,32 @@ public class CCITTFaxEncoderStreamTest {
     }
 
     @Test
-    public void testBuildCodes() throws IOException {
-        assertTrue(CCITTFaxEncoderStream.WHITE_TERMINATING_CODES.length == 64);
+    void testBuildCodes() {
+        assertEquals(64, CCITTFaxEncoderStream.WHITE_TERMINATING_CODES.length);
         for (Code code : CCITTFaxEncoderStream.WHITE_TERMINATING_CODES) {
             assertNotNull(code);
         }
-        assertTrue(CCITTFaxEncoderStream.WHITE_NONTERMINATING_CODES.length == 40);
+        assertEquals(40, CCITTFaxEncoderStream.WHITE_NONTERMINATING_CODES.length);
         for (Code code : CCITTFaxEncoderStream.WHITE_NONTERMINATING_CODES) {
             assertNotNull(code);
         }
-        assertTrue(CCITTFaxEncoderStream.BLACK_TERMINATING_CODES.length == 64);
+        assertEquals(64, CCITTFaxEncoderStream.BLACK_TERMINATING_CODES.length);
         for (Code code : CCITTFaxEncoderStream.BLACK_TERMINATING_CODES) {
             assertNotNull(code);
         }
-        assertTrue(CCITTFaxEncoderStream.BLACK_NONTERMINATING_CODES.length == 40);
+        assertEquals(40, CCITTFaxEncoderStream.BLACK_NONTERMINATING_CODES.length);
         for (Code code : CCITTFaxEncoderStream.BLACK_NONTERMINATING_CODES) {
             assertNotNull(code);
         }
     }
 
     @Test
-    public void testType2() throws IOException {
+    void testType2() throws IOException {
         testStreamEncodeDecode(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 1, 0L);
     }
 
     @Test
-    public void testType4() throws IOException {
+    void testType4() throws IOException {
         testStreamEncodeDecode(TIFFExtension.COMPRESSION_CCITT_T4, 1, 0L);
         testStreamEncodeDecode(TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_FILLBITS);
         testStreamEncodeDecode(TIFFExtension.COMPRESSION_CCITT_T4, 1, TIFFExtension.GROUP3OPT_2DENCODING);
@@ -112,18 +112,18 @@ public class CCITTFaxEncoderStreamTest {
     }
 
     @Test
-    public void testType6() throws IOException {
+    void testType6() throws IOException {
         testStreamEncodeDecode(TIFFExtension.COMPRESSION_CCITT_T6, 1, 0L);
     }
 
     @Test
-    public void testReversedFillOrder() throws IOException {
+    void testReversedFillOrder() throws IOException {
         testStreamEncodeDecode(TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE, 2, 0L);
         testStreamEncodeDecode(TIFFExtension.COMPRESSION_CCITT_T6, 2, 0L);
     }
 
     @Test
-    public void testReencodeImages() throws IOException {
+    void testReencodeImages() throws IOException {
         try (ImageInputStream iis = ImageIO.createImageInputStream(getClassLoaderResource("/tiff/fivepages-scan-causingerrors.tif").openStream())) {
             ImageReader reader = ImageIO.getImageReaders(iis).next();
             reader.setInput(iis, true);
@@ -150,7 +150,7 @@ public class CCITTFaxEncoderStreamTest {
     }
 
     @Test
-    public void testRunlengthIssue() throws IOException {
+    void testRunlengthIssue() throws IOException {
         // Test for "Fixed an issue with long runlengths in CCITTFax writing #188"
         byte[] data = new byte[400];
         Arrays.fill(data, (byte) 0xFF);
@@ -171,6 +171,7 @@ public class CCITTFaxEncoderStreamTest {
         assertArrayEquals(data, decodedData);
     }
 
+    @SuppressWarnings("SameParameterValue")
     protected URL getClassLoaderResource(final String pName) {
         return getClass().getResource(pName);
     }

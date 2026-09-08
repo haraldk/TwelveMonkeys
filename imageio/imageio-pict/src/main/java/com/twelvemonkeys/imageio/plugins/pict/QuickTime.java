@@ -30,14 +30,13 @@
 
 package com.twelvemonkeys.imageio.plugins.pict;
 
-import com.twelvemonkeys.imageio.util.IIOUtil;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.image.BufferedImage;
 import java.io.DataInput;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Arrays;
 import java.util.List;
 
@@ -146,15 +145,17 @@ final class QuickTime {
             System.out.println(description);
         }
 
+        if (stream.length() >= 0 && stream.length() - stream.getStreamPosition() < description.dataSize) {
+            throw new IIOException("Corrupt QuickTime data: truncated stream");
+        }
+
         QTDecompressor decompressor = getDecompressor(description);
 
         if (decompressor == null) {
             return null;
         }
 
-        try (InputStream streamAdapter = IIOUtil.createStreamAdapter(stream, description.dataSize)) {
-            return decompressor.decompress(description, streamAdapter);
-        }
+        return decompressor.decompress(description, new SubImageInputStream(stream, description.dataSize));
     }
 
     /**
@@ -211,8 +212,8 @@ final class QuickTime {
             description.temporalQuality = pStream.readInt(); // Temporal quality, 0 means "no temporal compression"
             description.spatialQuality = pStream.readInt(); // Spatial quality, 0x0000 0200 is codecNormalQuality
 
-            description.width = pStream.readShort(); // Width (short)
-            description.height = pStream.readShort(); // Height (short)
+            description.width = pStream.readUnsignedShort(); // Width (unsigned short)
+            description.height = pStream.readUnsignedShort(); // Height (unsigned short)
 
             description.horizontalRes = PICTUtil.readFixedPoint(pStream); // Horizontal resolution, FP, 0x0048 0000 means 72 DPI
             description.verticalRes = PICTUtil.readFixedPoint(pStream); // Vertical resolution, FP, 0x0048 0000 means 72 DPI

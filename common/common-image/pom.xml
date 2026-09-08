@@ -4,11 +4,11 @@
     <parent>
         <groupId>com.twelvemonkeys.common</groupId>
         <artifactId>common</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>common-image</artifactId>
     <packaging>jar</packaging>
-    <name>TwelveMonkeys :: Common :: Image</name>
+    <name>TwelveMonkeys » Common » Image</name>
     <description>
         TwelveMonkeys Common image support classes.
     </description>

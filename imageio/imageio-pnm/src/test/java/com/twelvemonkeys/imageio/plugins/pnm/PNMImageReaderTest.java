@@ -29,24 +29,50 @@
  */
 package com.twelvemonkeys.imageio.plugins.pnm;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Base64;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PNMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> {
     @Override
     protected ImageReaderSpi createProvider() {
         return new PNMImageReaderSpi();
+    }
+
+    @Test
+    public void readTinyInputDeclaringHugeDimensionsIsRejectedBeforeAllocation() throws IOException {
+        // GHSA-7c3w-m9qh-j2vj: a 19-byte P6 header declaring 26000 x 27000 allocated ~2.02 GB before this guard.
+        byte[] poc = Base64.getDecoder().decode("UDYKMjYwMDAgMjcwMDAKMjU1Cg==");
+
+        ImageReader reader = createReader();
+        try (ImageInputStream input = new ByteArrayImageInputStream(poc)) {
+            reader.setInput(input);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            // "exceeding" is unique to the size-guard message, confirming rejection in the guard (before
+            // allocation), not a later EOF/parse error after a large buffer was committed.
+            assertTrue(exception.getMessage().contains("exceeding"), exception.getMessage());
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     @Override

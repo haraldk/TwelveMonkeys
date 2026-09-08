@@ -4,10 +4,10 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-hdr</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: HDR plugin</name>
+    <name>TwelveMonkeys » ImageIO » HDR plugin</name>
     <description>
         ImageIO plugin for Radiance RGBE High Dynaimc Range format (HDR).
     </description>

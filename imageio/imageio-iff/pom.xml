@@ -4,10 +4,10 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-iff</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: IFF plugin</name>
+    <name>TwelveMonkeys » ImageIO » IFF plugin</name>
     <description>
         ImageIO plugin for Amiga/Electronic Arts Interchange File Format (IFF)
         type ILBM and PBM format.

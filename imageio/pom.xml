@@ -3,13 +3,13 @@
     <parent>
         <groupId>com.twelvemonkeys</groupId>
         <artifactId>twelvemonkeys</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.twelvemonkeys.imageio</groupId>
     <artifactId>imageio</artifactId>
     <packaging>pom</packaging>
-    <name>TwelveMonkeys :: ImageIO</name>
+    <name>TwelveMonkeys » ImageIO</name>
     <url>https://github.com/haraldk/TwelveMonkeys/tree/master/imageio</url>
 
     <contributors>
@@ -62,7 +62,7 @@
     </modules>
 
     <properties>
-        <junit.jupiter.version>5.13.1</junit.jupiter.version>
+        <junit.jupiter.version>5.14.4</junit.jupiter.version>
     </properties>
 
     <dependencies>

@@ -137,43 +137,43 @@ public final class BeanMap extends AbstractMap<String, Object> implements Serial
     }
 
     private class BeanIterator implements Iterator<Entry<String, Object>> {
-        private final Iterator<PropertyDescriptor> mIterator;
+        private final Iterator<PropertyDescriptor> iterator;
 
         public BeanIterator(final Iterator<PropertyDescriptor> pIterator) {
-            mIterator = pIterator;
+            iterator = pIterator;
         }
 
         public boolean hasNext() {
-            return mIterator.hasNext();
+            return iterator.hasNext();
         }
 
         public BeanEntry next() {
-            return new BeanEntry(mIterator.next());
+            return new BeanEntry(iterator.next());
         }
 
         public void remove() {
-            mIterator.remove();
+            iterator.remove();
         }
     }
 
     private class BeanEntry implements Entry<String, Object> {
-        private final PropertyDescriptor mDescriptor;
+        private final PropertyDescriptor descriptor;
 
         public BeanEntry(final PropertyDescriptor pDescriptor) {
-            this.mDescriptor = pDescriptor;
+            this.descriptor = pDescriptor;
         }
 
         public String getKey() {
-            return mDescriptor.getName();
+            return descriptor.getName();
         }
 
         public Object getValue() {
             return unwrap(new Wrapped() {
                 public Object run() throws IllegalAccessException, InvocationTargetException {
-                    final Method method = mDescriptor.getReadMethod();
+                    final Method method = descriptor.getReadMethod();
                     // A write-only bean.
                     if (method == null) {
-                        throw new UnsupportedOperationException("No getter: " + mDescriptor.getName());
+                        throw new UnsupportedOperationException("No getter: " + descriptor.getName());
                     }
 
                     return method.invoke(bean);
@@ -184,10 +184,10 @@ public final class BeanMap extends AbstractMap<String, Object> implements Serial
         public Object setValue(final Object pValue) {
             return unwrap(new Wrapped() {
                 public Object run() throws IllegalAccessException, InvocationTargetException {
-                    final Method method = mDescriptor.getWriteMethod();
+                    final Method method = descriptor.getWriteMethod();
                     // A read-only bean.
                     if (method == null) {
-                        throw new UnsupportedOperationException("No write method for property: " + mDescriptor.getName());
+                        throw new UnsupportedOperationException("No write method for property: " + descriptor.getName());
                     }
 
                     final Object old = getValue();

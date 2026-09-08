@@ -4,10 +4,10 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-dds</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: DDS plugin</name>
+    <name>TwelveMonkeys » ImageIO » DDS plugin</name>
     <description>
         ImageIO plugin for Microsoft Direct DrawSurface (DDS).
     </description>
@@ -43,6 +43,8 @@
                         <Provide-Capability>
                             osgi.serviceloader;
                             osgi.serviceloader=javax.imageio.spi.ImageReaderSpi
+                            osgi.serviceloader;
+                            osgi.serviceloader=javax.imageio.spi.ImageWriterSpi
                         </Provide-Capability>
                     </instructions>
                 </configuration>

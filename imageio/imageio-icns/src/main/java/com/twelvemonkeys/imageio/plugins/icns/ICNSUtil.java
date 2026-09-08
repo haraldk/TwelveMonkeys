@@ -30,6 +30,7 @@
 
 package com.twelvemonkeys.imageio.plugins.icns;
 
+import javax.imageio.IIOException;
 import java.io.DataInputStream;
 import java.io.IOException;
 
@@ -84,6 +85,10 @@ final class ICNSUtil {
                 // Compressed run
                 runLength = run + 131; // PackBits: -run + 1 and run == 0x80 is no-op... This allows 1 byte longer runs...
 
+                if (runLength > remaining) {
+                    throw new IIOException("Corrupt ICNS RLE data: run length exceeds expected data length");
+                }
+
                 byte runData = input.readByte();
 
                 for (int i = 0; i < runLength; i++) {
@@ -93,6 +98,10 @@ final class ICNSUtil {
             else {
                 // Uncompressed run
                 runLength = run + 1;
+
+                if (runLength > remaining) {
+                    throw new IIOException("Corrupt ICNS RLE data: run length exceeds expected data length");
+                }
 
                 input.readFully(result, resultPos, runLength);
                 resultPos += runLength;

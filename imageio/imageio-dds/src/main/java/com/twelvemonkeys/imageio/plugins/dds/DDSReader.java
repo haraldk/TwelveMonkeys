@@ -70,8 +70,8 @@ import java.io.IOException;
  * <a href="http://3dtech.jp/wiki/index.php?DDSReader">Japanese document</a>
  */
 final class DDSReader {
-
-    static final Order ARGB_ORDER = new Order(16, 8, 0, 24);
+    static final Order ARGB_ORDER = new Order(16, 8, 0, 24);   //  8 alpha | 8 red | 8 green | 8 blue
+    static final Order RGB_16_ORDER = new Order(11, 5, 0, -1); // no alpha | 5 red | 6 green | 5 blue
 
     private final DDSHeader header;
 
@@ -80,16 +80,21 @@ final class DDSReader {
     }
 
     int[] read(ImageInputStream imageInput, int imageIndex) throws IOException {
-
         // type
-        DDSType type = getType();
+        DDSType type = header.getType();
 
         // offset buffer to index mipmap image
         byte[] buffer = null;
         for (int i = 0; i <= imageIndex; i++) {
-            int len = getLength(type, i);
-            buffer = new byte[len];
-            imageInput.readFully(buffer);
+            int len = getBufferLength(type, i);
+
+            if (i == imageIndex) {
+                buffer = new byte[len];
+                imageInput.readFully(buffer);
+            }
+            else {
+                imageInput.seek(imageInput.getStreamPosition() + len);
+            }
         }
 
         int width = header.getWidth(imageIndex);
@@ -131,83 +136,17 @@ final class DDSReader {
         }
     }
 
-    private DDSType getType() throws IIOException {
-        int flags = header.getPixelFormatFlags();
-
-        if ((flags & DDS.PIXEL_FORMAT_FLAG_FOURCC) != 0) {
-            // DXT
-            int type = header.getFourCC();
-            return DDSType.valueOf(type);
-
-        } else if ((flags & DDS.PIXEL_FORMAT_FLAG_RGB) != 0) {
-            // RGB
-            int bitCount = header.getBitCount();
-            int redMask = header.getRedMask();
-            int greenMask = header.getGreenMask();
-            int blueMask = header.getBlueMask();
-            int alphaMask = ((flags & 0x01) != 0) ? header.getAlphaMask() : 0; // 0x01 alpha
-            if (bitCount == 16) {
-                if (redMask == A1R5G5B5_MASKS[0] && greenMask == A1R5G5B5_MASKS[1] && blueMask == A1R5G5B5_MASKS[2] && alphaMask == A1R5G5B5_MASKS[3]) {
-                    // A1R5G5B5
-                    return DDSType.A1R5G5B5;
-                } else if (redMask == X1R5G5B5_MASKS[0] && greenMask == X1R5G5B5_MASKS[1] && blueMask == X1R5G5B5_MASKS[2] && alphaMask == X1R5G5B5_MASKS[3]) {
-                    // X1R5G5B5
-                    return DDSType.X1R5G5B5;
-                } else if (redMask == A4R4G4B4_MASKS[0] && greenMask == A4R4G4B4_MASKS[1] && blueMask == A4R4G4B4_MASKS[2] && alphaMask == A4R4G4B4_MASKS[3]) {
-                    // A4R4G4B4
-                    return DDSType.A4R4G4B4;
-                } else if (redMask == X4R4G4B4_MASKS[0] && greenMask == X4R4G4B4_MASKS[1] && blueMask == X4R4G4B4_MASKS[2] && alphaMask == X4R4G4B4_MASKS[3]) {
-                    // X4R4G4B4
-                    return DDSType.X4R4G4B4;
-                } else if (redMask == R5G6B5_MASKS[0] && greenMask == R5G6B5_MASKS[1] && blueMask == R5G6B5_MASKS[2] && alphaMask == R5G6B5_MASKS[3]) {
-                    // R5G6B5
-                    return DDSType.R5G6B5;
-                } else {
-                    throw new IIOException("Unsupported 16bit RGB image.");
-                }
-            } else if (bitCount == 24) {
-                if (redMask == R8G8B8_MASKS[0] && greenMask == R8G8B8_MASKS[1] && blueMask == R8G8B8_MASKS[2] && alphaMask == R8G8B8_MASKS[3]) {
-                    // R8G8B8
-                    return DDSType.R8G8B8;
-                } else {
-                    throw new IIOException("Unsupported 24bit RGB image.");
-                }
-            } else if (bitCount == 32) {
-                if (redMask == A8B8G8R8_MASKS[0] && greenMask == A8B8G8R8_MASKS[1] && blueMask == A8B8G8R8_MASKS[2] && alphaMask == A8B8G8R8_MASKS[3]) {
-                    // A8B8G8R8
-                    return DDSType.A8B8G8R8;
-                } else if (redMask == X8B8G8R8_MASKS[0] && greenMask == X8B8G8R8_MASKS[1] && blueMask == X8B8G8R8_MASKS[2] && alphaMask == X8B8G8R8_MASKS[3]) {
-                    // X8B8G8R8
-                    return DDSType.X8B8G8R8;
-                } else if (redMask == A8R8G8B8_MASKS[0] && greenMask == A8R8G8B8_MASKS[1] && blueMask == A8R8G8B8_MASKS[2] && alphaMask == A8R8G8B8_MASKS[3]) {
-                    // A8R8G8B8
-                    return DDSType.A8R8G8B8;
-                } else if (redMask == X8R8G8B8_MASKS[0] && greenMask == X8R8G8B8_MASKS[1] && blueMask == X8R8G8B8_MASKS[2] && alphaMask == X8R8G8B8_MASKS[3]) {
-                    // X8R8G8B8
-                    return DDSType.X8R8G8B8;
-                } else {
-                    throw new IIOException("Unsupported 32bit RGB image.");
-                }
-            } else {
-                throw new IIOException("Unsupported bit count: " + bitCount);
-            }
-        } else {
-            throw new IIOException("Unsupported YUV or LUMINANCE image.");
-        }
-    }
-
-    private int getLength(DDSType type, int imageIndex) throws IIOException {
+    private int getBufferLength(DDSType type, int imageIndex) throws IIOException {
         int width = header.getWidth(imageIndex);
         int height = header.getHeight(imageIndex);
 
         switch (type) {
             case DXT1:
-                return 8 * ((width + 3) / 4) * ((height + 3) / 4);
             case DXT2:
             case DXT3:
             case DXT4:
             case DXT5:
-                return 16 * ((width + 3) / 4) * ((height + 3) / 4);
+                return type.blockSize() * ((width + 3) / 4) * ((height + 3) / 4);
             case A1R5G5B5:
             case X1R5G5B5:
             case A4R4G4B4:
@@ -218,11 +157,12 @@ final class DDSReader {
             case X8B8G8R8:
             case A8R8G8B8:
             case X8R8G8B8:
-                return (type.value() & 0xFF) * width * height;
+                return type.blockSize() * width * height;
             default:
-                throw new IIOException("Unknown type: " + Integer.toHexString(type.value()));
+                throw new IIOException("Unknown type: " + type);
         }
     }
+
 
     private static int[] decodeDXT1(int width, int height, byte[] buffer) {
         int[] pixels = new int[width * height];
@@ -241,7 +181,7 @@ final class DDSReader {
                     int t1 = (buffer[index] & 0x0C) >> 2;
                     int t2 = (buffer[index] & 0x30) >> 4;
                     int t3 = (buffer[index++] & 0xC0) >> 6;
-                    pixels[4 * width * i + 4 * j + width * k    ] = getDXTColor(c0, c1, 0xFF, t0);
+                    pixels[4 * width * i + 4 * j + width * k] = getDXTColor(c0, c1, 0xFF, t0);
                     if (4 * j + 1 >= width) continue;
                     pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, 0xFF, t1);
                     if (4 * j + 2 >= width) continue;
@@ -286,7 +226,7 @@ final class DDSReader {
                     int t1 = (buffer[index] & 0x0C) >> 2;
                     int t2 = (buffer[index] & 0x30) >> 4;
                     int t3 = (buffer[index++] & 0xC0) >> 6;
-                    pixels[4 * width * i + 4 * j + width * k    ] = getDXTColor(c0, c1, alphaTable[4 * k    ], t0);
+                    pixels[4 * width * i + 4 * j + width * k] = getDXTColor(c0, c1, alphaTable[4 * k], t0);
                     if (4 * j + 1 >= width) continue;
                     pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, alphaTable[4 * k + 1], t1);
                     if (4 * j + 2 >= width) continue;
@@ -344,7 +284,7 @@ final class DDSReader {
                     int t1 = (buffer[index] & 0x0C) >> 2;
                     int t2 = (buffer[index] & 0x30) >> 4;
                     int t3 = (buffer[index++] & 0xC0) >> 6;
-                    pixels[4 * width * i + 4 * j + width * k    ] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k    ]), t0);
+                    pixels[4 * width * i + 4 * j + width * k] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k]), t0);
                     if (4 * j + 1 >= width) continue;
                     pixels[4 * width * i + 4 * j + width * k + 1] = getDXTColor(c0, c1, getDXT5Alpha(a0, a1, alphaTable[4 * k + 1]), t1);
                     if (4 * j + 2 >= width) continue;
@@ -499,7 +439,7 @@ final class DDSReader {
         return pixels;
     }
 
-    private static int getDXTColor(int c0, int c1, int a, int t) {
+    static int getDXTColor(int c0, int c1, int a, int t) {
         switch (t) {
             case 0:
                 return getDXTColor1(c0, a);
@@ -515,7 +455,7 @@ final class DDSReader {
 
     private static int getDXTColor2_1(int c0, int c1, int a) {
         // 2*c0/3 + c1/3
-        int r = (2 * BIT5[(c0 & 0xFC00) >> 11] + BIT5[(c1 & 0xFC00) >> 11]) / 3;
+        int r = (2 * BIT5[(c0 & 0xF800) >> 11] + BIT5[(c1 & 0xF800) >> 11]) / 3;
         int g = (2 * BIT6[(c0 & 0x07E0) >> 5] + BIT6[(c1 & 0x07E0) >> 5]) / 3;
         int b = (2 * BIT5[c0 & 0x001F] + BIT5[c1 & 0x001F]) / 3;
         return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
@@ -523,20 +463,20 @@ final class DDSReader {
 
     private static int getDXTColor1_1(int c0, int c1, int a) {
         // (c0+c1) / 2
-        int r = (BIT5[(c0 & 0xFC00) >> 11] + BIT5[(c1 & 0xFC00) >> 11]) / 2;
+        int r = (BIT5[(c0 & 0xF800) >> 11] + BIT5[(c1 & 0xF800) >> 11]) / 2;
         int g = (BIT6[(c0 & 0x07E0) >> 5] + BIT6[(c1 & 0x07E0) >> 5]) / 2;
         int b = (BIT5[c0 & 0x001F] + BIT5[c1 & 0x001F]) / 2;
         return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
     }
 
     private static int getDXTColor1(int c, int a) {
-        int r = BIT5[(c & 0xFC00) >> 11];
+        int r = BIT5[(c & 0xF800) >> 11];
         int g = BIT6[(c & 0x07E0) >> 5];
         int b = BIT5[(c & 0x001F)];
         return (a << ARGB_ORDER.alphaShift) | (r << ARGB_ORDER.redShift) | (g << ARGB_ORDER.greenShift) | (b << ARGB_ORDER.blueShift);
     }
 
-    private static int getDXT5Alpha(int a0, int a1, int t) {
+    static int getDXT5Alpha(int a0, int a1, int t) {
         if (a0 > a1) switch (t) {
             case 0:
                 return a0;
@@ -577,22 +517,22 @@ final class DDSReader {
     }
 
     // RGBA Masks
-    private static final int[] A1R5G5B5_MASKS = {0x7C00, 0x03E0, 0x001F, 0x8000};
-    private static final int[] X1R5G5B5_MASKS = {0x7C00, 0x03E0, 0x001F, 0x0000};
-    private static final int[] A4R4G4B4_MASKS = {0x0F00, 0x00F0, 0x000F, 0xF000};
-    private static final int[] X4R4G4B4_MASKS = {0x0F00, 0x00F0, 0x000F, 0x0000};
-    private static final int[] R5G6B5_MASKS = {0xF800, 0x07E0, 0x001F, 0x0000};
-    private static final int[] R8G8B8_MASKS = {0xFF0000, 0x00FF00, 0x0000FF, 0x000000};
-    private static final int[] A8B8G8R8_MASKS = {0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000};
-    private static final int[] X8B8G8R8_MASKS = {0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000};
-    private static final int[] A8R8G8B8_MASKS = {0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000};
-    private static final int[] X8R8G8B8_MASKS = {0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000};
+    static final int[] A1R5G5B5_MASKS = {0x7C00, 0x03E0, 0x001F, 0x8000};
+    static final int[] X1R5G5B5_MASKS = {0x7C00, 0x03E0, 0x001F, 0x0000};
+    static final int[] A4R4G4B4_MASKS = {0x0F00, 0x00F0, 0x000F, 0xF000};
+    static final int[] X4R4G4B4_MASKS = {0x0F00, 0x00F0, 0x000F, 0x0000};
+    static final int[] R5G6B5_MASKS = {0xF800, 0x07E0, 0x001F, 0x0000};
+    static final int[] R8G8B8_MASKS = {0xFF0000, 0x00FF00, 0x0000FF, 0x000000};
+    static final int[] A8B8G8R8_MASKS = {0x000000FF, 0x0000FF00, 0x00FF0000, 0xFF000000};
+    static final int[] X8B8G8R8_MASKS = {0x000000FF, 0x0000FF00, 0x00FF0000, 0x00000000};
+    static final int[] A8R8G8B8_MASKS = {0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000};
+    static final int[] X8R8G8B8_MASKS = {0x00FF0000, 0x0000FF00, 0x000000FF, 0x00000000};
 
     // BIT4 = 17 * index;
-    private static final int[] BIT5 = {0, 8, 16, 25, 33, 41, 49, 58, 66, 74, 82, 90, 99, 107, 115, 123, 132, 140, 148, 156, 165, 173, 181, 189, 197, 206, 214, 222, 230, 239, 247, 255};
-    private static final int[] BIT6 = {0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89, 93, 97, 101, 105, 109, 113, 117, 121, 125, 130, 134, 138, 142, 146, 150, 154, 158, 162, 166, 170, 174, 178, 182, 186, 190, 194, 198, 202, 206, 210, 215, 219, 223, 227, 231, 235, 239, 243, 247, 251, 255};
+    static final int[] BIT5 = {0, 8, 16, 25, 33, 41, 49, 58, 66, 74, 82, 90, 99, 107, 115, 123, 132, 140, 148, 156, 165, 173, 181, 189, 197, 206, 214, 222, 230, 239, 247, 255};
+    static final int[] BIT6 = {0, 4, 8, 12, 16, 20, 24, 28, 32, 36, 40, 45, 49, 53, 57, 61, 65, 69, 73, 77, 81, 85, 89, 93, 97, 101, 105, 109, 113, 117, 121, 125, 130, 134, 138, 142, 146, 150, 154, 158, 162, 166, 170, 174, 178, 182, 186, 190, 194, 198, 202, 206, 210, 215, 219, 223, 227, 231, 235, 239, 243, 247, 251, 255};
 
-    private static final class Order {
+    static final class Order {
         Order(int redShift, int greenShift, int blueShift, int alphaShift) {
             this.redShift = redShift;
             this.greenShift = greenShift;

@@ -30,22 +30,35 @@
 
 package com.twelvemonkeys.imageio.plugins.dds;
 
+
 @SuppressWarnings("unused")
 interface DDS {
-    byte[] MAGIC = new byte[]{'D', 'D', 'S', ' '};
+    int MAGIC = 'D' + ('D' << 8) + ('S' << 16) + (' ' << 24); // Little-Endian
+
     int HEADER_SIZE = 124;
+    int PIXELFORMAT_SIZE = 32;
 
     // Header Flags
-    int FLAG_CAPS = 0x1;              // Required in every .dds file.
-    int FLAG_HEIGHT = 0x2;            // Required in every .dds file.
-    int FLAG_WIDTH = 0x4;             // Required in every .dds file.
-    int FLAG_PITCH = 0x8;             // Required when pitch is provided for an uncompressed texture.
-    int FLAG_PIXELFORMAT = 0x1000;    // Required in every .dds file.
-    int FLAG_MIPMAPCOUNT = 0x20000;   // Required in a mipmapped texture.
-    int FLAG_LINEARSIZE = 0x80000;    // Required when pitch is provided for a compressed texture.
-    int FLAG_DEPTH = 0x800000;        // Required in a depth texture.
+    int FLAG_CAPS = 1;              // Required in every .dds file.
+    int FLAG_HEIGHT = 1 << 1;            // Required in every .dds file.
+    int FLAG_WIDTH = 1 << 2;             // Required in every .dds file.
+    int FLAG_PIXELFORMAT = 1 << 12;    // Required in every .dds file.
+    int FLAG_PITCH = 1 << 3;             // Required when pitch is provided for an uncompressed texture.
+    int FLAG_MIPMAPCOUNT = 1 << 17;   // Required in a mipmapped texture.
+    int FLAG_LINEARSIZE = 1 << 19;    // Required when pitch is provided for a compressed texture.
+    int FLAG_DEPTH = 1 << 23;        // Required in a depth texture.
 
     // Pixel Format Flags
+    int PIXEL_FORMAT_FLAG_ALPHAPIXELS = 0x1;
+    int PIXEL_FORMAT_FLAG_ALPHA = 0x2;
     int PIXEL_FORMAT_FLAG_FOURCC = 0x04;
     int PIXEL_FORMAT_FLAG_RGB = 0x40;
+
+    //DX10 Resource Dimensions
+    int D3D10_RESOURCE_DIMENSION_TEXTURE2D = 3;
+
+    //dwCaps
+    int DDSCAPS_COMPLEX = 0x8;
+    int DDSCAPS_MIPMAP = 0x400000;
+    int DDSCAPS_TEXTURE = 0x1000;
 }

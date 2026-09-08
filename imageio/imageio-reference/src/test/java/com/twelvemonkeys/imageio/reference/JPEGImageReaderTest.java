@@ -112,6 +112,12 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Test
+    @Disabled("JDK 25 now supports reading Exif thumbnails, but does not report thumbnail progress")
+    public void testThumbnailProgress() throws IOException {
+        super.testThumbnailProgress();
+    }
+    
+    @Test
     @Disabled("No test data with JFIF thumbnail")
     @Override
     public void testNotBadCachingThumbnails() throws IOException {

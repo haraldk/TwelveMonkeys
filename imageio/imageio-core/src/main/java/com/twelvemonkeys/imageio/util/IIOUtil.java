@@ -35,6 +35,8 @@ import com.twelvemonkeys.lang.Validate;
 
 import javax.imageio.IIOParam;
 import javax.imageio.ImageIO;
+import javax.imageio.ImageReadParam;
+import javax.imageio.ImageWriteParam;
 import javax.imageio.spi.IIOServiceProvider;
 import javax.imageio.spi.ServiceRegistry;
 import javax.imageio.stream.ImageInputStream;
@@ -45,7 +47,9 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -68,7 +72,7 @@ public final class IIOUtil {
      */
     public static InputStream createStreamAdapter(final ImageInputStream pStream) {
         // TODO: Include stream start pos?
-        // TODO: Skip buffering for known in-memory implementations?
+        // TODO: Skip buffering for known in-memory implementations? pStream.isCachedMemory
         return new BufferedInputStream(new IIOInputStreamAdapter(pStream));
     }
 
@@ -82,7 +86,7 @@ public final class IIOUtil {
      */
     public static InputStream createStreamAdapter(final ImageInputStream pStream, final long pLength) {
         // TODO: Include stream start pos?
-        // TODO: Skip buffering for known in-memory implementations?
+        // TODO: Skip buffering for known in-memory implementations? pStream.isCachedMemory
         return new BufferedInputStream(new IIOInputStreamAdapter(pStream, pLength));
     }
 
@@ -358,5 +362,116 @@ public final class IIOUtil {
             // System.arraycopy should be intrinsic, but consider using direct array access for pixelStride == 1
             System.arraycopy(srcRow, srcPos + x, destRow, destPos + x / samplePeriod, pixelStride);
         }
+    }
+
+    /**
+     * Copies all the standard param values from source to destination.
+     * <p>
+     * Typical use (in some imaginary {@code FooImageWriter} class):
+     * </p>
+     *
+     * <pre>
+     * ImageWriteParam param = ...
+     * FooImageWriteparam fooParam = param instanceof FooImageWriteParam
+     *      ? (FooImageWriteParam) param
+     *      : copyStandardParams(param, getDefaultWriteParam());
+     * </pre>
+     *
+     * May also be useful for {@code ImageReader}s that delegate reading to other plugins
+     * (like a TIFF plugin delegating JPEG format decoding to a {@code JPEGImageReader}).
+     *
+     * @param source the source parameter, may be {@code null}
+     * @param destination the destination parameter
+     * @return destination
+     *
+     * @param <T> the plugin specific subclass of {@code IIOParam}
+     *
+     * @throws NullPointerException if destination is {@code null}
+     */
+    public static <T extends IIOParam> T copyStandardParams(IIOParam source, T destination) {
+        Objects.requireNonNull(destination);
+        Validate.isTrue(source != destination, "source must be different from destination");
+
+        if (source != null) {
+            copyIIOParams(source, destination);
+
+            // TODO: API & usage... Is it ever useful to copy from a read to a write param or vice versa?
+            //  If not, maybe throw an IllegalArgumentException instead
+
+            if (source instanceof ImageReadParam && destination instanceof ImageReadParam) {
+                copyImageReadParams((ImageReadParam) source, (ImageReadParam) destination);
+            }
+
+            if (source instanceof ImageWriteParam && destination instanceof ImageWriteParam) {
+                copyImageWriteParams((ImageWriteParam) source, (ImageWriteParam) destination);
+            }
+        }
+
+        return destination;
+    }
+
+    private static void copyImageWriteParams(ImageWriteParam source, ImageWriteParam destination) {
+        // TODO: Usage... It's very unlikely that compression settings of one plugin is compatible with another...
+        //  Is the the below useful?
+        //  Also, is it okay to just silently ignore settings from one format that isn't compatible with another?
+
+        // Quirky API, we can't query for compression mode, unless source.canWriteCompressed is true...
+        if (source.canWriteCompressed() && destination.canWriteCompressed()) {
+            int compressionMode = source.getCompressionMode();
+            destination.setCompressionMode(compressionMode);
+
+            if (compressionMode == ImageWriteParam.MODE_EXPLICIT
+                && source.getCompressionType() != null
+                && Arrays.asList(destination.getCompressionTypes()).contains(source.getCompressionType())) {
+                    destination.setCompressionType(source.getCompressionType());
+                    destination.setCompressionQuality(source.getCompressionQuality());
+            }
+        }
+
+        if (source.canWriteProgressive() && destination.canWriteProgressive()) {
+            destination.setProgressiveMode(source.getProgressiveMode());
+        }
+
+        if (source.canWriteTiles() && destination.canWriteTiles()) {
+            int tilingMode = source.getTilingMode();
+            destination.setTilingMode(tilingMode);
+
+            if (tilingMode == ImageWriteParam.MODE_EXPLICIT) {
+                // TODO: What if source can offset (and has offsets) and dest can't? Is it ok to just ignore the setting?
+                boolean canWriteOffsetTiles = source.canOffsetTiles() && destination.canOffsetTiles();
+
+                destination.setTiling(
+                    source.getTileWidth(), source.getTileHeight(),
+                    canWriteOffsetTiles ? source.getTileGridXOffset() : 0,
+                    canWriteOffsetTiles ? source.getTileGridYOffset() : 0
+                );
+            }
+        }
+    }
+
+    private static void copyImageReadParams(ImageReadParam source, ImageReadParam destination) {
+        destination.setDestination(source.getDestination());
+        destination.setDestinationBands(source.getDestinationBands());
+
+        if (destination.canSetSourceRenderSize()) {
+            destination.setSourceRenderSize(source.getSourceRenderSize());
+        }
+
+        destination.setSourceProgressivePasses(
+            source.getSourceMinProgressivePass(),
+            source.getSourceMaxProgressivePass()
+        );
+    }
+
+    private static void copyIIOParams(IIOParam source, IIOParam destination) {
+        destination.setController(source.getController());
+        destination.setSourceSubsampling(
+            source.getSourceXSubsampling(), source.getSourceYSubsampling(),
+            source.getSubsamplingXOffset(), source.getSubsamplingYOffset()
+        );
+        destination.setSourceRegion(source.getSourceRegion());
+        destination.setSourceBands(source.getSourceBands());
+        destination.setDestinationOffset(source.getDestinationOffset());
+        destination.setDestinationType(source.getDestinationType());
     }
 }

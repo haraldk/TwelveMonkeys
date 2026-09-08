@@ -4,11 +4,11 @@
     <parent>
         <groupId>com.twelvemonkeys.common</groupId>
         <artifactId>common</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>common-io</artifactId>
     <packaging>jar</packaging>
-    <name>TwelveMonkeys :: Common :: IO</name>
+    <name>TwelveMonkeys » Common » IO</name>
     <description>
         TwelveMonkeys Common I/O support classes.
     </description>

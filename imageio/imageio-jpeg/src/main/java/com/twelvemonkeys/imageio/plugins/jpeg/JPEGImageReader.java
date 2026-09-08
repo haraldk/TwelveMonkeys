@@ -975,16 +975,15 @@ public final class JPEGImageReader extends ImageReaderBase {
                 }
             }
 
-            if (!badICC && chunkNumber < 1) {
-                // Anything else is just ignored
-                processWarningOccurred(String.format("Invalid 'ICC_PROFILE' chunk index: %d. Ignoring ICC profile.", chunkNumber));
+            int count = badICC ? segments.size() : chunkCount;
 
-                if (!allowBadIndexes) {
-                    return null;
-                }
+            if (!badICC && (chunkNumber < 1 || chunkNumber > count)) {
+                // Anything else is just ignored
+                processWarningOccurred(String.format("Invalid 'ICC_PROFILE' chunk index: %d of %d. Ignoring ICC profile.", chunkNumber, chunkCount));
+
+                return null;
             }
 
-            int count = badICC ? segments.size() : chunkCount;
             InputStream[] streams = new InputStream[count];
             streams[badICC ? 0 : chunkNumber - 1] = stream;
 
@@ -999,6 +998,12 @@ public final class JPEGImageReader extends ImageReaderBase {
                 }
 
                 int index = badICC ? i : chunkNumber - 1;
+                if (index < 0 || index >= count) {
+                    processWarningOccurred(String.format("Invalid 'ICC_PROFILE' chunk index: %d of %d. Ignoring ICC profile.", chunkNumber, chunkCount));
+
+                    return null;
+                }
+
                 streams[index] = stream;
             }
 

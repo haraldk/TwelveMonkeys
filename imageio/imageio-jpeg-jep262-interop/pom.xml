@@ -4,10 +4,10 @@
     <parent>
         <groupId>com.twelvemonkeys.imageio</groupId>
         <artifactId>imageio</artifactId>
-        <version>3.12.1-SNAPSHOT</version>
+        <version>3.15.1-SNAPSHOT</version>
     </parent>
     <artifactId>imageio-jpeg-jep262-interop</artifactId>
-    <name>TwelveMonkeys :: ImageIO :: JPEG/JEP-262 Interop</name>
+    <name>TwelveMonkeys » ImageIO » JPEG/JEP-262 Interop</name>
     <description>
         Test JPEG plugin and JEP-262 (JDK TIFF plugin) interoperability
     </description>

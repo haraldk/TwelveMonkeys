@@ -120,6 +120,10 @@ public final class XMPReader extends MetadataReader {
         factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
         factory.setFeature("http://apache.org/xml/features/nonvalidating/load-external-dtd", false);
 
+        // Security: Disallow DOCTYPE declarations entirely, as defense-in-depth (not needed for XMP)
+        // TODO: Currently breaks a test
+//        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+
         return factory;
     }
 

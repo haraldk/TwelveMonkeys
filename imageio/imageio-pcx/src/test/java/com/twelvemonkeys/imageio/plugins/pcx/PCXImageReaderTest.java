@@ -32,13 +32,17 @@ package com.twelvemonkeys.imageio.plugins.pcx;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -138,6 +142,35 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
 
             assertRGBEquals("Should have white background", 0xffffffff, image.getRGB(0, 0), 0);
             assertRGBEquals("Should have black skull", 0xff000000, image.getRGB(64, 10), 0);
+        }
+    }
+
+    @Test
+    public void testReadTooManyBitPlanesThrowsIIOException() throws IOException {
+        // A header with 1 bit/pixel and more than 8 channels (bit planes) still builds a valid
+        // IndexColorModel (bits 9-16), but the planar row buffer holds only 8 planes. The row read
+        // must fail with an IIOException, not an IndexOutOfBoundsException from the buffer overrun.
+        byte[] pcx = new byte[PCX.HEADER_SIZE + 64];
+        ByteBuffer header = ByteBuffer.wrap(pcx).order(ByteOrder.LITTLE_ENDIAN);
+        header.put((byte) 0x0a);     // Magic
+        header.put((byte) 5);        // Version
+        header.put((byte) 0);        // Compression: none
+        header.put((byte) 1);        // Bits per pixel
+        header.putShort((short) 0);  // xMin
+        header.putShort((short) 0);  // yMin
+        header.putShort((short) 7);  // xMax -> width 8
+        header.putShort((short) 1);  // yMax -> height 2
+        header.putShort((short) 72); // hDPI
+        header.putShort((short) 72); // vDPI
+        header.position(65);         // Skip palette + reserved byte
+        header.put((byte) 16);       // Channels/bit planes (> 8)
+        header.putShort((short) 2);  // Bytes per line
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(pcx))) {
+            PCXImageReader reader = createReader();
+            reader.setInput(input);
+
+            assertThrows(IIOException.class, () -> reader.read(0));
         }
     }
 

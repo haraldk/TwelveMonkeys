@@ -1255,7 +1255,7 @@ public abstract class MapAbstractTest extends ObjectAbstractTest {
     }
     */
 
-    public class TestMapEntrySet extends SetAbstractTest {
+    protected abstract class TestMapEntrySet extends SetAbstractTest {
 
         // Have to implement manually; entrySet doesn't support addAll
         public Object[] getFullElements() {
@@ -1429,7 +1429,7 @@ public abstract class MapAbstractTest extends ObjectAbstractTest {
     }
     */
 
-    public class TestMapKeySet extends SetAbstractTest {
+    protected abstract class TestMapKeySet extends SetAbstractTest {
         public Object[] getFullElements() {
             return getSampleKeys();
         }
@@ -1495,7 +1495,7 @@ public abstract class MapAbstractTest extends ObjectAbstractTest {
     }
     */
 
-    public class TestMapValues extends CollectionAbstractTest {
+    protected abstract class TestMapValues extends CollectionAbstractTest {
         public Object[] getFullElements() {
             return getSampleValues();
         }

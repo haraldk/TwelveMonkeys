@@ -50,7 +50,6 @@ import java.awt.*;
 import java.awt.color.*;
 import java.awt.image.*;
 import java.io.DataInputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -114,6 +113,12 @@ public final class IFFImageReader extends ImageReaderBase {
 
     final static boolean DEBUG = "true".equalsIgnoreCase(System.getProperty("com.twelvemonkeys.imageio.plugins.iff.debug"));
 
+    /**
+     * Maximum plausible decoded-to-input expansion ratio for IFF,
+     * used to bound the allocation against the input length.
+     */
+    private static final int MAX_EXPANSION_RATIO = 128;
+
     private Form header;
     private DataInputStream byteRunStream;
 
@@ -145,7 +150,7 @@ public final class IFFImageReader extends ImageReaderBase {
 
         int formType = imageInput.readInt();
         if (formType != IFF.TYPE_ILBM && formType != IFF.TYPE_PBM && formType != IFF.TYPE_RGB8 && formType != IFF.TYPE_DEEP && formType != IFF.TYPE_TVPP) {
-            throw new IIOException(String.format("Only IFF FORM types 'ILBM' and 'PBM ' supported: %s", toChunkStr(formType)));
+            throw new IIOException(String.format("Unsupported IFF FORM type: %s ('ILBM', 'PBM ', 'RGB8', 'DEEP' and 'TVPP' supported)", toChunkStr(formType)));
         }
 
         if (DEBUG) {
@@ -159,6 +164,12 @@ public final class IFFImageReader extends ImageReaderBase {
         while (remaining > 0) {
             int chunkId = imageInput.readInt();
             int length = imageInput.readInt();
+
+            // TODO: Can we move this up to remaining, to validate only once?
+            if (imageInput.length() >= 0 && length > imageInput.length() - imageInput.getStreamPosition()
+                    || imageInput.length() == -1 && length > 1048544) {
+                throw new IIOException(String.format("Corrupted IFF FORM: length of chunk '%s' exceeds input size: %d", toChunkStr(chunkId), length));
+            }
 
             remaining -= 8;
             remaining -= length % 2 == 0 ? length : length + 1;
@@ -279,7 +290,10 @@ public final class IFFImageReader extends ImageReaderBase {
         init(imageIndex);
         processImageStarted(imageIndex);
 
-        BufferedImage result = getDestination(param, getImageTypes(imageIndex), getWidth(imageIndex), getHeight(imageIndex));
+        int width = getWidth(imageIndex);
+        int height = getHeight(imageIndex);
+        validateSourceSize(getRawImageType(imageIndex), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+        BufferedImage result = getDestination(param, getImageTypes(imageIndex), width, height);
         readBody(param, result);
 
         processImageComplete();
@@ -451,8 +465,7 @@ public final class IFFImageReader extends ImageReaderBase {
         }
         else if (header.colorMap() != null) {
             // NOTE: For ILBM types, colorMap may be null for 8 bit (gray), 24 bit or 32 bit only
-            IndexColorModel palette = header.colorMap();
-            readInterleavedIndexed(param, destination, palette, imageInput);
+            readInterleavedIndexed(param, destination, header.colorMap(), imageInput);
         }
         else {
             readInterleaved(param, destination, imageInput);
@@ -849,8 +862,11 @@ public final class IFFImageReader extends ImageReaderBase {
     }
 
     private void hamToRGB(final byte[] indexed, final IndexColorModel colorModel, final byte[] dest, @SuppressWarnings("SameParameterValue") final int destOffset) {
-        final int bits = header.bitplanes();
-        final int width = header.width();
+        int bits = header.bitplanes();
+        int width = header.width();
+
+        int indexShift = bits == 6 ? 4 : 2;
+        int colorMask = bits == 6 ? 0x0f : 0x03;
 
         //  Initialize to the "border color" (index 0)
         int lastRed = colorModel.getRed(0);
@@ -861,8 +877,6 @@ public final class IFFImageReader extends ImageReaderBase {
             int pixel = indexed[x] & 0xff;
 
             int paletteIndex = bits == 6 ? pixel & 0x0f : pixel & 0x3f;
-            int indexShift = bits == 6 ? 4 : 2;
-            int colorMask = bits == 6 ? 0x0f : 0x03;
 
             // Get Hold and Modify bits
             switch ((pixel >> (8 - indexShift)) & 0x03) {
