@@ -33,6 +33,7 @@ package com.twelvemonkeys.imageio.metadata.tiff;
 import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.exif.EXIF;
+import com.twelvemonkeys.imageio.metadata.exif.GPS;
 import com.twelvemonkeys.lang.Validate;
 
 import java.lang.reflect.Array;
@@ -206,7 +207,7 @@ public final class TIFFEntry extends AbstractEntry {
             case EXIF.TAG_EXPOSURE_TIME:
                 return "ExposureTime";
             case EXIF.TAG_F_NUMBER:
-                return "FNUmber";
+                return "FNumber";
             case EXIF.TAG_EXPOSURE_PROGRAM:
                 return "ExposureProgram";
             case EXIF.TAG_ISO_SPEED_RATINGS:
@@ -289,6 +290,148 @@ public final class TIFFEntry extends AbstractEntry {
                 return "PixelXDimension";
             case EXIF.TAG_PIXEL_Y_DIMENSION:
                 return "PixelYDimension";
+
+            case EXIF.TAG_SPECTRAL_SENSITIVITY:
+                return "SpectralSensitivity";
+            case EXIF.TAG_OECF:
+                return "OECF";
+            case EXIF.TAG_SUBJECT_AREA:
+                return "SubjectArea";
+            case EXIF.TAG_SUBSEC_TIME:
+                return "SubsecTime";
+            case EXIF.TAG_SUBSEC_TIME_ORIGINAL:
+                return "SubsecTimeOriginal";
+            case EXIF.TAG_SUBSEC_TIME_DIGITIZED:
+                return "SubsecTimeDigitized";
+            case EXIF.TAG_RELATED_SOUND_FILE:
+                return "RelatedSoundFile";
+            case EXIF.TAG_FLASH_ENERGY:
+                return "FlashEnergy";
+            case EXIF.TAG_SPATIAL_FREQUENCY_RESPONSE:
+                return "SpatialFrequencyResponse";
+            case EXIF.TAG_FOCAL_PLANE_X_RESOLUTION:
+                return "FocalPlaneXResolution";
+            case EXIF.TAG_FOCAL_PLANE_Y_RESOLUTION:
+                return "FocalPlaneYResolution";
+            case EXIF.TAG_FOCAL_PLANE_RESOLUTION_UNIT:
+                return "FocalPlaneResolutionUnit";
+            case EXIF.TAG_SUBJECT_LOCATION:
+                return "SubjectLocation";
+            case EXIF.TAG_EXPOSURE_INDEX:
+                return "ExposureIndex";
+            case EXIF.TAG_DEVICE_SETTING_DESCRIPTION:
+                return "DeviceSettingDescription";
+            case EXIF.TAG_SUBJECT_DISTANCE_RANGE:
+                return "SubjectDistanceRange";
+
+            // EXIF 2.3 and later
+            case EXIF.TAG_SENSITIVITY_TYPE:
+                return "SensitivityType";
+            case EXIF.TAG_STANDARD_OUTPUT_SENSITIVITY:
+                return "StandardOutputSensitivity";
+            case EXIF.TAG_RECOMMENDED_EXPOSURE_INDEX:
+                return "RecommendedExposureIndex";
+            case EXIF.TAG_ISO_SPEED:
+                return "ISOSpeed";
+            case EXIF.TAG_OFFSET_TIME:
+                return "OffsetTime";
+            case EXIF.TAG_OFFSET_TIME_ORIGINAL:
+                return "OffsetTimeOriginal";
+            case EXIF.TAG_OFFSET_TIME_DIGITIZED:
+                return "OffsetTimeDigitized";
+            case EXIF.TAG_TEMPERATURE:
+                return "Temperature";
+            case EXIF.TAG_HUMIDITY:
+                return "Humidity";
+            case EXIF.TAG_PRESSURE:
+                return "Pressure";
+            case EXIF.TAG_WATER_DEPTH:
+                return "WaterDepth";
+            case EXIF.TAG_ACCELERATION:
+                return "Acceleration";
+            case EXIF.TAG_CAMERA_ELEVATION_ANGLE:
+                return "CameraElevationAngle";
+            case EXIF.TAG_CAMERA_OWNER_NAME:
+                return "CameraOwnerName";
+            case EXIF.TAG_BODY_SERIAL_NUMBER:
+                return "BodySerialNumber";
+            case EXIF.TAG_LENS_SPECIFICATION:
+                return "LensSpecification";
+            case EXIF.TAG_LENS_MAKE:
+                return "LensMake";
+            case EXIF.TAG_LENS_MODEL:
+                return "LensModel";
+            case EXIF.TAG_LENS_SERIAL_NUMBER:
+                return "LensSerialNumber";
+            case EXIF.TAG_COMPOSITE_IMAGE:
+                return "CompositeImage";
+            case EXIF.TAG_GAMMA:
+                return "Gamma";
+
+            // NOTE: GPS tags are only valid within a GPS IFD, however, as the ids below
+            // don't collide with any other tags known here, they can be safely named.
+            // GPS tags 1 (GPSLatitudeRef) and 2 (GPSLatitude) are deliberately NOT named,
+            // as their ids collide with the Interoperability IFD tags 1 and 2
+            case GPS.TAG_GPS_VERSION_ID:
+                return "GPSVersionID";
+            case GPS.TAG_GPS_LONGITUDE_REF:
+                return "GPSLongitudeRef";
+            case GPS.TAG_GPS_LONGITUDE:
+                return "GPSLongitude";
+            case GPS.TAG_GPS_ALTITUDE_REF:
+                return "GPSAltitudeRef";
+            case GPS.TAG_GPS_ALTITUDE:
+                return "GPSAltitude";
+            case GPS.TAG_GPS_TIME_STAMP:
+                return "GPSTimeStamp";
+            case GPS.TAG_GPS_SATELLITES:
+                return "GPSSatellites";
+            case GPS.TAG_GPS_STATUS:
+                return "GPSStatus";
+            case GPS.TAG_GPS_MEASURE_MODE:
+                return "GPSMeasureMode";
+            case GPS.TAG_GPS_DOP:
+                return "GPSDOP";
+            case GPS.TAG_GPS_SPEED_REF:
+                return "GPSSpeedRef";
+            case GPS.TAG_GPS_SPEED:
+                return "GPSSpeed";
+            case GPS.TAG_GPS_TRACK_REF:
+                return "GPSTrackRef";
+            case GPS.TAG_GPS_TRACK:
+                return "GPSTrack";
+            case GPS.TAG_GPS_IMG_DIRECTION_REF:
+                return "GPSImgDirectionRef";
+            case GPS.TAG_GPS_IMG_DIRECTION:
+                return "GPSImgDirection";
+            case GPS.TAG_GPS_MAP_DATUM:
+                return "GPSMapDatum";
+            case GPS.TAG_GPS_DEST_LATITUDE_REF:
+                return "GPSDestLatitudeRef";
+            case GPS.TAG_GPS_DEST_LATITUDE:
+                return "GPSDestLatitude";
+            case GPS.TAG_GPS_DEST_LONGITUDE_REF:
+                return "GPSDestLongitudeRef";
+            case GPS.TAG_GPS_DEST_LONGITUDE:
+                return "GPSDestLongitude";
+            case GPS.TAG_GPS_DEST_BEARING_REF:
+                return "GPSDestBearingRef";
+            case GPS.TAG_GPS_DEST_BEARING:
+                return "GPSDestBearing";
+            case GPS.TAG_GPS_DEST_DISTANCE_REF:
+                return "GPSDestDistanceRef";
+            case GPS.TAG_GPS_DEST_DISTANCE:
+                return "GPSDestDistance";
+            case GPS.TAG_GPS_PROCESSING_METHOD:
+                return "GPSProcessingMethod";
+            case GPS.TAG_GPS_AREA_INFORMATION:
+                return "GPSAreaInformation";
+            case GPS.TAG_GPS_DATE_STAMP:
+                return "GPSDateStamp";
+            case GPS.TAG_GPS_DIFFERENTIAL:
+                return "GPSDifferential";
+            case GPS.TAG_GPS_H_POSITIONING_ERROR:
+                return "GPSHPositioningError";
 
             // TODO: More field names
             /*
