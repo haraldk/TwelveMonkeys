@@ -31,21 +31,25 @@
 package com.twelvemonkeys.imageio.plugins.heic;
 
 import com.twelvemonkeys.imageio.StandardImageMetadataSupport;
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.Entry;
+import com.twelvemonkeys.imageio.metadata.exif.EXIF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import openize.heic.decoder.ExifData;
-import openize.heic.decoder.ExifDirectoryType;
 import openize.heic.decoder.HeicImageFrame;
 
 import javax.imageio.ImageTypeSpecifier;
-import java.text.DateFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.TimeZone;
 
 final class HEICImageMetadata extends StandardImageMetadataSupport {
-    // TODO: Pull out more info from the appropriate boxes/EXIF as needed...
-
-    private static final int TAG_DATE_TIME_ORIGINAL = 0x9003;
-    private static final int TAG_DATE_TIME = 0x0132;
+    // TODO: Pull out more info from the appropriate boxes as needed (ICC profile, pixel aspect ratio etc.)
 
     HEICImageMetadata(ImageTypeSpecifier type, HeicImageFrame frame) {
         super(withFrameValues(builder(type), frame));
@@ -54,41 +58,111 @@ final class HEICImageMetadata extends StandardImageMetadataSupport {
     private static Builder withFrameValues(Builder builder, HeicImageFrame frame) {
         builder.withCompressionTypeName("HEVC")
                .withCompressionLossless(false);
-        // NOTE: Orientation is left as Normal, the decoder
-        // already applies 'irot'/'imir' transforms while decoding
+        // NOTE: Orientation is deliberately left as Normal: The decoder already applies the
+        // authoritative 'irot'/'imir' transforms while decoding, reporting the EXIF
+        // orientation here would cause clients to rotate twice
 
-        Calendar creationTime = creationTime(frame.Exif);
-        if (creationTime != null) {
-            builder.withDocumentCreationTime(creationTime);
+        Directory exif = parseExif(frame.Exif);
+        if (exif != null) {
+            Calendar creationTime = creationTime(exif);
+            if (creationTime != null) {
+                builder.withDocumentCreationTime(creationTime);
+            }
+
+            builder.withTextEntries(textEntries(exif));
         }
 
         return builder;
     }
 
-    private static Calendar creationTime(ExifData exif) {
-        if (exif == null) {
+    private static Directory parseExif(ExifData exifData) {
+        if (exifData == null) {
             return null;
         }
 
         try {
-            String dateTime = exif.getExifString(ExifDirectoryType.ExifSubIfdDirectory, TAG_DATE_TIME_ORIGINAL);
-            if (dateTime == null) {
-                dateTime = exif.getExifString(ExifDirectoryType.ExifIfd0Directory, TAG_DATE_TIME);
+            byte[] rawExif = exifData.getRawBytes();
+            int offset = tiffHeaderOffset(rawExif);
+            if (offset < 0) {
+                return null;
             }
 
-            if (dateTime != null && dateTime.matches("\\d{4}:\\d{2}:\\d{2} \\d{2}:\\d{2}:\\d{2}")) {
-                DateFormat format = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
-                format.setTimeZone(TimeZone.getTimeZone("UTC")); // EXIF date/time has no zone info
-                Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
-                calendar.setTime(format.parse(dateTime));
-
-                return calendar;
-            }
+            return new TIFFReader().read(new ByteArrayImageInputStream(rawExif, offset, rawExif.length - offset));
         }
         catch (Exception ignore) {
             // Bad or unparseable EXIF should never prevent reading metadata
+            return null;
+        }
+    }
+
+    private static int tiffHeaderOffset(byte[] rawExif) {
+        if (rawExif == null || rawExif.length < 8) {
+            return -1;
         }
 
-        return null;
+        // The data is usually a plain TIFF stream, but be lenient,
+        // and skip a possible "Exif\0\0" preamble or similar
+        for (int i = 0; i < Math.min(rawExif.length - 1, 16); i++) {
+            if ((rawExif[i] == 'I' && rawExif[i + 1] == 'I') || (rawExif[i] == 'M' && rawExif[i + 1] == 'M')) {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    private static Calendar creationTime(Directory exif) {
+        // Prefer EXIF DateTimeOriginal (time of capture), fall back to TIFF DateTime (time of change)
+        Entry dateTime = null;
+
+        Entry exifIfdEntry = exif.getEntryById(TIFF.TAG_EXIF_IFD);
+        if (exifIfdEntry != null && exifIfdEntry.getValue() instanceof Directory) {
+            dateTime = ((Directory) exifIfdEntry.getValue()).getEntryById(EXIF.TAG_DATE_TIME_ORIGINAL);
+        }
+        if (dateTime == null) {
+            dateTime = exif.getEntryById(TIFF.TAG_DATE_TIME);
+        }
+        if (dateTime == null || !(dateTime.getValue() instanceof String)) {
+            return null;
+        }
+
+        String value = ((String) dateTime.getValue()).trim();
+        if (!value.matches("\\d{4}:\\d{2}:\\d{2} \\d{2}:\\d{2}:\\d{2}")) {
+            return null;
+        }
+
+        try {
+            SimpleDateFormat format = new SimpleDateFormat("yyyy:MM:dd HH:mm:ss");
+            format.setTimeZone(TimeZone.getTimeZone("UTC")); // EXIF date/time has no time zone info
+            Calendar calendar = Calendar.getInstance(TimeZone.getTimeZone("UTC"));
+            calendar.setTime(format.parse(value));
+
+            return calendar;
+        }
+        catch (ParseException ignore) {
+            return null;
+        }
+    }
+
+    private static Map<String, String> textEntries(Directory exif) {
+        Map<String, String> entries = new LinkedHashMap<>();
+
+        addTextEntry(entries, exif, TIFF.TAG_MAKE, "Make");
+        addTextEntry(entries, exif, TIFF.TAG_MODEL, "Model");
+        addTextEntry(entries, exif, TIFF.TAG_SOFTWARE, "Software");
+        addTextEntry(entries, exif, TIFF.TAG_ARTIST, "Artist");
+        addTextEntry(entries, exif, TIFF.TAG_COPYRIGHT, "Copyright");
+
+        return entries;
+    }
+
+    private static void addTextEntry(Map<String, String> entries, Directory exif, int tagId, String keyword) {
+        Entry entry = exif.getEntryById(tagId);
+        if (entry != null && entry.getValue() instanceof String) {
+            String value = ((String) entry.getValue()).trim();
+            if (!value.isEmpty()) {
+                entries.put(keyword, value);
+            }
+        }
     }
 }
