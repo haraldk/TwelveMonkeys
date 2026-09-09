@@ -46,7 +46,6 @@ public final class TIFFImageWriteParam extends ImageWriteParam {
     // TODO: Support CCITT T.6 (4)
     // TODO: Support JBIG compression via ImageIO plugin/delegate?
     // TODO: Support JPEG2000 compression via ImageIO plugin/delegate?
-    // TODO: Support tiling
     // TODO: Support OPTIONAL predictor. See TIFF 6.0 Specification, Section 14: "Differencing Predictor", page 64.
 
     // DONE:
@@ -55,6 +54,7 @@ public final class TIFFImageWriteParam extends ImageWriteParam {
     // Support PackBits compression (32773)
     // Support LZW compression (5)?
     // Support JPEG compression (7)
+    // Support tiling
 
     TIFFImageWriteParam() {
         this(Locale.getDefault());
@@ -73,6 +73,7 @@ public final class TIFFImageWriteParam extends ImageWriteParam {
         };
         compressionType = compressionTypes[0];
         canWriteCompressed = true;
+        canWriteTiles = true;
     }
 
     @Override
