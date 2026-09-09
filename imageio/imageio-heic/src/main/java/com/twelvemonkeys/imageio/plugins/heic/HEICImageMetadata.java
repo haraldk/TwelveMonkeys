@@ -34,6 +34,7 @@ import com.twelvemonkeys.imageio.StandardImageMetadataSupport;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.exif.EXIF;
+import com.twelvemonkeys.imageio.metadata.exif.GPS;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
@@ -147,22 +148,65 @@ final class HEICImageMetadata extends StandardImageMetadataSupport {
     private static Map<String, String> textEntries(Directory exif) {
         Map<String, String> entries = new LinkedHashMap<>();
 
-        addTextEntry(entries, exif, TIFF.TAG_MAKE, "Make");
-        addTextEntry(entries, exif, TIFF.TAG_MODEL, "Model");
-        addTextEntry(entries, exif, TIFF.TAG_SOFTWARE, "Software");
-        addTextEntry(entries, exif, TIFF.TAG_ARTIST, "Artist");
-        addTextEntry(entries, exif, TIFF.TAG_COPYRIGHT, "Copyright");
+        addTextEntries(entries, exif);
+
+        Entry exifIfdEntry = exif.getEntryById(TIFF.TAG_EXIF_IFD);
+        if (exifIfdEntry != null && exifIfdEntry.getValue() instanceof Directory) {
+            addTextEntries(entries, (Directory) exifIfdEntry.getValue());
+        }
+
+        Entry gpsIfdEntry = exif.getEntryById(TIFF.TAG_GPS_IFD);
+        if (gpsIfdEntry != null && gpsIfdEntry.getValue() instanceof Directory) {
+            addTextEntries(entries, (Directory) gpsIfdEntry.getValue(), true);
+        }
 
         return entries;
     }
 
-    private static void addTextEntry(Map<String, String> entries, Directory exif, int tagId, String keyword) {
-        Entry entry = exif.getEntryById(tagId);
-        if (entry != null && entry.getValue() instanceof String) {
-            String value = ((String) entry.getValue()).trim();
-            if (!value.isEmpty()) {
-                entries.put(keyword, value);
+    private static void addTextEntries(Map<String, String> entries, Directory directory) {
+        addTextEntries(entries, directory, false);
+    }
+
+    private static void addTextEntries(Map<String, String> entries, Directory directory, boolean isGPSIFD) {
+        for (Entry entry : directory) {
+            Object value = entry.getValue();
+            if (value == null || value instanceof Directory || value instanceof byte[]) {
+                // Skip sub-IFDs and binary values (MakerNote, UserComment etc.)
+                continue;
+            }
+            if (entry.getIdentifier().equals(TIFF.TAG_ORIENTATION)) {
+                // Skip EXIF Orientation: The authoritative rotation ('irot'/'imir')
+                // is already applied by the decoder, exposing it here would mislead clients
+                continue;
+            }
+
+            String string = entry.getValueAsString();
+            if (string == null) {
+                continue;
+            }
+
+            string = string.trim();
+            if (string.isEmpty() || string.length() > 200) {
+                continue;
+            }
+
+            entries.putIfAbsent(keyword(entry, isGPSIFD), string);
+        }
+    }
+
+    private static String keyword(Entry entry, boolean isGPSIFD) {
+        if (isGPSIFD) {
+            // GPS tags 1 and 2 are ambiguous outside a GPS IFD
+            // (they collide with the Interoperability IFD tags), and thus not named by TIFFEntry
+            if (entry.getIdentifier().equals(GPS.TAG_GPS_LATITUDE_REF)) {
+                return "GPSLatitudeRef";
+            }
+            if (entry.getIdentifier().equals(GPS.TAG_GPS_LATITUDE)) {
+                return "GPSLatitude";
             }
         }
+
+        String fieldName = entry.getFieldName();
+        return fieldName != null ? fieldName : "Tag" + entry.getIdentifier();
     }
 }
