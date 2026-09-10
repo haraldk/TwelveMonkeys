@@ -1,0 +1,16 @@
+module com.twelvemonkeys.imageio.metadata {
+    requires com.twelvemonkeys.common.lang;
+    requires com.twelvemonkeys.imageio.core;
+    requires java.xml;
+
+    requires transitive java.desktop;
+
+    exports com.twelvemonkeys.imageio.metadata;
+    exports com.twelvemonkeys.imageio.metadata.exif;
+    exports com.twelvemonkeys.imageio.metadata.iptc;
+    exports com.twelvemonkeys.imageio.metadata.jpeg;
+    exports com.twelvemonkeys.imageio.metadata.psd;
+    exports com.twelvemonkeys.imageio.metadata.tiff;
+    exports com.twelvemonkeys.imageio.metadata.xmp;
+
+}
