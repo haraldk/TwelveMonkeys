@@ -107,9 +107,9 @@ public final class IIOUtil {
      * requested number of bytes or throws an (@code EOFException}.
      *
      * @param stream the stream
-     * @param length number of bytes to skip, assumed to be >= 0
+     * @param length number of bytes to skip, assumed to be &gt;= 0
      * @throws NullPointerException If {@code stream} is {@code null}.
-     * @throws IllegalArgumentException If {@code length} < 0.
+     * @throws IllegalArgumentException If {@code length} &lt; 0.
      * @throws EOFException If the stream reaches the end before reading all the bytes.
      * @throws IOException If an I/O error occurs.
      */
@@ -129,9 +129,9 @@ public final class IIOUtil {
      * requested number of bytes or throws an (@code EOFException}.
      *
      * @param stream the stream
-     * @param length number of bytes to skip, assumed to be >= 0
+     * @param length number of bytes to skip, assumed to be &gt;= 0
      * @throws NullPointerException If {@code stream} is {@code null}.
-     * @throws IllegalArgumentException If {@code length} < 0.
+     * @throws IllegalArgumentException If {@code length} &lt; 0.
      * @throws EOFException If the stream reaches the end before reading all the bytes.
      * @throws IOException If an I/O error occurs.
      */
@@ -155,9 +155,9 @@ public final class IIOUtil {
      * requested number of bytes or throws an (@code EOFException}.
      *
      * @param stream the stream
-     * @param length number of bytes to skip, assumed to be >= 0
+     * @param length number of bytes to skip, assumed to be &gt;= 0
      * @throws NullPointerException If {@code stream} is {@code null}.
-     * @throws IllegalArgumentException If {@code length} < 0.
+     * @throws IllegalArgumentException If {@code length} &lt; 0.
      * @throws EOFException If the stream reaches the end before reading all the bytes.
      * @throws IOException If an I/O error occurs.
      */
