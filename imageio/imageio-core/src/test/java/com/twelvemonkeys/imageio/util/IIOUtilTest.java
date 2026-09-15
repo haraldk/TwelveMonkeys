@@ -1,5 +1,6 @@
 package com.twelvemonkeys.imageio.util;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -7,17 +8,123 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.*;
 
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
 import javax.imageio.plugins.bmp.BMPImageWriteParam;
 import javax.imageio.plugins.jpeg.JPEGImageReadParam;
+import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 
 /**
  * IIOUtilTest
  */
 public class IIOUtilTest {
+
+    @Test
+    void skipFullyInputStreamNull() {
+        assertThrows(NullPointerException.class, () -> IIOUtil.skipFully((InputStream) null, 42));
+    }
+
+    @Test
+    void skipFullyInputStreamNegative() throws IOException {
+        try (InputStream stream = new ByteArrayInputStream(new byte[0])) {
+            assertThrows(IllegalArgumentException.class, () -> IIOUtil.skipFully(stream, -1));
+        }
+    }
+
+    @Test
+    void skipFullyInputStream() throws IOException {
+        try (InputStream stream = new ByteArrayInputStream(new byte[4])) {
+            IIOUtil.skipFully(stream, 4);
+
+            assertEquals(-1, stream.read());
+            assertThrows(EOFException.class, () -> IIOUtil.skipFully(stream, 2));
+        }
+    }
+
+    @Test
+    void skipFullyInputStreamCrossEOF() throws IOException {
+        try (InputStream stream = new ByteArrayInputStream(new byte[3])) {
+            assertThrows(EOFException.class, () -> IIOUtil.skipFully(stream, 4));
+            assertEquals(-1, stream.read());
+        }
+    }
+
+    @Test
+    void skipFullyImageInputStreamNull() {
+        assertThrows(NullPointerException.class, () -> IIOUtil.skipFully((ImageInputStream) null, 42));
+    }
+
+    @Test
+    void skipFullyImageInputStreamNegative() throws IOException {
+        try (ImageInputStream stream = new ByteArrayImageInputStream(new byte[0])) {
+            assertThrows(IllegalArgumentException.class, () -> IIOUtil.skipFully(stream, -1));
+        }
+    }
+
+    @Test
+    void skipFullyImageInputStream() throws IOException {
+        try (ImageInputStream stream = new ByteArrayImageInputStream(new byte[7])) {
+            IIOUtil.skipFully(stream, 7);
+
+            assertEquals(-1, stream.read());
+            assertThrows(EOFException.class, () -> IIOUtil.skipFully(stream, 2));
+        }
+    }
+
+    @Test
+    void skipFullyImageInputStreamCrossEOF() throws IOException {
+        try (ImageInputStream stream = new ByteArrayImageInputStream(new byte[6])) {
+            assertThrows(EOFException.class, () -> IIOUtil.skipFully(stream, 8));
+            assertEquals(-1, stream.read());
+        }
+    }
+
+    @Test
+    void skipFullyImageInputStreamUnknownLength() throws IOException {
+        // Special case for unknown length,
+        try (ImageInputStream stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(new byte[7]))) {
+            assertEquals(-1, stream.length()); // Sanity check test, may break if stream impl changes...
+
+            IIOUtil.skipFully(stream, 3);
+            assertEquals(0, stream.read());
+            assertThrows(EOFException.class, () -> IIOUtil.skipFully(stream, 4)); // cross EOF
+            assertEquals(-1, stream.read());
+        }
+    }
+
+    @Test
+    void skipFullyDataInputNull() {
+        assertThrows(NullPointerException.class, () -> IIOUtil.skipFully((DataInput) null, 42));
+    }
+
+    @Test
+    void skipFullyDataInputSNegative() throws IOException {
+        try (DataInputStream stream = new DataInputStream(new ByteArrayInputStream(new byte[0]))) {
+            assertThrows(IllegalArgumentException.class, () -> IIOUtil.skipFully((DataInput) stream, -1));
+        }
+    }
+
+    @Test
+    void skipFullyDataInputStream() throws IOException {
+        try (DataInputStream stream = new DataInputStream(new ByteArrayInputStream(new byte[3]))) {
+            IIOUtil.skipFully((DataInput) stream, 3);
+
+            assertEquals(-1, stream.read());
+            assertThrows(EOFException.class, () -> IIOUtil.skipFully((DataInput) stream, 2));
+        }
+    }
+
+    @Test
+    void skipFullyDataInputStreamCrossEOF() throws IOException {
+        try (DataInputStream stream = new DataInputStream(new ByteArrayInputStream(new byte[9]))) {
+            assertThrows(EOFException.class, () -> IIOUtil.skipFully((DataInput) stream, Integer.MAX_VALUE * 2L));
+            assertEquals(-1, stream.read());
+        }
+    }
 
     @Test
     public void subsampleRowPeriod2Byte() {

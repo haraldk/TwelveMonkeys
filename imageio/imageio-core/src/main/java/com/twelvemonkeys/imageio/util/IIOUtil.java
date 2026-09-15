@@ -43,10 +43,7 @@ import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.ImageOutputStream;
 import java.awt.*;
 import java.awt.image.*;
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
-import java.io.InputStream;
-import java.io.OutputStream;
+import java.io.*;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Objects;
@@ -102,6 +99,80 @@ public final class IIOUtil {
      */
     public static OutputStream createStreamAdapter(final ImageOutputStream pStream) {
         return new BufferedOutputStream(new IIOOutputStreamAdapter(pStream));
+    }
+
+    /**
+     * Like {@link ImageInputStream#skipBytes(long)}, but with the semantics of
+     * {@link DataInput#readFully(byte[], int, int)}. That is, it exactly skips the
+     * requested number of bytes or throws an (@code EOFException}.
+     *
+     * @param stream the stream
+     * @param length number of bytes to skip, assumed to be >= 0
+     * @throws NullPointerException If {@code stream} is {@code null}.
+     * @throws IllegalArgumentException If {@code length} < 0.
+     * @throws EOFException If the stream reaches the end before reading all the bytes.
+     * @throws IOException If an I/O error occurs.
+     */
+    public static void skipFully(final ImageInputStream stream, long length) throws IOException {
+//        Validate.isTrue(length >= 0, "length must be >= 0");
+//
+//        if (length > 0) {
+//            // It's possible to seek past EOF, so we read one byte to assure EOFException if reached
+//            stream.seek(stream.getStreamPosition() + length - 1);
+//            stream.readByte();
+//        }
+        skipFully((DataInput) stream, length);
+    }
+
+    /**
+     * Like {@link ImageInputStream#skipBytes(long)}, but with the semantics of
+     * {@link DataInput#readFully(byte[], int, int)}. That is, it exactly skips the
+     * requested number of bytes or throws an (@code EOFException}.
+     *
+     * @param stream the stream
+     * @param length number of bytes to skip, assumed to be >= 0
+     * @throws NullPointerException If {@code stream} is {@code null}.
+     * @throws IllegalArgumentException If {@code length} < 0.
+     * @throws EOFException If the stream reaches the end before reading all the bytes.
+     * @throws IOException If an I/O error occurs.
+     */
+    // TODO: Make public if ever useful...
+    static void skipFully(final DataInput stream, long length) throws IOException {
+        Validate.isTrue(length >= 0, "length must be >= 0");
+
+        while (length > 0) {
+            int skipped = stream.skipBytes((int) Math.min(Integer.MAX_VALUE, length));
+            if (skipped <= 0) {
+                throw new EOFException();
+            }
+
+            length -= skipped;
+        }
+    }
+
+    /**
+     * Like {@link ImageInputStream#skipBytes(long)}, but with the semantics of
+     * {@link DataInput#readFully(byte[], int, int)}. That is, it exactly skips the
+     * requested number of bytes or throws an (@code EOFException}.
+     *
+     * @param stream the stream
+     * @param length number of bytes to skip, assumed to be >= 0
+     * @throws NullPointerException If {@code stream} is {@code null}.
+     * @throws IllegalArgumentException If {@code length} < 0.
+     * @throws EOFException If the stream reaches the end before reading all the bytes.
+     * @throws IOException If an I/O error occurs.
+     */
+    public static void skipFully(final InputStream stream, long length) throws IOException {
+        Validate.isTrue(length >= 0, "length must be >= 0");
+
+        while (length > 0) {
+            long skipped = stream.skip(length);
+            if (skipped <= 0) {
+                throw new EOFException();
+            }
+
+            length -= skipped;
+        }
     }
 
     public static Image fakeSubsampling(final Image pImage, final IIOParam pParam) {

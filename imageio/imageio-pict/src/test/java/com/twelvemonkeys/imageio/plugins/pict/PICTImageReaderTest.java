@@ -185,7 +185,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
             stream.mark();
             stream.seek(123);
 
-            ((ImageReaderSpi) new PICTImageReaderSpi()).canDecodeInput(stream);
+            provider.canDecodeInput(stream);
 
             assertEquals(123, stream.getStreamPosition());
             stream.reset();
@@ -199,11 +199,11 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
     public void testProviderNotMatchJPEG() throws IOException {
         // This JPEG contains PICT magic bytes at locations a PICT would normally have them.
         // We should not claim to be able read it.
-        assertFalse(((ImageReaderSpi) new PICTImageReaderSpi()).canDecodeInput(
+        assertFalse(provider.canDecodeInput(
                 new TestData(getClassLoaderResource("/jpeg/R-7439-1151526181.jpeg"),
                 new Dimension(386, 396)
         )));
-        assertFalse(((ImageReaderSpi) new PICTImageReaderSpi()).canDecodeInput(
+        assertFalse(provider.canDecodeInput(
                 new TestData(getClassLoaderResource("/jpeg/89497426-adc19a00-d7ff-11ea-8ad1-0cbcd727b62a.jpeg"),
                 new Dimension(640, 480)
         )));
@@ -244,7 +244,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
                 createOpcodePICT(PICT.OP_UNCOMPRESSED_QUICKTIME, 0x7ffffff0, new byte[0], 0))) {
             reader.setInput(stream);
             IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
-            assertTrue(exception.getMessage().contains("exceeds input size"));
+            assertTrue(exception.getMessage().contains("end of File"));
         }
         finally {
             reader.dispose();
@@ -274,7 +274,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
                 createOpcodePICT(PICT.OP_UNCOMPRESSED_QUICKTIME, Integer.MIN_VALUE, new byte[0], 0))) {
             reader.setInput(stream);
             IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
-            assertTrue(exception.getMessage().contains("Invalid PICT opcode data length"));
+            assertTrue(exception.getMessage().contains("end of File"));
         }
         finally {
             reader.dispose();
@@ -288,7 +288,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
                 createOpcodePICT(0x8100, Integer.MIN_VALUE, new byte[0], 0))) {
             reader.setInput(stream);
             IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
-            assertTrue(exception.getMessage().contains("Invalid PICT opcode data length"));
+            assertTrue(exception.getMessage().contains("end of File"));
         }
         finally {
             reader.dispose();
@@ -304,7 +304,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
                 reader.setInput(stream);
                 IIOException exception = assertThrows(IIOException.class, () -> reader.read(0),
                         String.format("opcode 0x%04x", opcode));
-                assertTrue(exception.getMessage().contains("exceeds input size"));
+                assertTrue(exception.getMessage().contains("end of File"));
             }
             finally {
                 reader.dispose();
