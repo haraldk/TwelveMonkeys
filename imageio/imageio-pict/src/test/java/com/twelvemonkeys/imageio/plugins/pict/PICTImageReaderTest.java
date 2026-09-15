@@ -34,12 +34,17 @@ import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStreamSpi;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -230,6 +235,202 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         PICTImageReader reader = createReader();
         reader.setInput(new ByteArrayImageInputStream(DATA_V1_OVAL_RECT));
         reader.read(0);
+    }
+
+    @Test
+    public void testRejectsOversizedUncompressedQuickTimePayload() throws IOException {
+        PICTImageReader reader = createReader();
+        try (ImageInputStream stream = new ByteArrayImageInputStream(
+                createOpcodePICT(PICT.OP_UNCOMPRESSED_QUICKTIME, 0x7ffffff0, new byte[0], 0))) {
+            reader.setInput(stream);
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            assertTrue(exception.getMessage().contains("exceeds input size"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testRejectsOversizedUncompressedQuickTimePayloadUnknownLength() throws IOException {
+        PICTImageReader reader = createReader();
+        byte[] data = createOpcodePICT(PICT.OP_UNCOMPRESSED_QUICKTIME, 0x7ffffff0, new byte[0], 0);
+
+        try (ImageInputStream stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(data))) {
+            assertEquals(-1, stream.length());
+            reader.setInput(stream);
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            assertInstanceOf(java.io.EOFException.class, exception.getCause());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testRejectsNegativeUncompressedQuickTimePayloadLength() throws IOException {
+        PICTImageReader reader = createReader();
+        try (ImageInputStream stream = new ByteArrayImageInputStream(
+                createOpcodePICT(PICT.OP_UNCOMPRESSED_QUICKTIME, Integer.MIN_VALUE, new byte[0], 0))) {
+            reader.setInput(stream);
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            assertTrue(exception.getMessage().contains("Invalid PICT opcode data length"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testRejectsNegativeReservedLongOpcodePayloadLength() throws IOException {
+        PICTImageReader reader = createReader();
+        try (ImageInputStream stream = new ByteArrayImageInputStream(
+                createOpcodePICT(0x8100, Integer.MIN_VALUE, new byte[0], 0))) {
+            reader.setInput(stream);
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            assertTrue(exception.getMessage().contains("Invalid PICT opcode data length"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testRejectsOversizedReservedLongOpcodePayloads() throws IOException {
+        for (int opcode : new int[] {0x00d0, 0x00fe, 0x8100, 0x81ff, 0xffff}) {
+            PICTImageReader reader = createReader();
+            try (ImageInputStream stream = new ByteArrayImageInputStream(
+                    createOpcodePICT(opcode, 0x7ffffff0, new byte[0], 0))) {
+                reader.setInput(stream);
+                IIOException exception = assertThrows(IIOException.class, () -> reader.read(0),
+                        String.format("opcode 0x%04x", opcode));
+                assertTrue(exception.getMessage().contains("exceeds input size"));
+            }
+            finally {
+                reader.dispose();
+            }
+        }
+    }
+
+    @Test
+    public void testSkipsInBoundsLongOpcodePayload() throws IOException {
+        byte[] data = createOpcodePICT(PICT.OP_UNCOMPRESSED_QUICKTIME, 4, new byte[] {1, 2, 3, 4}, 0);
+
+        BufferedImage image = ImageIO.read(new ByteArrayInputStream(data));
+
+        assertNotNull(image);
+        assertEquals(1, image.getWidth());
+        assertEquals(1, image.getHeight());
+    }
+
+    @Test
+    public void testSkipsInBoundsLongOpcodePayloadKnownLength() throws IOException {
+        PICTImageReader reader = createReader();
+        byte[] data = createOpcodePICT(PICT.OP_UNCOMPRESSED_QUICKTIME, 4, new byte[] {1, 2, 3, 4}, 0);
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(data)) {
+            reader.setInput(stream);
+            BufferedImage image = reader.read(0);
+            assertEquals(1, image.getWidth());
+            assertEquals(1, image.getHeight());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testSkipsInBoundsLongOpcodePayloadUnknownLength() throws IOException {
+        PICTImageReader reader = createReader();
+        byte[] data = createOpcodePICT(PICT.OP_UNCOMPRESSED_QUICKTIME, 4, new byte[] {1, 2, 3, 4}, 0);
+
+        try (ImageInputStream stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(data))) {
+            assertEquals(-1, stream.length());
+            reader.setInput(stream);
+            BufferedImage image = reader.read(0);
+            assertEquals(1, image.getWidth());
+            assertEquals(1, image.getHeight());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testSkipsInBoundsUnsignedShortReservedPayload() throws IOException {
+        PICTImageReader reader = createReader();
+        byte[] data = createOpcodePICT(0x00a2, 4, new byte[] {1, 2, 3, 4}, 0, true);
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(data)) {
+            reader.setInput(stream);
+            BufferedImage image = reader.read(0);
+            assertEquals(1, image.getWidth());
+            assertEquals(1, image.getHeight());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testImageIOReadRejectsOversizedPayloadWithNullHeader() throws IOException {
+        byte[] data = createOpcodePICT(PICT.OP_UNCOMPRESSED_QUICKTIME, 0x7ffffff0, new byte[0], PICT.PICT_NULL_HEADER_SIZE);
+
+        assertThrows(IIOException.class, () -> ImageIO.read(new ByteArrayInputStream(data)));
+    }
+
+    @Test
+    public void testImageIOReadSkipsInBoundsPayloadWithNullHeader() throws IOException {
+        byte[] data = createOpcodePICT(PICT.OP_UNCOMPRESSED_QUICKTIME, 4, new byte[] {1, 2, 3, 4}, PICT.PICT_NULL_HEADER_SIZE);
+
+        BufferedImage image = ImageIO.read(new ByteArrayInputStream(data));
+
+        assertNotNull(image);
+        assertEquals(1, image.getWidth());
+        assertEquals(1, image.getHeight());
+    }
+
+    private static byte[] createOpcodePICT(int opcode, int dataLength, byte[] payload, int headerSize) throws IOException {
+        return createOpcodePICT(opcode, dataLength, payload, headerSize, false);
+    }
+
+    private static byte[] createOpcodePICT(int opcode, int dataLength, byte[] payload, int headerSize, boolean unsignedShortLength) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream output = new DataOutputStream(bytes)) {
+            output.write(new byte[headerSize]);
+            output.writeShort(0);               // picture size
+            output.writeShort(0);               // frame top
+            output.writeShort(0);               // frame left
+            output.writeShort(1);               // frame bottom
+            output.writeShort(1);               // frame right
+            output.writeShort(0x0011);          // VersionOp
+            output.writeShort(0x02ff);          // version 2
+            output.writeShort(0x0c00);          // HeaderOp
+            output.writeInt(0xfffe0000);        // extended v2 header
+            output.writeInt(72 << 16);          // horizontal resolution
+            output.writeInt(72 << 16);          // vertical resolution
+            output.writeShort(0);               // optimal source top
+            output.writeShort(0);               // optimal source left
+            output.writeShort(1);               // optimal source bottom
+            output.writeShort(1);               // optimal source right
+            output.writeInt(0);                 // reserved
+            output.writeShort(opcode);
+            if (unsignedShortLength) {
+                output.writeShort(dataLength);
+            }
+            else {
+                output.writeInt(dataLength);
+            }
+            output.write(payload);
+
+            if ((payload.length & 1) != 0) {
+                output.writeByte(0);             // v2 opcode alignment
+            }
+
+            output.writeShort(PICT.OP_END_OF_PICTURE);
+        }
+
+        return bytes.toByteArray();
     }
 
     @Test
