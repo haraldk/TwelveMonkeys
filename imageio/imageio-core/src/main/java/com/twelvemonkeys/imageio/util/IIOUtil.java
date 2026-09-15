@@ -114,14 +114,13 @@ public final class IIOUtil {
      * @throws IOException If an I/O error occurs.
      */
     public static void skipFully(final ImageInputStream stream, long length) throws IOException {
-//        Validate.isTrue(length >= 0, "length must be >= 0");
-//
-//        if (length > 0) {
-//            // It's possible to seek past EOF, so we read one byte to assure EOFException if reached
-//            stream.seek(stream.getStreamPosition() + length - 1);
-//            stream.readByte();
-//        }
-        skipFully((DataInput) stream, length);
+        Validate.isTrue(length >= 0, "length must be >= 0");
+
+        if (length > 0) {
+            // It's possible to seek past EOF, so we read one byte to assure EOFException if reached
+            stream.seek(stream.getStreamPosition() + length - 1);
+            stream.readByte();
+        }
     }
 
     /**
