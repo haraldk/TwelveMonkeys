@@ -1488,7 +1488,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         if (DEBUG) {
                             System.out.printf("unCompressedQuickTime, length %d%n", dataLength);
                         }
-                        pStream.readFully(new byte[dataLength], 0, dataLength);
+                        skipOpcodeData(pStream, dataLength);
                         break;
 
                     default:
@@ -1527,7 +1527,7 @@ public final class PICTImageReader extends ImageReaderBase {
                         }
 
                         if (dataLength != 0) {
-                            pStream.readFully(new byte[dataLength], 0, dataLength);
+                            skipOpcodeData(pStream, dataLength);
                         }
                 }
                 // We remember the last rectangle that was successfully rendered by a CompressedQuickTime opcode because it
@@ -1554,6 +1554,42 @@ public final class PICTImageReader extends ImageReaderBase {
         }
         catch (IOException e) {
             throw new IIOException(String.format("Error in PICT format: %s", e.getMessage()), e);
+        }
+    }
+
+    private static void skipOpcodeData(ImageInputStream stream, int dataLength) throws IOException {
+        if (dataLength < 0) {
+            throw new IIOException("Invalid PICT opcode data length: " + dataLength);
+        }
+
+        long position = stream.getStreamPosition();
+        long inputLength = stream.length();
+        if (inputLength >= 0 && dataLength > inputLength - position) {
+            throw new IIOException("PICT opcode data length exceeds input size: " + dataLength);
+        }
+
+        if (inputLength >= 0) {
+            stream.seek(position + dataLength);
+            return;
+        }
+
+        byte[] buffer = new byte[Math.min(dataLength, 8192)];
+        int remaining = dataLength;
+        while (remaining > 0) {
+            int count = stream.read(buffer, 0, Math.min(remaining, buffer.length));
+            if (count < 0) {
+                throw new EOFException("Unexpected end of PICT opcode data");
+            }
+
+            if (count == 0) {
+                if (stream.read() < 0) {
+                    throw new EOFException("Unexpected end of PICT opcode data");
+                }
+
+                count = 1;
+            }
+
+            remaining -= count;
         }
     }
 
