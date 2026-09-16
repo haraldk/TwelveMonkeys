@@ -347,7 +347,7 @@ public class ResampleOpTest {
 
     @Test
     void preservesInputAlpha() {
-        for (int imageType = BufferedImage.TYPE_INT_RGB; imageType < BufferedImage.TYPE_BYTE_INDEXED; imageType++) {
+        for (int imageType = BufferedImage.TYPE_INT_RGB; imageType <= BufferedImage.TYPE_BYTE_INDEXED; imageType++) {
             BufferedImage source = new BufferedImage(10, 10, imageType);
             BufferedImage scaled = new ResampleOp(100, 100, ResampleOp.FILTER_LANCZOS).filter(source, null);
 
@@ -360,7 +360,7 @@ public class ResampleOpTest {
 
     @Test
     void preservesInputAlphaFastResample() {
-        for (int imageType = BufferedImage.TYPE_INT_RGB; imageType < BufferedImage.TYPE_BYTE_INDEXED; imageType++) {
+        for (int imageType = BufferedImage.TYPE_INT_RGB; imageType <= BufferedImage.TYPE_BYTE_INDEXED; imageType++) {
             BufferedImage source = new BufferedImage(1, 1, imageType);
 
             // Resamples with unspecified filter + size smaller than min filter radius -> fastResample
