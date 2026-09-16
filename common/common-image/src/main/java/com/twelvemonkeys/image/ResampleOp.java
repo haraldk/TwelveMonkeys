@@ -510,24 +510,24 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         switch (filterType) {
             case FILTER_POINT:
                 if (input.getType() != BufferedImage.TYPE_CUSTOM) {
-                    return fastResample(input, output, width, height, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+                    return fastResample(input, createOutputIfNeeded(input, output), width, height, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
                 }
                 // Else fall through
             case FILTER_TRIANGLE:
                 if (input.getType() != BufferedImage.TYPE_CUSTOM) {
-                    return fastResample(input, output, width, height, AffineTransformOp.TYPE_BILINEAR);
+                    return fastResample(input, createOutputIfNeeded(input, output), width, height, AffineTransformOp.TYPE_BILINEAR);
                 }
                 // Else fall through
             case FILTER_QUADRATIC:
                 if (input.getType() != BufferedImage.TYPE_CUSTOM) {
-                    return fastResample(input, output, width, height, AffineTransformOp.TYPE_BICUBIC);
+                    return fastResample(input, createOutputIfNeeded(input, output), width, height, AffineTransformOp.TYPE_BICUBIC);
                 }
                 // Else fall through
             default:
                 filter = createFilter(filterType);
                 // NOTE: Workaround for filter throwing exceptions when input or output is less than support...
                 if (Math.min(input.getWidth(), input.getHeight()) <= filter.support() || Math.min(width, height) <= filter.support()) {
-                    return fastResample(input, output, width, height, AffineTransformOp.TYPE_BILINEAR);
+                    return fastResample(input, createOutputIfNeeded(input, output), width, height, AffineTransformOp.TYPE_BILINEAR);
                 }
                 // Fall through
         }
@@ -546,7 +546,9 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
 
         // Create or convert output to a suitable image
         // TODO: OPTIMIZE: Don't really need to convert all types to same as input
-        BufferedImage result = output != null && temp.getType() != BufferedImage.TYPE_CUSTOM ? /*output*/ ImageUtil.toBuffered(output, temp.getType()) : createCompatibleDestImage(temp, null);
+        BufferedImage result = output != null && temp.getType() != BufferedImage.TYPE_CUSTOM
+                ? ImageUtil.toBuffered(output, temp.getType())
+                : createCompatibleDestImage(temp, null);
 
         resample(temp, result, filter);
 
@@ -558,6 +560,10 @@ public class ResampleOp implements BufferedImageOp/* TODO: RasterOp */ {
         }
 
         return result;
+    }
+
+    private BufferedImage createOutputIfNeeded(BufferedImage input, BufferedImage output) {
+        return output != null ? output : createCompatibleDestImage(input, null);
     }
 
     /*
