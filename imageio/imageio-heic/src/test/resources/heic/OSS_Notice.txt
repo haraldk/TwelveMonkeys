@@ -1,0 +1,10 @@
+Files located in the current folder belong to Nokia Technologies and 
+are used according to Nokia High-Efficiency Image File Format (HEIF) License
+https://github.com/nokiatech/heif/blob/master/LICENSE.TXT
+
+Licensed Field means the non-commercial purposes of evaluation, testing and academic research
+in each non-commercial case to use, run, modify (in a way that still complies with the
+Specification) and copy the Software to (a) generate, using one or more encoded pictures as
+inputs, a file complying with the Specification and including the one or more encoded pictures
+that were given as inputs; and/or (b) read a file complying with the Specification, resulting
+into one or more encoded pictures included in the file as outputs.
