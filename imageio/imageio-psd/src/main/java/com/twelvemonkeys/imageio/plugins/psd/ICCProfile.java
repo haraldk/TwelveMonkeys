@@ -66,10 +66,11 @@ final class ICCProfile extends PSDImageResource {
         output.writeShort(0); // Zero-length Pascal name + pad
 
         byte[] data = profile.getData();
-        output.writeInt(data.length + data.length % 2);
+        int pad = data.length % 2;
+        output.writeInt(data.length + pad);
         output.write(data);
 
-        if (data.length % 2 != 0) {
+        if (pad != 0) {
             output.write(0); // pad
         }
     }

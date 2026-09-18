@@ -33,7 +33,8 @@ package com.twelvemonkeys.imageio.plugins.psd;
 import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 import com.twelvemonkeys.imageio.util.ProgressListenerBase;
-
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.w3c.dom.NodeList;
 
 import javax.imageio.IIOException;
@@ -46,8 +47,13 @@ import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
-import java.awt.color.*;
-import java.awt.image.*;
+import java.awt.color.ColorSpace;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
+import java.awt.image.ComponentColorModel;
+import java.awt.image.DataBuffer;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.EOFException;
 import java.io.IOException;
 import java.time.Duration;
@@ -58,7 +64,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -745,6 +750,40 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
         });
     }
 
+    @Test
+    @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void negativeLayerMaskInfiniteLoop() throws IOException {
+        try (ByteArrayOutputStream b = new ByteArrayOutputStream()) {
+            DataOutputStream o = new DataOutputStream(b);
+            o.writeBytes("8BPS");
+            o.writeShort(2);        // signature, version 2 (PSB)
+            o.write(new byte[6]);      // reserved
+            o.writeShort(3);        // channels
+            o.writeInt(10);         // height
+            o.writeInt(10);         // width
+            o.writeShort(8);        // depth
+            o.writeShort(3);        // mode (RGB)
+            o.writeInt(0);          // color mode data length
+            o.writeInt(0);          // image resources length
+            o.writeLong(100);       // layer+mask info length (PSB: 8 bytes)
+            o.writeLong(0);         // layer info length (PSB: 8 bytes)
+            o.writeInt(0);          // global layer mask length
+            o.writeBytes("8BIM");
+            o.writeBytes("LMsk");
+            o.writeLong(-19);       // 64-bit record length, negative
+            o.write(new byte[64]);
+
+            PSDImageReader reader = createReader();
+
+            try (ImageInputStream stream = new ByteArrayImageInputStream(b.toByteArray())) {
+                reader.setInput(stream);
+                assertThrows(IIOException.class, () -> reader.read(0));
+            }
+            finally {
+                reader.dispose();
+            }
+        }
+    }
 
     final static class FakeCMYKColorSpace extends ColorSpace {
         FakeCMYKColorSpace() {

@@ -57,10 +57,10 @@ final class PSDColorData {
         }
 
         // NOTE: Spec says length may only be 768 bytes (256 RGB triplets)
-        colors = new byte[length];
+        colors = new byte[Math.min(768, length)];
         pInput.readFully(colors);
 
-        // NOTE: Could be a padding byte here, if not even..
+        // NOTE: Could be a padding byte here, if not even...
     }
 
     IndexColorModel getIndexColorModel() {

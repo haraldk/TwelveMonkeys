@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 
+import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -49,7 +50,11 @@ abstract class PSDDirectoryResource extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        data = new byte[(int) size]; // TODO: Fix potential overflow, or document why that can't happen (read spec)
+        if (size > Integer.MAX_VALUE) {
+            throw new IIOException("PSD Resource too large: " + size);
+        }
+
+        data = new byte[(int) size];
         pInput.readFully(data);
     }
 

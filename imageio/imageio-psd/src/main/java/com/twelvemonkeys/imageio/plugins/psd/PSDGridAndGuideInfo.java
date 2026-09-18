@@ -30,6 +30,7 @@
 
 package com.twelvemonkeys.imageio.plugins.psd;
 
+import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 
@@ -72,6 +73,10 @@ final class PSDGridAndGuideInfo extends PSDImageResource {
         gridCycleVertical = pInput.readInt();
         gridCycleHorizontal = pInput.readInt();
         guideCount = pInput.readInt();
+
+        if (guideCount > 1024) {
+            throw new IIOException("PSD: Unsupported number of guides > 1024");
+        }
 
         guides = new GuideResource[guideCount];
 

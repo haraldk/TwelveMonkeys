@@ -37,6 +37,7 @@ import com.twelvemonkeys.io.enc.DecoderStream;
 import com.twelvemonkeys.io.enc.PackBitsDecoder;
 import com.twelvemonkeys.lang.StringUtil;
 
+import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.DataInput;
 import java.io.IOException;
@@ -85,6 +86,10 @@ final class PSDUtil {
     // TODO: Probably also useful for PICT reader, move to some common util?
     static String readUnicodeString(final DataInput pInput) throws IOException {
         int length = pInput.readInt();
+
+        if (length < 0 || length > Short.MAX_VALUE) {
+            throw new IIOException(String.format("Unicode string exceeds max allowed size (%d): %s", Short.MAX_VALUE, Integer.toUnsignedString(length)));
+        }
 
         if (length == 0) {
             return "";
