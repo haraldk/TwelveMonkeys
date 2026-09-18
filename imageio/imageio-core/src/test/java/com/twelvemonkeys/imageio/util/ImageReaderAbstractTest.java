@@ -315,11 +315,13 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     @Test
     public void testReadIndexNegativeWithParam() throws IOException {
         ImageReader reader = createReader();
-        TestData data = getTestData().get(0);
-        reader.setInput(data.getInputStream());
 
         try {
-            assertThrows(IndexOutOfBoundsException.class, () -> reader.read(-1, reader.getDefaultReadParam()));
+            TestData data = getTestData().get(0);
+            reader.setInput(data.getInputStream());
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            assertThrows(IndexOutOfBoundsException.class, () -> reader.read(-1, param));
         }
         finally {
             reader.dispose();
@@ -329,10 +331,13 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
     @Test
     public void testReadIndexOutOfBoundsWithParam() throws IOException {
         ImageReader reader = createReader();
-        TestData data = getTestData().get(0);
-        reader.setInput(data.getInputStream());
+
         try {
-            assertThrows(IndexOutOfBoundsException.class, () -> reader.read(Short.MAX_VALUE, reader.getDefaultReadParam()));
+            TestData data = getTestData().get(0);
+            reader.setInput(data.getInputStream());
+
+            ImageReadParam param = reader.getDefaultReadParam();
+            assertThrows(IndexOutOfBoundsException.class, () -> reader.read(Short.MAX_VALUE, param));
         }
         finally {
             reader.dispose();
