@@ -84,6 +84,10 @@ final class PSDThumbnail extends PSDImageResource {
         if (sizeCompressed != (size - 28)) {
             throw new IIOException("Corrupt thumbnail in PSD document");
         }
+        else if (sizeCompressed > 256 * 256 * 4) {
+            // Safeguard
+            throw new IIOException("PSD Thumbnail is too large");
+        }
 
         // According to the spec, only 24 bits and 1 plane is supported
         int bits = pInput.readUnsignedShort();
@@ -109,15 +113,15 @@ final class PSDThumbnail extends PSDImageResource {
         return new BufferedImage(cm, raster, cm.isAlphaPremultiplied(), null);
     }
 
-    public final int getWidth() {
+    public int getWidth() {
         return width;
     }
 
-    public final int getHeight() {
+    public int getHeight() {
         return height;
     }
 
-    public final BufferedImage getThumbnail() throws IOException {
+    public BufferedImage getThumbnail() throws IOException {
         switch (format) {
             case 0:
                 // RAW RGB

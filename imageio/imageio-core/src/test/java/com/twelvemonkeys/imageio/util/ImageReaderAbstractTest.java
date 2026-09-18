@@ -35,7 +35,6 @@ import com.twelvemonkeys.lang.Validate;
 
 import org.junit.jupiter.api.Disabled;
 import org.mockito.InOrder;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import javax.imageio.IIOException;
@@ -61,7 +60,6 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
-import static java.lang.Math.min;
 import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -311,9 +309,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         ImageReader reader = createReader();
         // Do not set input
 
-        assertThrows(IllegalStateException.class, () -> {
-            reader.read(0);
-        });
+        assertThrows(IllegalStateException.class, () -> reader.read(0));
     }
 
     @Test
@@ -323,9 +319,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         reader.setInput(data.getInputStream());
 
         try {
-            assertThrows(IndexOutOfBoundsException.class, () -> {
-                reader.read(-1, reader.getDefaultReadParam());
-            });
+            assertThrows(IndexOutOfBoundsException.class, () -> reader.read(-1, reader.getDefaultReadParam()));
         }
         finally {
             reader.dispose();
@@ -338,9 +332,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         TestData data = getTestData().get(0);
         reader.setInput(data.getInputStream());
         try {
-            assertThrows(IndexOutOfBoundsException.class, () -> {
-                reader.read(Short.MAX_VALUE, reader.getDefaultReadParam());
-            });
+            assertThrows(IndexOutOfBoundsException.class, () -> reader.read(Short.MAX_VALUE, reader.getDefaultReadParam()));
         }
         finally {
             reader.dispose();
@@ -352,9 +344,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
         ImageReader reader = createReader();
         // Do not set input
         try {
-            assertThrows(IllegalStateException.class, () -> {
-                reader.read(0);
-            });
+            assertThrows(IllegalStateException.class, () -> reader.read(0));
         }
         finally {
             reader.dispose();
@@ -1323,11 +1313,9 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
         // Create a listener that just makes the reader abort immediately...
         IIOReadProgressListener abortingListener = mock(IIOReadProgressListener.class, "Aborter");
-        Answer<Void> abort = new Answer<Void>() {
-            public Void answer(InvocationOnMock invocation) {
-                reader.abort();
-                return null;
-            }
+        Answer<Void> abort = invocation -> {
+            reader.abort();
+            return null;
         };
         doAnswer(abort).when(abortingListener).imageStarted(any(ImageReader.class), anyInt());
         doAnswer(abort).when(abortingListener).imageProgress(any(ImageReader.class), anyFloat());
@@ -1529,6 +1517,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
             if (!removed) {
                 for (Iterator<ImageTypeSpecifier> iterator = illegalTypes.iterator(); iterator.hasNext();) {
                     ImageTypeSpecifier illegalType = iterator.next();
+
                     if (illegalType.getBufferedImageType() == valid.getBufferedImageType()) {
                         iterator.remove();
                     }
@@ -1872,7 +1861,7 @@ public abstract class ImageReaderAbstractTest<T extends ImageReader> {
 
             this.images = images != null
                     ? Collections.unmodifiableList(new ArrayList<>(images))
-                    : Collections.<BufferedImage>emptyList();
+                    : Collections.emptyList();
 
             this.input = input;
         }

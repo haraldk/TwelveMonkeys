@@ -1012,7 +1012,7 @@ public final class PSDImageReader extends ImageReaderBase {
 
     private long readLength(final ImageInputStream stream) throws IOException {
         return header.largeFormat
-               ? stream.readLong()
+               ? validatePositiveLength(stream.readLong())
                : stream.readUnsignedInt();
     }
 
@@ -1034,7 +1034,7 @@ public final class PSDImageReader extends ImageReaderBase {
                 case PSD.FEid:
                 case PSD.FXid:
                 case PSD.PxSD:
-                    return stream.readLong();
+                    return validatePositiveLength(stream.readLong());
                 default:
                     // Fall through to 32 bit length
             }
@@ -1043,8 +1043,20 @@ public final class PSDImageReader extends ImageReaderBase {
         return stream.readUnsignedInt();
     }
 
+    private long validatePositiveLength(long value) throws IIOException {
+        if (value < 0) {
+            throw new IIOException(String.format("Length field exceeds Long.MAX_VALUE: %s", Long.toUnsignedString(value)));
+        }
+
+        return value;
+    }
+
     private List<PSDLayerInfo> readLayerInfo(int layerCount) throws IOException {
-        PSDLayerInfo[] layerInfos = new PSDLayerInfo[layerCount];
+        if (layerCount > 8000) {
+            processWarningOccurred("Bad layer count for PSD, expected <= 8000: " + layerCount);
+        }
+
+        PSDLayerInfo[] layerInfos = new PSDLayerInfo[Math.min(8000, layerCount)];
 
         Stack<List<PSDLayerInfo>> groupStack = new Stack<>();
         List<PSDLayerInfo> currentGroup = Collections.emptyList();

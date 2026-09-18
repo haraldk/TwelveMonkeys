@@ -41,11 +41,11 @@ import java.io.IOException;
  * @version $Id: PSDChannelSourceDestinationRange.java,v 1.0 May 6, 2008 5:14:13 PM haraldk Exp$
  */
 final class PSDChannelSourceDestinationRange {
-    private String channel;
-    private short sourceBlack;
-    private short sourceWhite;
-    private short destBlack;
-    private short destWhite;
+    private final String channel;
+    private final short sourceBlack;
+    private final short sourceWhite;
+    private final short destBlack;
+    private final short destWhite;
 
     public PSDChannelSourceDestinationRange(final ImageInputStream pInput, final String pChannel) throws IOException {
         channel = pChannel;

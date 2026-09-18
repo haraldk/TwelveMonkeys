@@ -69,6 +69,9 @@ final class PSDLayerInfo {
         right = pInput.readInt();
 
         int channels = pInput.readUnsignedShort();
+        if (channels < 1 || channels > 56) {
+            throw new IIOException(String.format("Unsupported number of channels for PSD: %d", channels));
+        }
 
         channelInfo = new PSDChannelInfo[channels];
         for (int i = 0; i < channels; i++) {
@@ -93,7 +96,7 @@ final class PSDLayerInfo {
         }
 
         int layerBlendingDataSize = pInput.readInt();
-        if (layerBlendingDataSize % 8 != 0) {
+        if (layerBlendingDataSize % 8 != 0 || layerBlendingDataSize > 2048 * 8) {
             throw new IIOException("Illegal PSD Layer Blending Data size: " + layerBlendingDataSize + ", expected multiple of 8");
         }
 
