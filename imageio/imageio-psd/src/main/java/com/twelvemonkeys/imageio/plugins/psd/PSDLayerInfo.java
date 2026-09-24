@@ -35,6 +35,8 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.util.Arrays;
 
+import static com.twelvemonkeys.imageio.plugins.psd.PSDImageReader.validatePositiveLength;
+
 /**
  * PSDLayerInfo
  *
@@ -76,7 +78,7 @@ final class PSDLayerInfo {
         channelInfo = new PSDChannelInfo[channels];
         for (int i = 0; i < channels; i++) {
             short channelId = pInput.readShort();
-            long length = largeFormat ? pInput.readLong() : pInput.readUnsignedInt();
+            long length = largeFormat ? validatePositiveLength(pInput.readLong()) : pInput.readUnsignedInt();
 
             channelInfo[i] = new PSDChannelInfo(channelId, length);
         }
@@ -96,8 +98,8 @@ final class PSDLayerInfo {
         }
 
         int layerBlendingDataSize = pInput.readInt();
-        if (layerBlendingDataSize % 8 != 0 || layerBlendingDataSize > 2048 * 8) {
-            throw new IIOException("Illegal PSD Layer Blending Data size: " + layerBlendingDataSize + ", expected multiple of 8");
+        if (layerBlendingDataSize < 0 || layerBlendingDataSize % 8 != 0 || layerBlendingDataSize > 2048 * 8) {
+            throw new IIOException(String.format("Illegal PSD Layer Blending Data size: %s, expected multiple of 8", Integer.toUnsignedString(layerBlendingDataSize)));
         }
 
         ranges = new PSDChannelSourceDestinationRange[layerBlendingDataSize / 8];
@@ -123,6 +125,11 @@ final class PSDLayerInfo {
         // Parse "Additional layer data"
         long additionalLayerInfoStart = pInput.getStreamPosition();
         long expectedEnd = additionalLayerInfoStart + extraDataSize - layerMaskDataSize - 4 - layerBlendingDataSize - 4 - layerNameSize;
+        if (expectedEnd < additionalLayerInfoStart) {
+            // Would otherwise seek backwards, and re-read the same data for the next layer
+            throw new IIOException(String.format("Illegal PSD Layer extra data size: %d", extraDataSize));
+        }
+
         while (pInput.getStreamPosition() < expectedEnd) {
             // 8BIM or 8B64
             int resourceSignature = pInput.readInt();
@@ -137,8 +144,12 @@ final class PSDLayerInfo {
 
             // NOTE: Only SOME resources have long length fields...
             boolean largeResource = resourceSignature != PSD.RESOURCE_TYPE;
-            long resourceLength = largeResource ? pInput.readLong() : pInput.readUnsignedInt();
+            long resourceLength = largeResource ? validatePositiveLength(pInput.readLong()) : pInput.readUnsignedInt();
             long resourceStart = pInput.getStreamPosition();
+
+            if (resourceLength > expectedEnd - resourceStart) {
+                throw new IIOException(String.format("Illegal PSD additional layer info length: %s", Long.toUnsignedString(resourceLength)));
+            }
 
 //            System.out.printf("signature: %s 0x%08x\n", PSDUtil.intToStr(resourceSignature), resourceSignature);
 //            System.out.println("key: " + PSDUtil.intToStr(resourceKey));

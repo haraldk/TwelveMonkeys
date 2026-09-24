@@ -1043,7 +1043,7 @@ public final class PSDImageReader extends ImageReaderBase {
         return stream.readUnsignedInt();
     }
 
-    private long validatePositiveLength(long value) throws IIOException {
+    static long validatePositiveLength(long value) throws IIOException {
         if (value < 0) {
             throw new IIOException(String.format("Length field exceeds Long.MAX_VALUE: %s", Long.toUnsignedString(value)));
         }
