@@ -874,6 +874,34 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
 
     @Test
     @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void directoryResourceSizeExceedsInput() throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
+            writeHeader(dataStream, PSD.VERSION_PSD, 1, 10, 10, PSD.COLOR_MODE_GRAYSCALE);
+            dataStream.writeInt(0);          // color mode data length
+            dataStream.writeInt(4 + 2 + 2 + 4 + 64); // image resources length
+            dataStream.writeBytes("8BIM");
+            dataStream.writeShort(PSD.RES_XMP_DATA);
+            dataStream.writeShort(0);        // empty pascal name + pad
+            dataStream.writeInt(Integer.MAX_VALUE); // resource size, way larger than the input
+            dataStream.write(new byte[64]);
+            dataStream.writeInt(0);          // layer+mask info length
+            dataStream.writeShort(PSD.COMPRESSION_NONE);
+            dataStream.write(new byte[100]);
+        }
+        PSDImageReader reader = createReader();
+        try (ImageInputStream stream = new ByteArrayImageInputStream(bytes.toByteArray())) {
+            reader.setInput(stream);
+            IIOException exception = assertThrows(IIOException.class, () -> reader.getImageMetadata(0));
+            assertThat(exception.getMessage(), containsString("Resource size exceeds limit"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void rleByteCountsExceedsInput() throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
