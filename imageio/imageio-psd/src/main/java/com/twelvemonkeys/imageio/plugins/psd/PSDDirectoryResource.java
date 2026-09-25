@@ -50,7 +50,7 @@ abstract class PSDDirectoryResource extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        if (size > Integer.MAX_VALUE) {
+        if (size > Short.MAX_VALUE * 20) {
             throw new IIOException("PSD Resource too large: " + size);
         }
 

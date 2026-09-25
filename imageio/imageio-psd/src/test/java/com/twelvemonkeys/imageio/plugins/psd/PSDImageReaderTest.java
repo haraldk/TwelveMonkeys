@@ -64,6 +64,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.containsStringIgnoringCase;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
 
 /**
@@ -578,7 +581,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
             IIOMetadata metadata = imageReader.getImageMetadata(0);
             List<PSDLayerInfo> layerInfos = ((PSDMetadata) metadata).layerInfo;
 
-            assertEquals(layerInfos.size(), 8);
+            assertEquals(8, layerInfos.size());
 
             // Normal layer, top level
             PSDLayerInfo layer5 = layerInfos.get(0);
@@ -727,7 +730,7 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     }
 
     @Test
-    public void testBrokenPackBitsThrowsEOFException() throws IOException {
+    public void testBrokenPackBitsThrowsEOFException() {
         assertTimeoutPreemptively(Duration.ofMillis(1000), () -> {
             PSDImageReader imageReader = createReader();
 
@@ -753,36 +756,234 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     @Test
     @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void negativeLayerMaskInfiniteLoop() throws IOException {
-        try (ByteArrayOutputStream b = new ByteArrayOutputStream()) {
-            DataOutputStream o = new DataOutputStream(b);
-            o.writeBytes("8BPS");
-            o.writeShort(2);        // signature, version 2 (PSB)
-            o.write(new byte[6]);      // reserved
-            o.writeShort(3);        // channels
-            o.writeInt(10);         // height
-            o.writeInt(10);         // width
-            o.writeShort(8);        // depth
-            o.writeShort(3);        // mode (RGB)
-            o.writeInt(0);          // color mode data length
-            o.writeInt(0);          // image resources length
-            o.writeLong(100);       // layer+mask info length (PSB: 8 bytes)
-            o.writeLong(0);         // layer info length (PSB: 8 bytes)
-            o.writeInt(0);          // global layer mask length
-            o.writeBytes("8BIM");
-            o.writeBytes("LMsk");
-            o.writeLong(-19);       // 64-bit record length, negative
-            o.write(new byte[64]);
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
 
-            PSDImageReader reader = createReader();
+        try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
+            writeHeader(dataStream, PSD.VERSION_PSB, 3, 10, 10, PSD.COLOR_MODE_RGB);
 
-            try (ImageInputStream stream = new ByteArrayImageInputStream(b.toByteArray())) {
-                reader.setInput(stream);
-                assertThrows(IIOException.class, () -> reader.read(0));
-            }
-            finally {
-                reader.dispose();
-            }
+            dataStream.writeInt(0);          // color mode data length
+            dataStream.writeInt(0);          // image resources length
+            dataStream.writeLong(100);       // layer+mask info length (PSB: 8 bytes)
+            dataStream.writeLong(0);         // layer info length (PSB: 8 bytes)
+            dataStream.writeInt(0);          // global layer mask length
+            dataStream.writeBytes("8BIM");
+            dataStream.writeBytes("LMsk");
+            dataStream.writeLong(-19);       // 64-bit record length, negative
+            dataStream.write(new byte[64]);
         }
+
+        PSDImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(bytes.toByteArray())) {
+            reader.setInput(stream);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            assertTrue(exception.getMessage().contains("Length field exceeds Long.MAX_VALUE"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void negativeAdditionalLayerInfoLengthInfiniteLoop() throws IOException {
+        ByteArrayOutputStream additional = new ByteArrayOutputStream();
+
+        try (DataOutputStream dataStream = new DataOutputStream(additional)) {
+            dataStream.writeBytes("8B64");
+            dataStream.writeBytes("luni");
+            dataStream.writeLong(-16);       // 64-bit record length, negative (seeks back to the signature)
+            dataStream.write(new byte[16]);
+        }
+
+        byte[] data = createLayeredPSD(createLayer(12 + additional.size(), 0, additional.toByteArray()));
+
+        PSDImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(data)) {
+            reader.setInput(stream);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.getNumImages(true));
+            assertThat(exception.getMessage(), containsString("Length field exceeds Long.MAX_VALUE"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void layerExtraDataSizeTooSmall() throws IOException {
+        // Extra data size 0 would make the reader seek backwards, and re-read the same data for the next layer
+        byte[] data = createLayeredPSD(createLayer(0, 0, new byte[0]));
+
+        PSDImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(data)) {
+            reader.setInput(stream);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.getNumImages(true));
+            assertThat(exception.getMessage(), containsString("Layer extra data size"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void negativeLayerBlendingDataSize() throws IOException {
+        byte[] data = createLayeredPSD(createLayer(12, -8, new byte[0]));
+
+        PSDImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(data)) {
+            reader.setInput(stream);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.getNumImages(true));
+            assertThat(exception.getMessage(), containsString("Layer Blending Data size"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void negativeColorDataLength() throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
+            writeHeader(dataStream, PSD.VERSION_PSD, 1, 10, 10, PSD.COLOR_MODE_INDEXED);
+            dataStream.writeInt(-3);         // color mode data length, negative multiple of 3
+            dataStream.write(new byte[64]);
+        }
+
+        PSDImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(bytes.toByteArray())) {
+            reader.setInput(stream);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.getWidth(0));
+            assertThat(exception.getMessage(), containsString("corrupt palette information"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void rleByteCountsExceedsInput() throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
+            // 1 x 300000 pixels is within the max expansion ratio for the input size,
+            // but the RLE byte counts table (4 bytes per row for PSB) can't possibly fit in the input
+            writeHeader(dataStream, PSD.VERSION_PSB, 1, 300_000, 1, PSD.COLOR_MODE_GRAYSCALE);
+            dataStream.writeInt(0);          // color mode data length
+            dataStream.writeInt(0);          // image resources length
+            dataStream.writeLong(0);         // layer+mask info length (PSB: 8 bytes)
+            dataStream.writeShort(PSD.COMPRESSION_RLE);
+            dataStream.write(new byte[1024]);
+        }
+
+        PSDImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(bytes.toByteArray())) {
+            reader.setInput(stream);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            assertThat(exception.getMessage(), containsStringIgnoringCase("image dimensions"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
+    void negativeRLEByteCount() throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
+            writeHeader(dataStream, PSD.VERSION_PSB, 1, 10, 10, PSD.COLOR_MODE_GRAYSCALE); // PSB, 32-bit byte counts
+            dataStream.writeInt(0);          // color mode data length
+            dataStream.writeInt(0);          // image resources length
+            dataStream.writeLong(0);         // layer+mask info length (PSB: 8 bytes)
+            dataStream.writeShort(PSD.COMPRESSION_RLE);
+            for (int y = 0; y < 10; y++) {
+                dataStream.writeInt(-1);     // byte count, negative
+            }
+            dataStream.write(new byte[256]);
+        }
+
+        PSDImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(bytes.toByteArray())) {
+            reader.setInput(stream);
+
+            IIOException exception = assertThrows(IIOException.class, () -> reader.read(0));
+            assertThat(exception.getMessage(), containsString("RLE byte count"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static void writeHeader(final DataOutputStream dataStream, int version, int channels, int height, int width, int mode) throws IOException {
+        dataStream.writeBytes("8BPS");
+        dataStream.writeShort(version);
+        dataStream.write(new byte[6]);   // reserved
+        dataStream.writeShort(channels);
+        dataStream.writeInt(height);
+        dataStream.writeInt(width);
+        dataStream.writeShort(8);   // bits per sample
+        dataStream.writeShort(mode);
+    }
+
+    private static byte[] createLayer(long extraDataSize, int layerBlendingDataSize, byte[] additionalLayerInfo) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+
+        try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
+            dataStream.writeInt(0);          // top
+            dataStream.writeInt(0);          // left
+            dataStream.writeInt(1);          // bottom
+            dataStream.writeInt(1);          // right
+            dataStream.writeShort(1);        // channels
+            dataStream.writeShort(0);        // channel id
+            dataStream.writeInt(3);          // channel data length
+            dataStream.writeBytes("8BIM");   // blend mode signature
+            dataStream.writeBytes("norm");   // blend mode
+            dataStream.writeByte(255);       // opacity
+            dataStream.writeByte(0);         // clipping
+            dataStream.writeByte(0);         // flags
+            dataStream.writeByte(0);         // pad
+            dataStream.writeInt((int) extraDataSize);
+            dataStream.writeInt(0);          // layer mask data size
+            dataStream.writeInt(layerBlendingDataSize);
+            dataStream.writeInt(0);          // empty pascal name + 3 pad bytes
+            dataStream.write(additionalLayerInfo);
+        }
+
+        return bytes.toByteArray();
+    }
+
+    private static byte[] createLayeredPSD(byte[] layer) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+
+        try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
+            writeHeader(dataStream, PSD.VERSION_PSD, 1, 1, 1, PSD.COLOR_MODE_GRAYSCALE);
+            dataStream.writeInt(0);          // color mode data length
+            dataStream.writeInt(0);          // image resources length
+            dataStream.writeInt(4 + 2 + layer.length + 64 + 4);  // layer+mask info length
+            dataStream.writeInt(2 + layer.length + 64);          // layer info length
+            dataStream.writeShort(1);        // layer count
+            dataStream.write(layer);
+            dataStream.write(new byte[64]);  // channel image data (and some slack)
+            dataStream.writeInt(0);          // global layer mask length
+            dataStream.write(new byte[64]);
+        }
+
+        return bytes.toByteArray();
     }
 
     final static class FakeCMYKColorSpace extends ColorSpace {

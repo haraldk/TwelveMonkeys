@@ -50,7 +50,7 @@ final class PSDColorData {
     PSDColorData(final ImageInputStream pInput) throws IOException {
         int length = pInput.readInt();
         if (length <= 0 || length % 3 != 0) {
-            throw new IIOException("Corrupt or missing palette information in PSD, length: " + Integer.toUnsignedString(length));
+            throw new IIOException("Missing or corrupt palette information, length: " + Integer.toUnsignedString(length));
         }
 
         // Spec says length may only be 768 bytes (256 RGB triplets)
