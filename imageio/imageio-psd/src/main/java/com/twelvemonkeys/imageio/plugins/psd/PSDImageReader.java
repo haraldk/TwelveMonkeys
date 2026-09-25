@@ -845,13 +845,6 @@ public final class PSDImageReader extends ImageReaderBase {
         if (header == null) {
             header = PSDHeader.read(imageInput);
 
-            // TODO: This does not work as intended, as the PSDHeader constructor already tests this and throws IAE...
-            if (!header.hasValidDimensions()) {
-                processWarningOccurred(String.format("Dimensions exceed maximum allowed for %s: %dx%d (max %dx%d)",
-                        header.largeFormat ? "PSB" : "PSD",
-                        header.width, header.height, header.getMaxSize(), header.getMaxSize()));
-            }
-
             metadata = new PSDMetadata();
             metadata.header = header;
 

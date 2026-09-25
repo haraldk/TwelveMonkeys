@@ -901,6 +901,86 @@ public class PSDImageReaderTest extends ImageReaderAbstractTest<PSDImageReader> 
     }
 
     @Test
+    void unsupportedDimensionsPSD() throws IOException {
+        Dimension[] cases = {
+                new Dimension(30_001, 10),
+                new Dimension(10, 0),
+                new Dimension(-1, 10)
+        };
+
+        for (Dimension dimension : cases) {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
+                writeHeader(dataStream, PSD.VERSION_PSD, 1, dimension.height, dimension.width, PSD.COLOR_MODE_GRAYSCALE);
+                dataStream.write(new byte[64]);
+            }
+
+            PSDImageReader reader = createReader();
+
+            try (ImageInputStream stream = new ByteArrayImageInputStream(bytes.toByteArray())) {
+                reader.setInput(stream);
+
+                IIOException exception = assertThrows(IIOException.class, () -> reader.getWidth(0), dimension.toString());
+                assertThat(exception.getMessage(), containsString("Unsupported dimensions"));
+            }
+            finally {
+                reader.dispose();
+            }
+        }
+    }
+
+    @Test
+    void unsupportedDimensionsPSB() throws IOException {
+        Dimension[] cases = {
+                new Dimension(10, 300_001)
+        };
+
+        for (Dimension dimension : cases) {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
+                writeHeader(dataStream, PSD.VERSION_PSB, 1, dimension.height, dimension.width, PSD.COLOR_MODE_GRAYSCALE);
+                dataStream.write(new byte[64]);
+            }
+
+            PSDImageReader reader = createReader();
+
+            try (ImageInputStream stream = new ByteArrayImageInputStream(bytes.toByteArray())) {
+                reader.setInput(stream);
+
+                IIOException exception = assertThrows(IIOException.class, () -> reader.getWidth(0), dimension.toString());
+                assertThat(exception.getMessage(), containsString("Unsupported dimensions"));
+            }
+            finally {
+                reader.dispose();
+            }
+        }
+    }
+
+    @Test
+    void validDimensionsPSBExceedingPSDLimit() throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
+            writeHeader(dataStream, PSD.VERSION_PSB, 1, 10, 30_001, PSD.COLOR_MODE_GRAYSCALE);
+            dataStream.writeInt(0);          // color mode data length
+            dataStream.writeInt(0);          // image resources length
+            dataStream.writeLong(0);         // layer+mask info length (PSB: 8 bytes)
+            dataStream.write(new byte[64]);
+        }
+
+        PSDImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(bytes.toByteArray())) {
+            reader.setInput(stream);
+
+            assertEquals(30_001, reader.getWidth(0));
+            assertEquals(10, reader.getHeight(0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
     @Timeout(value = 1, threadMode = Timeout.ThreadMode.SEPARATE_THREAD)
     void rleByteCountsExceedsInput() throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();

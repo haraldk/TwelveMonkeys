@@ -149,6 +149,12 @@ final class PSDHeader {
         int height = pInput.readInt(); // Rows
         int width = pInput.readInt();  // Columns
 
+        int maxSize = largeFormat ? PSB_MAX_SIZE : PSD_MAX_SIZE;
+        if (!hasValidDimensions(width, height, maxSize)) {
+            throw new IIOException(String.format("Unsupported dimensions for %s: %dx%d (expected 1-%d)",
+                    largeFormat ? "PSB" : "PSD", width, height, maxSize));
+        }
+
         short bits = pInput.readShort();
 
         switch (bits) {
@@ -219,7 +225,11 @@ final class PSDHeader {
     }
 
     boolean hasValidDimensions() {
-        return width <= getMaxSize() && height <= getMaxSize();
+        return hasValidDimensions(width, height, getMaxSize());
+    }
+
+    private static boolean hasValidDimensions(int width, int height, int maxSize) {
+        return width >= 1 && width <= maxSize && height >= 1 && height <= maxSize;
     }
 
     private String modeAsString() {
