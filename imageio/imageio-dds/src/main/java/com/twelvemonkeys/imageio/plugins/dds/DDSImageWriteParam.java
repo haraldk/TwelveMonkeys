@@ -1,7 +1,6 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
 import javax.imageio.ImageWriteParam;
-
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -12,11 +11,10 @@ public final class DDSImageWriteParam extends ImageWriteParam {
     private static final String[] COMPRESSION_TYPES = compressionTypes();
 
     private static String[] compressionTypes() {
-        // TODO: Maybe hardcode subset of values that we actually support writing?
         List<String> compressionTypes = Arrays.stream(DDSType.values())
-            .filter(DDSType::isBlockCompression)
-            .map(Enum::name)
-            .collect(Collectors.toList());
+                .filter(DDSType::isBlockCompression)
+                .map(Enum::name)
+                .collect(Collectors.toList());
         compressionTypes.add(0, "None");
 
         return compressionTypes.toArray(new String[0]);
@@ -48,6 +46,13 @@ public final class DDSImageWriteParam extends ImageWriteParam {
         }
 
         return DDSType.valueOf(compressionType);
+    }
+
+    @Override
+    public void setCompressionMode(int mode) {
+        if (mode == MODE_DISABLED)
+            this.compressionType = "None";
+        super.setCompressionMode(mode);
     }
 
     int getDxgiFormat() {
