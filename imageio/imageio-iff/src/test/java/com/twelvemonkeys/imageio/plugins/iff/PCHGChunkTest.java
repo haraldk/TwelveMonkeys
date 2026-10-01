@@ -103,4 +103,81 @@ class PCHGChunkTest {
         // r=0x11 b=0x22 g=0x33 -> 0x113322
         assertEquals(0x113322, palette.getRGB(5) & 0xffffff);
     }
+
+    @Test
+    void truncatedChunkLengthThrows() {
+        // Declared chunk length shorter than the 20 byte PCHG header: data = new byte[length - 20] must not go negative
+        PCHGChunk chunk = new PCHGChunk(10);
+        assertThrows(IIOException.class, () -> chunk.readChunk(new ByteArrayImageInputStream(new byte[24])));
+    }
+
+    @Test
+    void negativeLineRangeThrows() {
+        // startLine + lineCount is used as the changes array length, and must not go negative
+        byte[] body = new byte[32];
+        body[3] = 0x02;                 // flags = PCHGF_32BIT
+        body[4] = (byte) 0xFF;          // startLine = -100
+        body[5] = (byte) 0x9C;
+        // lineCount = 0
+
+        assertThrows(IIOException.class, () -> parse(body));
+    }
+
+    @Test
+    void invalidInitialRegisterRangeThrows() {
+        // startLine < 0 allocates initialChanges from maxReg - minReg + 1, which must not go negative
+        byte[] body = new byte[32];
+        body[3] = 0x02;                 // flags = PCHGF_32BIT
+        body[4] = (byte) 0xFF;          // startLine = -1
+        body[5] = (byte) 0xFF;
+        body[7] = 0x02;                 // lineCount = 2
+        body[9] = 0x01;                 // changedLines = 1
+        body[11] = 0x0A;                // minReg = 10
+        // maxReg = 0
+
+        assertThrows(IIOException.class, () -> parse(body));
+    }
+
+    @Test
+    void initialChangeRegisterOutOfRangeThrows() {
+        // reg is used as initialChanges[reg - minReg]; a register outside [minReg, maxReg] must not index out of bounds
+        byte[] body = new byte[] {
+                0x00, 0x00,             // compression = PCHG_COMP_NONE
+                0x00, 0x02,             // flags = PCHGF_32BIT
+                (byte) 0xFF, (byte) 0xFF, // startLine = -1
+                0x00, 0x02,             // lineCount = 2
+                0x00, 0x01,             // changedLines = 1
+                0x00, 0x00,             // minReg = 0
+                0x00, 0x00,             // maxReg = 0 -> initialChanges length 1
+                0x00, 0x00,             // maxChangesPerLine (ignored)
+                0x00, 0x00, 0x00, 0x01, // totalChanges = 1
+                (byte) 0x80, 0x00, 0x00, 0x00, // line mask: row -1 changed
+                0x00, 0x01,             // changeCount = 1
+                0x00, 0x05,             // register 5, outside [0, 0]
+                0x00, 0x11, 0x22, 0x33, // alpha (skipped), r, b, g
+        };
+
+        assertThrows(IIOException.class, () -> parse(body));
+    }
+
+    @Test
+    void negativeStartLineWithVisibleChangeParses() {
+        // startLine < 0 with a change on a visible (row >= 0) line: the per-line loop must not index changes[] with a negative row
+        byte[] body = new byte[] {
+                0x00, 0x00,             // compression = PCHG_COMP_NONE
+                0x00, 0x02,             // flags = PCHGF_32BIT
+                (byte) 0xFF, (byte) 0xFF, // startLine = -1
+                0x00, 0x03,             // lineCount = 3 -> changes length 2
+                0x00, 0x02,             // changedLines = 2
+                0x00, 0x00,             // minReg = 0
+                0x00, 0x1F,             // maxReg = 31 -> initialChanges length 32
+                0x00, 0x00,             // maxChangesPerLine (ignored)
+                0x00, 0x00, 0x00, 0x02, // totalChanges = 2
+                (byte) 0xC0, 0x00, 0x00, 0x00, // line mask: row -1 and the first visible row changed
+                0x00, 0x01, 0x00, 0x03, 0x00, 0x11, 0x22, 0x33, // initial change, register 3
+                0x00, 0x01, 0x00, 0x04, 0x00, 0x44, 0x55, 0x66, // visible change, register 4
+        };
+
+        assertDoesNotThrow(() -> parse(body));
+    }
 }
