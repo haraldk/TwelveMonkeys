@@ -93,6 +93,10 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
         input.readUnsignedShort(); // We don't really care, as we're not limited by the Amiga display hardware
         totalChanges = input.readInt();
 
+        if (chunkLength < 20) {
+            throw new IIOException("Truncated PCHG chunk length: " + chunkLength);
+        }
+
         byte[] data;
 
         switch (compression) {
@@ -123,12 +127,18 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
                 throw new IIOException("Unknown PCHG compression: " + compression);
         }
 
+        if (startLine + lineCount < 0) {
+            throw new IIOException("Invalid PCHG line range (startLine: " + startLine + ", lineCount: " + lineCount + ")");
+        }
+
         changes = new PaletteChange[startLine + lineCount][];
 
         if (startLine < 0) {
-            int numChanges = maxReg - minReg + 1;
+            if (maxReg < minReg) {
+                throw new IIOException("Invalid PCHG register range (minReg: " + minReg + ", maxReg: " + maxReg + ")");
+            }
 
-            initialChanges = new PaletteChange[numChanges];
+            initialChanges = new PaletteChange[maxReg - minReg + 1];
         }
 
         parseChanges(data, flags);
@@ -246,6 +256,10 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
                         dataBytesLeft -= 2;
                         int reg = ((smallChange & 0xf000) >> 12) + (i >= changeCount16 ? 16 : 0);
 
+                        if (reg < minReg || reg - minReg >= initialChanges.length) {
+                            throw new IIOException("Illegal index register: " + reg);
+                        }
+
                         initialChanges[reg - minReg] = new PaletteChange(
                                 reg,
                                 (byte) (((smallChange & 0x0f00) >> 8) * FACTOR_4BIT),
@@ -257,7 +271,7 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
                         int reg = toShort(data, dataIdx);
                         dataIdx += 2;
 
-                        if (reg < 0 && reg != MP_REG_IGNORE) {
+                        if (reg < minReg || reg - minReg >= initialChanges.length) {
                             throw new IIOException("Illegal index register: " + reg);
                         }
 
@@ -284,7 +298,7 @@ final class PCHGChunk extends AbstractMultiPaletteChunk {
             bits--;
         }
 
-        for (int row = startLine; changedlines != 0 && row < changes.length; row++) {
+        for (int row = Math.max(startLine, 0); changedlines != 0 && row < changes.length; row++) {
             if (bits == 0) {
                 if (maskBytesLeft == 0) {
                     throw new IIOException("Insufficient data in line mask");
