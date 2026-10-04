@@ -1,0 +1,13 @@
+module com.twelvemonkeys.imageio.xwd {
+    requires com.twelvemonkeys.common.lang;
+    requires java.xml;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive java.desktop;
+
+    exports com.twelvemonkeys.imageio.plugins.xwd;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.xwd.XWDImageReaderSpi;
+
+}

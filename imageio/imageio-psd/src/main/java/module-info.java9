@@ -1,0 +1,18 @@
+module com.twelvemonkeys.imageio.psd {
+    requires com.twelvemonkeys.common.image;
+    requires com.twelvemonkeys.common.io;
+    requires com.twelvemonkeys.common.lang;
+    requires com.twelvemonkeys.imageio.metadata;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive java.desktop;
+    requires transitive java.xml;
+
+    exports com.twelvemonkeys.imageio.plugins.psd;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.psd.PSDImageReaderSpi;
+    provides javax.imageio.spi.ImageWriterSpi with
+        com.twelvemonkeys.imageio.plugins.psd.PSDImageWriterSpi;
+
+}
