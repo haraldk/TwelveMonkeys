@@ -149,7 +149,7 @@ public class CompoundReader extends Reader {
 
             if (currentReader != markedReader) {
                 // Reset any reader before this
-                for (int i = currentReader; i >= markedReader; i--) {
+                for (int i = currentReader - 1; i >= markedReader; i--) {
                     readers.get(i).reset();
                 }
 
