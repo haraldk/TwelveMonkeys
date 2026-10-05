@@ -95,4 +95,43 @@ public class CompoundReaderTest extends ReaderAbstractTest {
             assertNotNull(e.getMessage());
         }
     }
+
+    @Test
+    public void testResetAcrossLastReader() throws IOException {
+        List<Reader> parts = new ArrayList<>();
+        parts.add(new StringReader("ab"));
+        parts.add(new StringReader("cd"));
+        try (Reader reader = new CompoundReader(parts.iterator())) {
+            assertEquals('a', reader.read());
+            reader.mark(4);
+            assertEquals('b', reader.read());
+            assertEquals('c', reader.read());
+            reader.reset();
+            assertEquals('b', reader.read());
+            assertEquals('c', reader.read());
+            assertEquals('d', reader.read());
+            assertEquals(-1, reader.read());
+            reader.reset();
+            assertEquals('b', reader.read());
+        }
+    }
+
+    @Test
+    public void testResetFromLastReaderToMiddleReader() throws IOException {
+        List<Reader> parts = new ArrayList<>();
+        parts.add(new StringReader("a"));
+        parts.add(new StringReader("bc"));
+        parts.add(new StringReader("de"));
+        try (Reader reader = new CompoundReader(parts.iterator())) {
+            assertEquals('a', reader.read());
+            assertEquals('b', reader.read());
+            reader.mark(4);
+            assertEquals('c', reader.read());
+            assertEquals('d', reader.read());
+            reader.reset();
+            assertEquals('c', reader.read());
+            assertEquals('d', reader.read());
+            assertEquals('e', reader.read());
+        }
+    }
 }
