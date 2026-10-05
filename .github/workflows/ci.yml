@@ -42,8 +42,8 @@ jobs:
           check_name: Unit Test Results for OpenJDK ${{ matrix.java }} on ${{ matrix.os }}
 
   test-jdk8-macos:
-    name: Test OpenJDK 8 on macos-14
-    runs-on: macos-14
+    name: Test OpenJDK 8 on macos-15
+    runs-on: macos-15
     permissions:
       checks: write
     steps:
