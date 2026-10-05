@@ -100,6 +100,8 @@ public class SVGImageReader extends ImageReaderBase {
 
     protected void resetMembers() {
         rasterizer = new Rasterizer();
+        // The preference from a param applies to that input only
+        allowExternalResources = DEFAULT_ALLOW_EXTERNAL_RESOURCES;
     }
 
     @Override

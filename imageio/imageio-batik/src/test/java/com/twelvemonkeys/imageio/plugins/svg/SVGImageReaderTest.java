@@ -30,6 +30,7 @@
 
 package com.twelvemonkeys.imageio.plugins.svg;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import javax.imageio.IIOException;
@@ -45,6 +46,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -332,6 +334,34 @@ public class SVGImageReaderTest extends ImageReaderAbstractTest<SVGImageReader> 
             assertThrows(SecurityException.class, () -> {
                 reader.read(0, param);
             });
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testAllowExternalResourcesNotKeptForNextInput() throws IOException {
+        // system-property set to true in surefire-plugin-settings in the pom
+        // Document referencing an external resource using an absolute URL, no base URI needed
+        String external = "<svg xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\" width=\"100\" height=\"100\">"
+                + "<image width=\"100\" height=\"100\" xlink:href=\"" + getClassLoaderResource("/svg/red-square.svg").toExternalForm() + "\"/>"
+                + "</svg>";
+        SVGImageReader reader = createReader();
+
+        try {
+            TestData blueSquare = new TestData(getClassLoaderResource("/svg/blue-square.svg"), (Dimension) null);
+            reader.setInput(blueSquare.getInputStream());
+
+            SVGReadParam param = reader.getDefaultReadParam();
+            param.setAllowExternalResources(false);
+            reader.read(0, param);
+
+            // The preference from the param above is for that input only,
+            // the next input should start out with the default again
+            reader.setInput(new ByteArrayImageInputStream(external.getBytes(StandardCharsets.UTF_8)));
+            BufferedImage image = reader.read(0);
+            assertRGBEquals("Expected all red", 0xFF0000, image.getRGB(50, 50) & 0xFFFFFF, 0);
         }
         finally {
             reader.dispose();
