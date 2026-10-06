@@ -49,18 +49,18 @@ final class PSDColorData {
 
     PSDColorData(final ImageInputStream pInput) throws IOException {
         int length = pInput.readInt();
-        if (length == 0) {
-            throw new IIOException("No palette information in PSD");
-        }
-        else if (length % 3 != 0) {
-            throw new IIOException("Wrong palette information in PSD");
+        if (length <= 0 || length % 3 != 0) {
+            throw new IIOException("Missing or corrupt palette information, length: " + Integer.toUnsignedString(length));
         }
 
-        // NOTE: Spec says length may only be 768 bytes (256 RGB triplets)
+        // Spec says length may only be 768 bytes (256 RGB triplets)
         colors = new byte[Math.min(768, length)];
         pInput.readFully(colors);
 
-        // NOTE: Could be a padding byte here, if not even...
+        // Skip any extra padding data, to keep the stream aligned
+        if (length > colors.length) {
+            pInput.skipBytes(length - colors.length);
+        }
     }
 
     IndexColorModel getIndexColorModel() {

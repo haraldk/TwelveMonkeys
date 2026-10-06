@@ -415,11 +415,11 @@ public final class PSDImageReader extends ImageReaderBase {
                 break;
             case PSD.COMPRESSION_RLE:
                 // NOTE: Byte counts will allow us to easily skip rows before AOI
-                byteCounts = new int[header.channels][header.height];
+                validateByteCountsSize((long) header.channels * header.height);
+
+                byteCounts = new int[header.channels][];
                 for (int c = 0; c < header.channels; c++) {
-                    for (int y = 0; y < header.height; y++) {
-                        byteCounts[c][y] = header.largeFormat ? imageInput.readInt() : imageInput.readUnsignedShort();
-                    }
+                    byteCounts[c] = readByteCounts(header.height);
                 }
                 break;
             default:
@@ -444,6 +444,28 @@ public final class PSDImageReader extends ImageReaderBase {
         }
 
         return image;
+    }
+
+    private void validateByteCountsSize(final long rows) throws IOException {
+        // The RLE byte counts table must be present in the stream, before the actual image data
+        long length = imageInput.length();
+        long remaining = length < 0 ? -1 : length - imageInput.getStreamPosition();
+
+        validateSourceSize(rows * (header.largeFormat ? 4 : 2), remaining, 1);
+    }
+
+    private int[] readByteCounts(final int rows) throws IOException {
+        int[] byteCounts = new int[rows];
+
+        for (int i = 0; i < rows; i++) {
+            byteCounts[i] = header.largeFormat ? imageInput.readInt() : imageInput.readUnsignedShort();
+
+            if (byteCounts[i] < 0) {
+                throw new IIOException(String.format("Illegal PSD RLE byte count: %s", Integer.toUnsignedString(byteCounts[i])));
+            }
+        }
+
+        return byteCounts;
     }
 
     private long findLayerStartPos(int layerIndex) {
@@ -823,12 +845,6 @@ public final class PSDImageReader extends ImageReaderBase {
         if (header == null) {
             header = PSDHeader.read(imageInput);
 
-            if (!header.hasValidDimensions()) {
-                processWarningOccurred(String.format("Dimensions exceed maximum allowed for %s: %dx%d (max %dx%d)",
-                        header.largeFormat ? "PSB" : "PSD",
-                        header.width, header.height, header.getMaxSize(), header.getMaxSize()));
-            }
-
             metadata = new PSDMetadata();
             metadata.header = header;
 
@@ -956,7 +972,9 @@ public final class PSDImageReader extends ImageReaderBase {
                 }
 
                 if (metadata.layerInfo == null) {
-                    while (imageInput.getStreamPosition() + 12 < metadata.layerAndMaskInfoStart + layerAndMaskInfoLength) {
+                    long sectionEnd = metadata.layerAndMaskInfoStart + layerAndMaskInfoLength;
+
+                    while (imageInput.getStreamPosition() + 12 < sectionEnd) {
                         int resSig = imageInput.readInt();
                         if (resSig != PSD.RESOURCE_TYPE && resSig != PSD.RESOURCE_TYPE_LONG) {
                             processWarningOccurred(String.format("Bad resource alignment, expected: '8BIM' was '%s'", PSDUtil.intToStr(resSig)));
@@ -965,6 +983,12 @@ public final class PSDImageReader extends ImageReaderBase {
 
                         int resId = imageInput.readInt();
                         long resLength = readLength(imageInput, resId); // In this section, resource lengths *vary* based on the resource...
+
+                        if (resLength > sectionEnd - imageInput.getStreamPosition()) {
+                            processWarningOccurred(String.format("Resource '%s' length exceeds layer and mask info section: %d", PSDUtil.intToStr(resId), resLength));
+                            break;
+                        }
+
                         // Calculate next offset, for some reason lengths are padded to 32 bit...
                         long nextOffset = imageInput.getStreamPosition() + 4 * ((resLength + 3) / 4);
 
@@ -1043,7 +1067,7 @@ public final class PSDImageReader extends ImageReaderBase {
         return stream.readUnsignedInt();
     }
 
-    private long validatePositiveLength(long value) throws IIOException {
+    static long validatePositiveLength(long value) throws IIOException {
         if (value < 0) {
             throw new IIOException(String.format("Length field exceeds Long.MAX_VALUE: %s", Long.toUnsignedString(value)));
         }
@@ -1151,10 +1175,8 @@ public final class PSDImageReader extends ImageReaderBase {
                         // If RLE, the image data starts with the byte counts
                         // for all the scan lines in the channel (LayerBottom-LayerTop), with
                         // each count stored as a two-byte (four for PSB) value.
-                        byteCounts = new int[layerInfo.bottom - layerInfo.top];
-                        for (int i = 0; i < byteCounts.length; i++) {
-                            byteCounts[i] = header.largeFormat ? imageInput.readInt() : imageInput.readUnsignedShort();
-                        }
+                        validateByteCountsSize(height);
+                        byteCounts = readByteCounts(height);
 
                         break;
                     default:

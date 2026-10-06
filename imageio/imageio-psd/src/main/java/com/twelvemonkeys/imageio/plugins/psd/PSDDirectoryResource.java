@@ -41,6 +41,9 @@ import java.nio.charset.StandardCharsets;
  * PSDDirectoryResource
  */
 abstract class PSDDirectoryResource extends PSDImageResource {
+    // Safeguard for streams of unknown length, XMP data written by Photoshop may be megabytes
+    private static final int MAX_SIZE_UNKNOWN_LENGTH = 64 * 1024 * 1024;
+
     byte[] data;
     private Directory directory;
 
@@ -50,8 +53,10 @@ abstract class PSDDirectoryResource extends PSDImageResource {
 
     @Override
     protected void readData(final ImageInputStream pInput) throws IOException {
-        if (size > Integer.MAX_VALUE) {
-            throw new IIOException("PSD Resource too large: " + size);
+        long limit = pInput.length() < 0 ? MAX_SIZE_UNKNOWN_LENGTH : pInput.length() - pInput.getStreamPosition();
+
+        if (size > Integer.MAX_VALUE || size > limit) {
+            throw new IIOException(String.format("PSD Resource size exceeds limit (%d): %d", limit, size));
         }
 
         data = new byte[(int) size];
