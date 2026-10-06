@@ -42,7 +42,7 @@ import java.nio.charset.StandardCharsets;
  */
 abstract class PSDDirectoryResource extends PSDImageResource {
     // Safeguard for streams of unknown length, XMP data written by Photoshop may be megabytes
-    private static final long MAX_SIZE_UNKNOWN_LENGTH = 64 * 1024 * 1024;
+    private static final int MAX_SIZE_UNKNOWN_LENGTH = 64 * 1024 * 1024;
 
     byte[] data;
     private Directory directory;
