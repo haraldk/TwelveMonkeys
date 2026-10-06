@@ -101,7 +101,24 @@ final class XWDX11Header {
         int windowY = input.readInt();
         int windowBorderWidth = input.readInt();
 
-        byte[] windowNameData = new byte[length - X11.X11_HEADER_SIZE];
+        if (bitsPerPixel <= 0 || bitsPerPixel > 32) {
+            throw new IIOException("Unsupported XWD bits per pixel: " + bitsPerPixel);
+        }
+        if (bitsPerRGB <= 0 || bitsPerRGB * 4 < bitsPerPixel || bitsPerRGB > 32 || bitsPerPixel % bitsPerRGB != 0) {
+            throw new IIOException(String.format("Unsupported XWD bits per RGB: %d (bits per pixel: %d)", bitsPerRGB, bitsPerPixel));
+        }
+        if (bytePerLine < ((long) width * bitsPerPixel + 7) / 8) {
+            throw new IIOException(String.format("Invalid XWD bytes per line: %d (width: %d, bits per pixel: %d)", bytePerLine, width, bitsPerPixel));
+        }
+        if (colorMapEntries < 0 || colorMapEntries > 1 << 16) {
+            throw new IIOException("Invalid XWD color map entries: " + colorMapEntries);
+        }
+        if (colorMapEntries > 0 && bitsPerRGB > 16) {
+            throw new IIOException("Unsupported XWD bits per RGB for color map: " + bitsPerRGB);
+        }
+
+        int windowNameLength = Math.max(0, Math.min(Short.MAX_VALUE, length - X11.X11_HEADER_SIZE));
+        byte[] windowNameData = new byte[windowNameLength];
         input.readFully(windowNameData);
         String windowName = windowNameData.length <= 1 ? null : new String(windowNameData, 0, windowNameData.length - 1, StandardCharsets.UTF_8);
 
