@@ -333,6 +333,35 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
         }
     }
 
+    @Test
+    public void testLosslessColorIndexOutsideColorTable() throws IOException {
+        // #1361: indices >= color_table_size must decode as transparent black (0x00000000)
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(
+                getClassLoaderResource("/webp/color_table_padding.webp"))) {
+
+            reader.setInput(stream);
+            assertColorTablePadding(reader.read(0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private void assertColorTablePadding(BufferedImage image) {
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                int expected = x < 8 ? 0x00000000 : 0xFF000000;
+                int mask = x < 8 ? -1 : 0xFF000000;
+
+                assertRGBEquals(
+                        "Unexpected pixel at (" + x + ", " + y + ")",
+                        expected, image.getRGB(x, y) & mask, 0);
+            }
+        }
+    }
+
     private static String sha256Alpha(BufferedImage image) {
         WritableRaster alphaRaster = image.getAlphaRaster();
         assertNotNull(alphaRaster, "Image should have alpha raster");
