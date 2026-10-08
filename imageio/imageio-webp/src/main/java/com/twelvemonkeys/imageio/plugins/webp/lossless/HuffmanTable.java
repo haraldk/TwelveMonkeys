@@ -89,9 +89,11 @@ final class HuffmanTable {
             int symbolNum = lsbBitReader.readBit() + 1;
             boolean first8Bits = lsbBitReader.readBit() == 1;
             short symbol1 = (short) lsbBitReader.readBits(first8Bits ? 8 : 1);
+            validateSymbol(symbol1, alphabetSize);
 
             if (symbolNum == 2) {
                 short symbol2 = (short) lsbBitReader.readBits(8);
+                validateSymbol(symbol2, alphabetSize);
 
                 for (int i = 0; i < (1 << LEVEL1_BITS); i += 2) {
                     level1[i] = 1 << 16 | symbol1;
@@ -224,6 +226,15 @@ final class HuffmanTable {
 
                 code = nextCode(code, length);
             }
+        }
+    }
+
+    private static void validateSymbol(short symbol, int alphabetSize) throws IIOException {
+        if (symbol >= alphabetSize) {
+            throw new IIOException(
+                    String.format("Huffman: Simple code symbol outside alphabet: symbol: %d, alphabet size: %d",
+                            symbol, alphabetSize)
+            );
         }
     }
 
