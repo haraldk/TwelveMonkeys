@@ -63,6 +63,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
@@ -83,7 +84,6 @@ import static com.twelvemonkeys.imageio.plugins.tiff.TIFFStreamMetadata.configur
  */
 public final class TIFFImageWriter extends ImageWriterBase {
     // Long term
-    // TODO: Support tiling
     // TODO: Support thumbnails
     // TODO: Support JPEG compression of CMYK data (pending JPEGImageWriter CMYK write support)
     // ----
@@ -110,6 +110,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
     // CCITT compressions T.4 and T.6
     // Support storing multiple images in one stream (multi-page TIFF)
     // Support more of the ImageIO metadata (ie. compression from metadata, etc)
+    // Support multiple strips (about 8K per strip, as recommended by the TIFF 6.0 spec) and tiled writing
+
+    /** The TIFF 6.0 spec recommends writing strips of about 8K bytes (before compression). */
+    private static final long DEFAULT_STRIP_SIZE = 8L * 1024;
 
     private final SequenceSupport sequence = new SequenceSupport();
 
@@ -155,25 +159,10 @@ public final class TIFFImageWriter extends ImageWriterBase {
                                      ? convertImageMetadata(image.getMetadata(), spec, param)
                                      : getDefaultImageMetadata(spec, param);
 
-        int numBands = sampleModel.getNumBands();
-        int pixelSize = computePixelSize(sampleModel);
-
-        int[] bandOffsets;
-        int[] bitOffsets;
-        if (sampleModel instanceof ComponentSampleModel) {
-            bandOffsets = ((ComponentSampleModel) sampleModel).getBandOffsets();
-            bitOffsets = null;
-        }
-        else if (sampleModel instanceof SinglePixelPackedSampleModel) {
-            bitOffsets = ((SinglePixelPackedSampleModel) sampleModel).getBitOffsets();
-            bandOffsets = null;
-        }
-        else if (sampleModel instanceof MultiPixelPackedSampleModel) {
-            bitOffsets = null;
-            bandOffsets = new int[] {0};
-        }
-        else {
-            throw new IllegalArgumentException("Unknown bit/bandOffsets for sample model: " + sampleModel);
+        if (param != null && (param.getSourceRegion() != null
+                || param.getSourceXSubsampling() != 1 || param.getSourceYSubsampling() != 1
+                || param.getSourceBands() != null)) {
+            processWarningOccurred(imageIndex, "Source region, subsampling and band selection are not supported, writing the complete image");
         }
 
         short offsetType = tiffWriter.offsetSize() == 4 ? TIFF.TYPE_LONG : TIFF.TYPE_LONG8;
@@ -185,100 +174,191 @@ public final class TIFFImageWriter extends ImageWriterBase {
             entries.put((Integer) entry.getIdentifier(), entry);
         }
 
-        entries.put(TIFF.TAG_IMAGE_WIDTH, new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, renderedImage.getWidth()));
-        entries.put(TIFF.TAG_IMAGE_HEIGHT, new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, renderedImage.getHeight()));
+        int width = renderedImage.getWidth();
+        int height = renderedImage.getHeight();
 
-        // TODO: RowsPerStrip - can be entire image (or even 2^32 -1), but it's recommended to write "about 8K bytes" per strip
-        entries.put(TIFF.TAG_ROWS_PER_STRIP, new TIFFEntry(TIFF.TAG_ROWS_PER_STRIP, renderedImage.getHeight()));
-        // StripByteCounts - for no compression, entire image data...
-        entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, offsetType, -1)); // Updated later
-        // StripOffsets - can be offset to single strip only
-        entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, offsetType, -1)); // Updated later
-
-        // TODO: If tiled, write tile indexes etc
-        // Depending on param.getTilingMode
-        long nextIFDPointerOffset = -1;
+        entries.put(TIFF.TAG_IMAGE_WIDTH, new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, width));
+        entries.put(TIFF.TAG_IMAGE_HEIGHT, new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, height));
 
         int compression = ((Number) entries.get(TIFF.TAG_COMPRESSION).getValue()).intValue();
 
+        // Tiled or striped layout, depending on the tiling settings of the param.
+        // NOTE: Updates the entries with TileWidth/TileLength or RowsPerStrip
+        SegmentLayout layout = computeSegmentLayout(imageIndex, param, entries, sampleModel, width, height);
+
+        long[] segmentOffsets = new long[layout.segsAcross * layout.segsDown];
+        long[] segmentByteCounts = new long[segmentOffsets.length];
+
+        long nextIFDPointerOffset;
+
         if (compression == TIFFBaseline.COMPRESSION_NONE) {
-            // This implementation, allows semi-streaming-compatible uncompressed TIFFs
-            long streamPosition = imageOutput.getStreamPosition();
+            // Uncompressed data has predictable size, so we write the IFD before the image data.
+            // This implementation allows semi-streaming-compatible uncompressed TIFFs
+            padToWordBoundary();
 
+            long rowSize = ((long) layout.segmentWidth * computePixelSize(sampleModel) + 7L) / 8L;
+
+            for (int segY = 0; segY < layout.segsDown; segY++) {
+                // Strips are clipped to the image height, tiles are padded to the full tile height
+                long rows = layout.tiled
+                            ? layout.segmentHeight
+                            : Math.min(layout.segmentHeight, height - (long) segY * layout.segmentHeight);
+
+                for (int segX = 0; segX < layout.segsAcross; segX++) {
+                    segmentByteCounts[segY * layout.segsAcross + segX] = rows * rowSize;
+                }
+            }
+
+            // Two passes: Compute the IFD size using placeholder offsets, then update with the final values.
+            // NOTE: The IFD size depends on the number of segments, not on the offset values, so it won't change
+            putSegmentEntries(entries, layout.tiled, offsetType, segmentOffsets, segmentByteCounts);
             long ifdSize = tiffWriter.computeIFDSize(entries.values());
-            long stripOffset = streamPosition + tiffWriter.offsetSize() + ifdSize + tiffWriter.offsetSize();
-            long stripByteCount = renderedImage.getHeight() * (((long) renderedImage.getWidth() * pixelSize + 7L) / 8L);
 
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, offsetType, stripOffset));
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, offsetType, stripByteCount));
+            long dataOffset = imageOutput.getStreamPosition() + tiffWriter.offsetSize() + ifdSize + tiffWriter.offsetSize();
+            for (int i = 0; i < segmentOffsets.length; i++) {
+                segmentOffsets[i] = dataOffset;
+                dataOffset += segmentByteCounts[i];
+            }
+
+            putSegmentEntries(entries, layout.tiled, offsetType, segmentOffsets, segmentByteCounts);
 
             long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes care of ordering tags
             nextIFDPointerOffset = imageOutput.getStreamPosition();
-
-            // If we have a previous IFD, update pointer
-            if (streamPosition > lastIFDPointerOffset) {
-                imageOutput.seek(lastIFDPointerOffset);
-                tiffWriter.writeOffset(imageOutput, ifdPointer);
-                imageOutput.seek(nextIFDPointerOffset);
-            }
 
             tiffWriter.writeOffset(imageOutput, 0); // Update next IFD pointer later
-        }
-        else {
-            tiffWriter.writeOffset(imageOutput, 0); // Update current IFD pointer later
-        }
 
-        long stripOffset = imageOutput.getStreamPosition();
+            // The image data follows the IFD directly
+            writeSegments(imageIndex, renderedImage, param, entries, layout, segmentOffsets, segmentByteCounts);
 
-        // TODO: Create compressor stream per Tile/Strip
-        // TODO: Cache JPEGImageWriter, dispose in dispose() method
-        if (compression == TIFFExtension.COMPRESSION_JPEG) {
-            Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("JPEG");
-
-            if (!writers.hasNext()) {
-                // This can only happen if someone deliberately uninstalled it
-                throw new IIOException("No JPEG ImageWriter found!");
-            }
-
-            ImageWriter jpegWriter = writers.next();
-            try {
-                jpegWriter.setOutput(new SubImageOutputStream(imageOutput));
-                ListenerDelegate listener = new ListenerDelegate(imageIndex);
-                jpegWriter.addIIOWriteProgressListener(listener);
-                jpegWriter.addIIOWriteWarningListener(listener);
-                jpegWriter.write(null, imageOnly(image), copyParams(param, jpegWriter));
-            }
-            finally {
-                jpegWriter.dispose();
-            }
-        }
-        else {
-            // Write image data
-            writeImageData(createCompressorStream(renderedImage, param, entries), imageIndex, renderedImage, numBands, bandOffsets, bitOffsets);
-        }
-
-        long stripByteCount = imageOutput.getStreamPosition() - stripOffset;
-
-        // Update IFD0-pointer, and write IFD
-        if (compression != TIFFBaseline.COMPRESSION_NONE) {
-            entries.put(TIFF.TAG_STRIP_OFFSETS, new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, offsetType, stripOffset));
-            entries.put(TIFF.TAG_STRIP_BYTE_COUNTS, new TIFFEntry(TIFF.TAG_STRIP_BYTE_COUNTS, offsetType, stripByteCount));
-
-            long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes care of ordering tags
-
-            nextIFDPointerOffset = imageOutput.getStreamPosition();
-
-            // TODO: This is slightly duped....
-            // However, need to update here, because to the writeIFD method writes the pointer, but at the incorrect offset
-            // TODO: Refactor writeIFD to take an offset
+            // Link the previous IFD pointer (or the stream header) to the IFD just written.
+            // NOTE: When at the start of the chain, writeIFD has already written the pointer, rewriting it is harmless
+            long endPosition = imageOutput.getStreamPosition();
             imageOutput.seek(lastIFDPointerOffset);
             tiffWriter.writeOffset(imageOutput, ifdPointer);
-            imageOutput.seek(nextIFDPointerOffset);
+            imageOutput.seek(endPosition);
+        }
+        else {
+            if (imageOutput.getStreamPosition() == lastIFDPointerOffset) {
+                // At the start of the IFD chain: Reserve space for the IFD pointer, written below
+                tiffWriter.writeOffset(imageOutput, 0);
+            }
 
-            tiffWriter.writeOffset(imageOutput, 0); // Next IFD pointer updated later
+            // Write the image data, one segment (strip or tile) at a time, collecting offsets and byte counts
+            if (compression == TIFFExtension.COMPRESSION_JPEG) {
+                writeJPEGSegments(imageIndex, image, renderedImage, param, layout, segmentOffsets, segmentByteCounts);
+            }
+            else {
+                writeSegments(imageIndex, renderedImage, param, entries, layout, segmentOffsets, segmentByteCounts);
+            }
+
+            putSegmentEntries(entries, layout.tiled, offsetType, segmentOffsets, segmentByteCounts);
+
+            padToWordBoundary();
+
+            long ifdPointer = tiffWriter.writeIFD(entries.values(), imageOutput); // NOTE: Writer takes care of ordering tags
+            nextIFDPointerOffset = imageOutput.getStreamPosition();
+
+            tiffWriter.writeOffset(imageOutput, 0); // Update next IFD pointer later
+
+            // Link the previous IFD pointer (or the stream header) to the IFD just written
+            long endPosition = imageOutput.getStreamPosition();
+            imageOutput.seek(lastIFDPointerOffset);
+            tiffWriter.writeOffset(imageOutput, ifdPointer);
+            imageOutput.seek(endPosition);
         }
 
         return nextIFDPointerOffset;
+    }
+
+    private static void putSegmentEntries(final Map<Integer, Entry> entries, final boolean tiled, final short offsetType,
+                                          final long[] segmentOffsets, final long[] segmentByteCounts) {
+        int offsetsTag = tiled ? TIFF.TAG_TILE_OFFSETS : TIFF.TAG_STRIP_OFFSETS;
+        int byteCountsTag = tiled ? TIFF.TAG_TILE_BYTE_COUNTS : TIFF.TAG_STRIP_BYTE_COUNTS;
+
+        entries.put(offsetsTag, new TIFFEntry(offsetsTag, offsetType, segmentOffsets.length == 1 ? segmentOffsets[0] : segmentOffsets));
+        entries.put(byteCountsTag, new TIFFEntry(byteCountsTag, offsetType, segmentByteCounts.length == 1 ? segmentByteCounts[0] : segmentByteCounts));
+    }
+
+    private static int computeRowsPerStrip(final int width, final int bitsPerPixel, final int height) {
+        long bytesPerRow = ((long) width * bitsPerPixel + 7L) / 8L;
+
+        return (int) Math.min(height, Math.max(1, DEFAULT_STRIP_SIZE / Math.max(1, bytesPerRow)));
+    }
+
+    /**
+     * Computes the segment layout (tiles or strips) for a page, and updates the corresponding
+     * entries (TileWidth/TileLength or RowsPerStrip).
+     */
+    private SegmentLayout computeSegmentLayout(final int imageIndex, final ImageWriteParam param, final Map<Integer, Entry> entries,
+                                               final SampleModel sampleModel, final int width, final int height) {
+        int compression = ((Number) entries.get(TIFF.TAG_COMPRESSION).getValue()).intValue();
+        boolean jpeg = compression == TIFFExtension.COMPRESSION_JPEG;
+
+        boolean tiled = param != null && param.canWriteTiles() && param.getTilingMode() == ImageWriteParam.MODE_EXPLICIT;
+
+        int segmentWidth;
+        int segmentHeight;
+        int segsAcross;
+        int segsDown;
+
+        if (tiled) {
+            // The TIFF spec requires tile dimensions to be multiples of 16
+            int tileWidth = (Math.max(1, param.getTileWidth()) + 15) / 16 * 16;
+            int tileHeight = (Math.max(1, param.getTileHeight()) + 15) / 16 * 16;
+
+            if (tileWidth != param.getTileWidth() || tileHeight != param.getTileHeight()) {
+                processWarningOccurred(imageIndex, String.format("Tile size rounded up to nearest multiple of 16: %d x %d", tileWidth, tileHeight));
+            }
+
+            segmentWidth = tileWidth;
+            segmentHeight = tileHeight;
+            segsAcross = (width + tileWidth - 1) / tileWidth;
+            segsDown = (height + tileHeight - 1) / tileHeight;
+
+            entries.remove(TIFF.TAG_ROWS_PER_STRIP);
+            entries.put(TIFF.TAG_TILE_WIDTH, new TIFFEntry(TIFF.TAG_TILE_WIDTH, tileWidth));
+            entries.put(TIFF.TAG_TILE_HEIGTH, new TIFFEntry(TIFF.TAG_TILE_HEIGTH, tileHeight));
+        }
+        else {
+            segmentWidth = width;
+
+            // JPEG data is written as a single strip, to avoid repeating the tables for each strip.
+            // Otherwise, write strips of about 8K bytes (before compression), as recommended by the spec
+            segmentHeight = jpeg ? height : computeRowsPerStrip(width, computePixelSize(sampleModel), height);
+
+            segsAcross = 1;
+            segsDown = (height + segmentHeight - 1) / segmentHeight;
+
+            entries.put(TIFF.TAG_ROWS_PER_STRIP, new TIFFEntry(TIFF.TAG_ROWS_PER_STRIP, segmentHeight));
+        }
+
+        return new SegmentLayout(tiled, segmentWidth, segmentHeight, segsAcross, segsDown);
+    }
+
+    /**
+     * Pads the output to a word (2 byte) boundary, as required for IFDs and value offsets
+     * (TIFF 6.0 Specification, "Image File Directory", page 13-15).
+     */
+    private void padToWordBoundary() throws IOException {
+        if ((imageOutput.getStreamPosition() & 1) != 0) {
+            imageOutput.write(0);
+        }
+    }
+
+    private static final class SegmentLayout {
+        final boolean tiled;
+        final int segmentWidth;
+        final int segmentHeight;
+        final int segsAcross;
+        final int segsDown;
+
+        SegmentLayout(final boolean tiled, final int segmentWidth, final int segmentHeight, final int segsAcross, final int segsDown) {
+            this.tiled = tiled;
+            this.segmentWidth = segmentWidth;
+            this.segmentHeight = segmentHeight;
+            this.segsAcross = segsAcross;
+            this.segsDown = segsDown;
+        }
     }
 
     private IIOImage imageOnly(final IIOImage image) {
@@ -298,13 +378,12 @@ public final class TIFFImageWriter extends ImageWriterBase {
             return null;
         }
 
-        // Always safe
-        ImageWriteParam writeParam = writer.getDefaultWriteParam();
-        writeParam.setSourceSubsampling(param.getSourceXSubsampling(), param.getSourceYSubsampling(), param.getSubsamplingXOffset(), param.getSubsamplingYOffset());
-        writeParam.setSourceRegion(param.getSourceRegion());
-        writeParam.setSourceBands(param.getSourceBands());
+        // NOTE: Source region/subsampling/bands are NOT copied to the delegate: The dimensions encoded by
+        // the delegate must match the IFD ImageWidth/ImageLength (or TileWidth/TileLength), and are taken
+        // from the complete image (or tile)
 
         // Only if canWriteCompressed()
+        ImageWriteParam writeParam = writer.getDefaultWriteParam();
         writeParam.setCompressionMode(param.getCompressionMode());
         if (param.getCompressionMode() == ImageWriteParam.MODE_EXPLICIT) {
             writeParam.setCompressionQuality(param.getCompressionQuality());
@@ -324,7 +403,8 @@ public final class TIFFImageWriter extends ImageWriterBase {
         return size;
     }
 
-    private DataOutput createCompressorStream(final RenderedImage image, final ImageWriteParam param, final Map<Integer, Entry> entries) {
+    private DataOutput createCompressorStream(final int columns, final int rows, final int samplesPerPixel, final int bitsPerSample,
+                                              final ImageWriteParam param, final Map<Integer, Entry> entries) {
         /*
         36 MB test data:
 
@@ -376,9 +456,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
         output.length: 12600399
          */
 
-        int samplesPerPixel = (Integer) entries.get(TIFF.TAG_SAMPLES_PER_PIXEL).getValue();
-        int bitPerSample = ((short[]) entries.get(TIFF.TAG_BITS_PER_SAMPLE).getValue())[0];
-
         // Use predictor by default for LZW and ZLib/Deflate
         // TODO: Unless explicitly disabled in TIFFImageWriteParam
         int compression = ((Number) entries.get(TIFF.TAG_COMPRESSION).getValue()).intValue();
@@ -410,23 +487,35 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 // (in other words, 0.0 means 1 == BEST_SPEED, 1.0 means 9 == BEST_COMPRESSION)
                 // PS: PNGImageWriter just uses hardcoded BEST_COMPRESSION... :-P
                 int deflateSetting = Deflater.BEST_SPEED; // This is consistent with default compression quality being 1.0 and 0 meaning max compression...
-                if (param.getCompressionMode() == ImageWriteParam.MODE_EXPLICIT) {
+                if (param != null && param.getCompressionMode() == ImageWriteParam.MODE_EXPLICIT) {
                     deflateSetting = Deflater.BEST_COMPRESSION - Math.round((Deflater.BEST_COMPRESSION - 1) * param.getCompressionQuality());
                 }
 
                 stream = IIOUtil.createStreamAdapter(imageOutput);
-                stream = new DeflaterOutputStream(stream, new Deflater(deflateSetting), 1024);
-                if (entries.containsKey(TIFF.TAG_PREDICTOR) && entries.get(TIFF.TAG_PREDICTOR).getValue().equals(TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING)) {
-                    stream = new HorizontalDifferencingStream(stream, image.getTileWidth(), samplesPerPixel, bitPerSample, imageOutput.getByteOrder());
+                stream = new DeflaterOutputStream(stream, new Deflater(deflateSetting), 1024) {
+                    @Override
+                    public void close() throws IOException {
+                        // NOTE: An explicitly supplied Deflater must be explicitly ended to release native
+                        // memory, as one stream is now created per segment
+                        try {
+                            super.close();
+                        }
+                        finally {
+                            def.end();
+                        }
+                    }
+                };
+                if (useHorizontalPredictor(entries)) {
+                    stream = new HorizontalDifferencingStream(stream, columns, samplesPerPixel, bitsPerSample, imageOutput.getByteOrder());
                 }
 
                 return new DataOutputStream(stream);
 
             case TIFFExtension.COMPRESSION_LZW:
                 stream = IIOUtil.createStreamAdapter(imageOutput);
-                stream = new EncoderStream(stream, new LZWEncoder((((long) image.getTileWidth() * samplesPerPixel * bitPerSample + 7) / 8) * image.getTileHeight()));
-                if (entries.containsKey(TIFF.TAG_PREDICTOR) && entries.get(TIFF.TAG_PREDICTOR).getValue().equals(TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING)) {
-                    stream = new HorizontalDifferencingStream(stream, image.getTileWidth(), samplesPerPixel, bitPerSample, imageOutput.getByteOrder());
+                stream = new EncoderStream(stream, new LZWEncoder((((long) columns * samplesPerPixel * bitsPerSample + 7) / 8) * rows));
+                if (useHorizontalPredictor(entries)) {
+                    stream = new HorizontalDifferencingStream(stream, columns, samplesPerPixel, bitsPerSample, imageOutput.getByteOrder());
                 }
 
                 return new DataOutputStream(stream);
@@ -434,7 +523,7 @@ public final class TIFFImageWriter extends ImageWriterBase {
             case TIFFBaseline.COMPRESSION_CCITT_MODIFIED_HUFFMAN_RLE:
             case TIFFExtension.COMPRESSION_CCITT_T4:
             case TIFFExtension.COMPRESSION_CCITT_T6:
-                if (image.getSampleModel().getNumBands() != 1 || image.getSampleModel().getSampleSize(0) != 1) {
+                if (samplesPerPixel != 1 || bitsPerSample != 1) {
                     throw new IllegalArgumentException("CCITT compressions supports 1 sample/pixel, 1 bit/sample only");
                 }
 
@@ -448,12 +537,18 @@ public final class TIFFImageWriter extends ImageWriterBase {
                 Entry fillOrderEntry = entries.get(TIFF.TAG_FILL_ORDER);
                 int fillOrder = (int) (fillOrderEntry != null ? fillOrderEntry.getValue() : TIFFBaseline.FILL_LEFT_TO_RIGHT);
                 stream = IIOUtil.createStreamAdapter(imageOutput);
-                stream = new CCITTFaxEncoderStream(stream, image.getTileWidth(), image.getTileHeight(), compression, fillOrder, option);
+                stream = new CCITTFaxEncoderStream(stream, columns, rows, compression, fillOrder, option);
 
                 return new DataOutputStream(stream);
         }
 
         throw new IllegalArgumentException(String.format("Unsupported TIFF compression: %d", compression));
+    }
+
+    private static boolean useHorizontalPredictor(final Map<Integer, Entry> entries) {
+        Entry predictorEntry = entries.get(TIFF.TAG_PREDICTOR);
+
+        return predictorEntry != null && predictorEntry.getValue().equals(TIFFExtension.PREDICTOR_HORIZONTAL_DIFFERENCING);
     }
 
     private int getPhotometricInterpretation(final ColorModel colorModel, int compression) {
@@ -517,202 +612,325 @@ public final class TIFFImageWriter extends ImageWriterBase {
         return shorts;
     }
 
-    private void writeImageData(DataOutput stream, int imageIndex, RenderedImage renderedImage, int numComponents, int[] bandOffsets, int[] bitOffsets) throws IOException {
-        // Store 3BYTE, 4BYTE as is (possibly need to re-arrange to RGB order)
-        // Store INT_RGB as 3BYTE, INT_ARGB as 4BYTE?, INT_ABGR must be re-arranged
-        // Store IndexColorModel as is
-        // Store BYTE_GRAY as is
-        // Store USHORT_GRAY as is
-
+    /**
+     * Writes the image data, one segment (strip or tile) at a time,
+     * and stores the offsets and byte counts of the segments written.
+     */
+    private void writeSegments(final int imageIndex, final RenderedImage image, final ImageWriteParam param, final Map<Integer, Entry> entries,
+                               final SegmentLayout layout, final long[] segmentOffsets, final long[] segmentByteCounts) throws IOException {
         processImageStarted(imageIndex);
 
-        final int minTileY = renderedImage.getMinTileY();
-        final int maxYTiles = minTileY + renderedImage.getNumYTiles();
-        final int minTileX = renderedImage.getMinTileX();
-        final int maxXTiles = minTileX + renderedImage.getNumXTiles();
+        int width = image.getWidth();
+        int height = image.getHeight();
+        int minX = image.getMinX();
+        int minY = image.getMinY();
 
-        // Use buffer to have longer, better performing writes
-        final int tileHeight = renderedImage.getTileHeight();
-        final int tileWidth = renderedImage.getTileWidth();
+        SampleModel sampleModel = image.getSampleModel();
+        int samplesPerPixel = sampleModel.getNumBands();
+        int bitsPerSample = validateBitsPerSample(sampleModel);
+        ByteOrder byteOrder = imageOutput.getByteOrder();
 
-        // TODO: SampleSize may differ between bands/banks
-        final int sampleSize = renderedImage.getSampleModel().getSampleSize(0);
-        final int numBands = renderedImage.getSampleModel().getNumBands();
+        // Strips span the full image width, tiles (including partial edge tiles) are padded to the
+        // full tile width, so the number of columns per segment is the same for every segment
+        int columns = layout.segmentWidth;
 
-        // TODO: This buffer should probably have order matching that of imageOutput, but only if writing "actual" 16 or 32 bit samples, not "packed" samples
-        final byte[] buffer = new byte[(tileWidth * numBands * sampleSize + 7) / 8];
-        int bufferPos = 0;
+        // Reused for all rows of all segments, to avoid re-allocating for each (possibly single row) segment
+        byte[] rowBuffer = new byte[(int) (((long) columns * samplesPerPixel * bitsPerSample + 7) / 8)];
+        int[] samples = new int[columns * samplesPerPixel];
 
-        for (int yTile = minTileY; yTile < maxYTiles; yTile++) {
-            for (int xTile = minTileX; xTile < maxXTiles; xTile++) {
-                final Raster tile = renderedImage.getTile(xTile, yTile);
+        int segment = 0;
 
-                // Model translation
-                final int offsetX = tile.getMinX() - tile.getSampleModelTranslateX();
-                final int offsetY = tile.getMinY() - tile.getSampleModelTranslateY();
+        for (int segY = 0; segY < layout.segsDown; segY++) {
+            for (int segX = 0; segX < layout.segsAcross; segX++) {
+                int x = segX * layout.segmentWidth;
+                int y = segY * layout.segmentHeight;
 
-                // Scanline stride, not accounting for model translation
-                final int stride = (tile.getSampleModel().getWidth() * sampleSize + 7) / 8;
-                final DataBuffer dataBuffer = tile.getDataBuffer();
+                Rectangle region = new Rectangle(minX + x, minY + y,
+                                                 Math.min(layout.segmentWidth, width - x), Math.min(layout.segmentHeight, height - y));
+                Raster data = getRegion(image, region);
 
-                switch (dataBuffer.getDataType()) {
-                    case DataBuffer.TYPE_BYTE:
-//                        System.err.println("Writing " + numBands + "BYTE -> " + numBands + "BYTE");
-                        int steps = (tileWidth * sampleSize + 7) / 8;
-                        // Shift needed for "packed" samples with "odd" offset
-                        int shift = offsetX % 8;
+                // Strips are clipped to the image height, tiles are padded to the full tile height
+                int rows = layout.tiled ? layout.segmentHeight : region.height;
 
-                        // TODO: Generalize this code, to always use row raster
-                        final WritableRaster rowRaster = shift != 0 ? tile.createCompatibleWritableRaster(tile.getWidth(), 1) : null;
-                        final DataBuffer rowBuffer = shift != 0 ? rowRaster.getDataBuffer() : null;
+                segmentOffsets[segment] = imageOutput.getStreamPosition();
 
-                        for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-                            for (int y = offsetY; y < tileHeight + offsetY; y++) {
-                                final int yOff = y * stride * numBands;
-
-                                if (shift != 0) {
-                                    rowRaster.setDataElements(0, 0, tile.createChild(0, y - offsetY, tile.getWidth(), 1, 0, 0, null));
-                                }
-
-                                for (int x = offsetX; x < steps + offsetX; x++) {
-                                    final int xOff = yOff + x * numBands;
-
-                                    for (int s = 0; s < numBands; s++) {
-                                        if (sampleSize == 8 || shift == 0) {
-                                            // Normal interleaved/planar case
-                                            buffer[bufferPos++] = ((byte) (dataBuffer.getElem(b, xOff + bandOffsets[s]) & 0xff));
-                                        }
-                                        else {
-                                            // "Packed" case
-                                            buffer[bufferPos++] = ((byte) (rowBuffer.getElem(b, x - offsetX + bandOffsets[s]) & 0xff));
-                                        }
-                                    }
-                                }
-
-                                flushBuffer(buffer, bufferPos, stream);
-                                bufferPos = 0;
-                                flushStream(stream);
-                            }
-                        }
-
-                        break;
-
-                    case DataBuffer.TYPE_USHORT:
-                    case DataBuffer.TYPE_SHORT:
-                        final int shortStride = stride / 2;
-                        if (numComponents == 1) {
-//                            System.err.println("Writing USHORT -> " + numBands * 2 + "_BYTES");
-
-                            for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-                                for (int y = offsetY; y < tileHeight + offsetY; y++) {
-                                    final int yOff = y * shortStride;
-
-                                    for (int x = offsetX; x < tileWidth + offsetX; x++) {
-                                        int xOff = yOff + x;
-
-                                        int elem = dataBuffer.getElem(b, xOff);
-                                        buffer[bufferPos++] = (byte) ((elem >>> 8) & 0xff);
-                                        buffer[bufferPos++] = (byte) (elem & 0xff);
-                                    }
-
-                                    flushBuffer(buffer, bufferPos, stream);
-                                    bufferPos = 0;
-                                    flushStream(stream);
-                                }
-                            }
-                        }
-                        else {
-//                            for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-//                                for (int y = 0; y < tileHeight; y++) {
-//                                    final int yOff = y * tileWidth;
-//
-//                                    for (int x = 0; x < tileWidth; x++) {
-//                                        final int xOff = yOff + x;
-//                                        int element = dataBuffer.getElem(b, xOff);
-//
-//                                        for (int s = 0; s < numBands; s++) {
-//                                            buffer.put((byte) ((element >> bitOffsets[s]) & 0xff));
-//                                        }
-//                                    }
-//
-//                                    flushBuffer(buffer, stream);
-//                                    if (stream instanceof DataOutputStream) {
-//                                        DataOutputStream dataOutputStream = (DataOutputStream) stream;
-//                                        dataOutputStream.flush();
-//                                    }
-//                                }
-//                            }
-                            throw new IllegalArgumentException("Not implemented for data type: " + dataBuffer.getDataType());
-                        }
-
-                        break;
-
-                    case DataBuffer.TYPE_INT:
-                        // TODO: This is incorrect for general 32 bits/sample, only works for packed (INT_(A)RGB) and single channel
-                        final int intStride = stride / 4;
-                        if (1 == numComponents) {
-//                            System.err.println("Writing INT -> " + numBands * 4 + "_BYTES");
-                            for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-                                for (int y = offsetY; y < tileHeight + offsetY; y++) {
-                                    int yOff = y * intStride;
-
-                                    for (int x = offsetX; x < tileWidth + offsetX; x++) {
-                                        int xOff = yOff + x;
-
-                                        int elem = dataBuffer.getElem(b, xOff);
-                                        buffer[bufferPos++] = (byte) ((elem >>> 24) & 0xff);
-                                        buffer[bufferPos++] = (byte) ((elem >>> 16) & 0xff);
-                                        buffer[bufferPos++] = (byte) ((elem >>> 8) & 0xff);
-                                        buffer[bufferPos++] = (byte) (elem & 0xff);
-                                    }
-
-                                    flushBuffer(buffer, bufferPos, stream);
-                                    bufferPos = 0;
-                                    flushStream(stream);
-                                }
-                            }
-                        }
-                        else {
-//                            System.err.println("Writing INT -> " + numBands + "_BYTES");
-
-                            for (int b = 0; b < dataBuffer.getNumBanks(); b++) {
-                                for (int y = 0; y < tileHeight; y++) {
-                                    final int yOff = y * tileWidth;
-
-                                    for (int x = 0; x < tileWidth; x++) {
-                                        final int xOff = yOff + x;
-                                        int element = dataBuffer.getElem(b, xOff);
-
-                                        for (int s = 0; s < numBands; s++) {
-                                            buffer[bufferPos++] = (byte) ((element >> bitOffsets[s]) & 0xff);
-                                        }
-                                    }
-
-                                    flushBuffer(buffer, bufferPos, stream);
-                                    bufferPos = 0;
-                                    flushStream(stream);
-                                }
-                            }
-                        }
-
-                        break;
-                    default:
-                        throw new IllegalArgumentException("Not implemented for data type: " + dataBuffer.getDataType());
+                DataOutput stream = createCompressorStream(columns, rows, samplesPerPixel, bitsPerSample, param, entries);
+                try {
+                    writeSegmentRows(stream, data, region, rows, samplesPerPixel, bitsPerSample, byteOrder, rowBuffer, samples);
                 }
+                finally {
+                    if (stream instanceof DataOutputStream) {
+                        // Each segment is an independent stream of compressed data
+                        ((DataOutputStream) stream).close();
+                    }
+                }
+
+                segmentByteCounts[segment] = imageOutput.getStreamPosition() - segmentOffsets[segment];
+                segment++;
+
+                processImageProgress(segment * 100f / segmentOffsets.length);
             }
-
-            flushStream(stream);
-
-            // TODO: Report better progress
-            processImageProgress((100f * (yTile + 1)) / maxYTiles);
-        }
-
-        if (stream instanceof DataOutputStream) {
-            DataOutputStream dataOutputStream = (DataOutputStream) stream;
-            dataOutputStream.close();
         }
 
         processImageComplete();
+    }
+
+    /**
+     * Returns the given region of the image, avoiding a copy of the samples where possible.
+     */
+    private static Raster getRegion(final RenderedImage image, final Rectangle region) {
+        if (image instanceof BufferedImage) {
+            // NOTE: getData(Rectangle) copies the samples, createChild is a view of the same data.
+            // This matters, as there may be a large number of (small) segments
+            return ((BufferedImage) image).getRaster()
+                    .createChild(region.x, region.y, region.width, region.height, region.x, region.y, null);
+        }
+
+        return image.getData(region);
+    }
+
+    private void writeSegmentRows(final DataOutput stream, final Raster data, final Rectangle region,
+                                  final int rows, final int numBands, final int bitsPerSample, final ByteOrder byteOrder,
+                                  final byte[] rowBuffer, final int[] samples) throws IOException {
+        // Zeroed once per segment: packRow rewrites the sample bytes for every row, so only the padding
+        // bytes of a partial (right edge) tile need to be zeroed, and they are never written to
+        Arrays.fill(rowBuffer, (byte) 0);
+
+        for (int row = 0; row < rows; row++) {
+            if (row < region.height) {
+                // NOTE: Samples are fetched one full row at a time, as the per-sample accessors are much slower
+                data.getPixels(region.x, region.y + row, region.width, 1, samples);
+                packRow(rowBuffer, samples, region.width, numBands, bitsPerSample, byteOrder);
+            }
+            else if (row == region.height) {
+                // Rows below the image (bottom edge tile padding) are all zero
+                Arrays.fill(rowBuffer, (byte) 0);
+            }
+
+            stream.write(rowBuffer, 0, rowBuffer.length);
+            flushStream(stream);
+        }
+    }
+
+    /**
+     * Packs one row of band interleaved {@code samples} into {@code rowBuffer}, in TIFF layout:
+     * Sub-byte samples (1/2/4 bit, single band) are packed left to right, multi-byte samples
+     * are written in the given byte order (matching the output stream/file byte order).
+     */
+    private static void packRow(final byte[] rowBuffer, final int[] samples, final int columns, final int numBands,
+                                final int bitsPerSample, final ByteOrder byteOrder) {
+        boolean littleEndian = byteOrder == ByteOrder.LITTLE_ENDIAN;
+        int sampleCount = columns * numBands;
+
+        int pos = 0;
+
+        switch (bitsPerSample) {
+            case 1:
+            case 2:
+            case 4:
+                // NOTE: Sub-byte samples are single band only, as validated by validateBitsPerSample
+                int mask = (1 << bitsPerSample) - 1;
+                int accumulated = 0;
+                int bits = 0;
+
+                for (int i = 0; i < sampleCount; i++) {
+                    accumulated = accumulated << bitsPerSample | (samples[i] & mask);
+                    bits += bitsPerSample;
+
+                    if (bits == 8) {
+                        rowBuffer[pos++] = (byte) accumulated;
+                        accumulated = 0;
+                        bits = 0;
+                    }
+                }
+
+                if (bits != 0) {
+                    // Left-justify the last partial byte
+                    rowBuffer[pos] = (byte) (accumulated << (8 - bits));
+                }
+
+                break;
+
+            case 8:
+                for (int i = 0; i < sampleCount; i++) {
+                    rowBuffer[pos++] = (byte) samples[i];
+                }
+
+                break;
+
+            case 16:
+                for (int i = 0; i < sampleCount; i++) {
+                    int sample = samples[i];
+
+                    if (littleEndian) {
+                        rowBuffer[pos++] = (byte) sample;
+                        rowBuffer[pos++] = (byte) (sample >>> 8);
+                    }
+                    else {
+                        rowBuffer[pos++] = (byte) (sample >>> 8);
+                        rowBuffer[pos++] = (byte) sample;
+                    }
+                }
+
+                break;
+
+            case 32:
+                for (int i = 0; i < sampleCount; i++) {
+                    int sample = samples[i];
+
+                    if (littleEndian) {
+                        rowBuffer[pos++] = (byte) sample;
+                        rowBuffer[pos++] = (byte) (sample >>> 8);
+                        rowBuffer[pos++] = (byte) (sample >>> 16);
+                        rowBuffer[pos++] = (byte) (sample >>> 24);
+                    }
+                    else {
+                        rowBuffer[pos++] = (byte) (sample >>> 24);
+                        rowBuffer[pos++] = (byte) (sample >>> 16);
+                        rowBuffer[pos++] = (byte) (sample >>> 8);
+                        rowBuffer[pos++] = (byte) sample;
+                    }
+                }
+
+                break;
+
+            default:
+                // Guarded by validateBitsPerSample
+                throw new AssertionError("Unsupported BitsPerSample: " + bitsPerSample);
+        }
+    }
+
+    /**
+     * Validates that the sample layout of {@code sampleModel} can be written, and returns its
+     * (uniform) BitsPerSample value.
+     * <p>
+     * NOTE: Multi-channel data is currently supported for 8 bit samples only, and floating point
+     * samples are not yet supported.
+     * </p>
+     */
+    private static int validateBitsPerSample(final SampleModel sampleModel) throws IIOException {
+        // TODO: Support floating point (32/64 bit) samples
+        int dataType = sampleModel.getDataType();
+        if (dataType == DataBuffer.TYPE_FLOAT || dataType == DataBuffer.TYPE_DOUBLE) {
+            throw new IIOException("Unsupported sample model, floating point samples not supported: " + sampleModel);
+        }
+
+        int[] sampleSize = sampleModel.getSampleSize();
+        int bitsPerSample = sampleSize[0];
+
+        for (int size : sampleSize) {
+            if (size != bitsPerSample) {
+                throw new IIOException("Unsupported sample model, varying sample sizes: " + Arrays.toString(sampleSize));
+            }
+        }
+
+        switch (bitsPerSample) {
+            case 8:
+                break;
+
+            case 1:
+            case 2:
+            case 4:
+            case 16:
+            case 32:
+                // TODO: Support multiple channels for 16 and 32 bit samples
+                if (sampleSize.length != 1) {
+                    throw new IIOException(String.format("Unsupported BitsPerSample (%d) for %d samples per pixel (expected 1 sample per pixel)",
+                                                         bitsPerSample, sampleSize.length));
+                }
+
+                break;
+
+            default:
+                throw new IIOException("Unsupported BitsPerSample: " + bitsPerSample);
+        }
+
+        return bitsPerSample;
+    }
+
+    /**
+     * Writes JPEG compressed image data, using a delegate JPEG {@code ImageWriter}.
+     * Striped JPEG data is written as a single strip, to avoid repeating the tables for each strip,
+     * tiled JPEG data is written as one JPEG stream per tile.
+     */
+    private void writeJPEGSegments(final int imageIndex, final IIOImage image, final RenderedImage renderedImage, final ImageWriteParam param,
+                                   final SegmentLayout layout, final long[] segmentOffsets, final long[] segmentByteCounts) throws IOException {
+        // TODO: Cache JPEGImageWriter, dispose in dispose() method
+        Iterator<ImageWriter> writers = ImageIO.getImageWritersByFormatName("JPEG");
+
+        if (!writers.hasNext()) {
+            // This can only happen if someone deliberately uninstalled it
+            throw new IIOException("No JPEG ImageWriter found!");
+        }
+
+        ImageWriter jpegWriter = writers.next();
+
+        try {
+            if (!layout.tiled && segmentOffsets.length == 1) {
+                // The complete image is written as a single JPEG stream, delegate progress/warning events
+                segmentOffsets[0] = imageOutput.getStreamPosition();
+
+                jpegWriter.setOutput(new SubImageOutputStream(imageOutput));
+                ListenerDelegate listener = new ListenerDelegate(imageIndex);
+                jpegWriter.addIIOWriteProgressListener(listener);
+                jpegWriter.addIIOWriteWarningListener(listener);
+                jpegWriter.write(null, imageOnly(image), copyParams(param, jpegWriter));
+
+                segmentByteCounts[0] = imageOutput.getStreamPosition() - segmentOffsets[0];
+            }
+            else {
+                processImageStarted(imageIndex);
+
+                int width = renderedImage.getWidth();
+                int height = renderedImage.getHeight();
+                int minX = renderedImage.getMinX();
+                int minY = renderedImage.getMinY();
+                ColorModel colorModel = renderedImage.getColorModel();
+
+                int segment = 0;
+
+                for (int segY = 0; segY < layout.segsDown; segY++) {
+                    for (int segX = 0; segX < layout.segsAcross; segX++) {
+                        int x = segX * layout.segmentWidth;
+                        int y = segY * layout.segmentHeight;
+
+                        Rectangle region = new Rectangle(minX + x, minY + y,
+                                                         Math.min(layout.segmentWidth, width - x), Math.min(layout.segmentHeight, height - y));
+
+                        segmentOffsets[segment] = imageOutput.getStreamPosition();
+
+                        jpegWriter.setOutput(new SubImageOutputStream(imageOutput));
+
+                        WritableRaster tileRaster = paddedTile(renderedImage, region, layout.segmentWidth, layout.segmentHeight);
+                        BufferedImage tile = new BufferedImage(colorModel, tileRaster, colorModel.isAlphaPremultiplied(), null);
+                        jpegWriter.write(null, new IIOImage(tile, null, null), copyParams(param, jpegWriter));
+
+                        segmentByteCounts[segment] = imageOutput.getStreamPosition() - segmentOffsets[segment];
+                        segment++;
+
+                        processImageProgress(segment * 100f / segmentOffsets.length);
+                    }
+                }
+
+                processImageComplete();
+            }
+        }
+        finally {
+            jpegWriter.dispose();
+        }
+    }
+
+    /**
+     * Returns the given region of the image as a raster of full tile size,
+     * padding the area outside the image with zeros.
+     */
+    private static WritableRaster paddedTile(final RenderedImage image, final Rectangle region, final int tileWidth, final int tileHeight) {
+        Raster data = image.getData(region);
+
+        WritableRaster tileRaster = data.createCompatibleWritableRaster(tileWidth, tileHeight);
+        tileRaster.setRect(0, 0, data.createChild(region.x, region.y, region.width, region.height, 0, 0, null));
+
+        return tileRaster;
     }
 
     private static void flushStream(DataOutput stream) throws IOException {
@@ -721,10 +939,6 @@ public final class TIFFImageWriter extends ImageWriterBase {
             DataOutputStream dataOutputStream = (DataOutputStream) stream;
             dataOutputStream.flush();
         }
-    }
-
-    private static void flushBuffer(final byte[] buffer, final int bufferPos, final DataOutput stream) throws IOException {
-        stream.write(buffer, 0, bufferPos);
     }
 
     // Metadata
