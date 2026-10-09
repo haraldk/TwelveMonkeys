@@ -407,8 +407,8 @@ public final class VP8LDecoder {
                                 colorTableSize, 1, colorTableSize * 4, 4, new int[] {0, 1, 2, 3}, null),
                         false, null, colorTableSize, 1);
 
-                // resolve subtraction code
-                for (int i = 4; i < colorTable.length; i++) {
+                // Reconstruct actual color table entries, preserving transparent padding.
+                for (int i = 4; i < colorTableSize * 4; i++) {
                     colorTable[i] += colorTable[i - 4];
                 }
 
