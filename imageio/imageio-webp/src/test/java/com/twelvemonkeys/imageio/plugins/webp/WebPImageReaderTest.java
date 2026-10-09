@@ -353,7 +353,7 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
         for (int y = 0; y < 16; y++) {
             for (int x = 0; x < 16; x++) {
                 int expected = x < 8 ? 0x00000000 : 0xFF000000;
-                int mask = x < 8 ? -1 : 0xFF000000;
+                int mask = x < 8 ? 0xFFFFFFFF : 0xFF000000;
 
                 assertRGBEquals(
                         "Unexpected pixel at (" + x + ", " + y + ")",
