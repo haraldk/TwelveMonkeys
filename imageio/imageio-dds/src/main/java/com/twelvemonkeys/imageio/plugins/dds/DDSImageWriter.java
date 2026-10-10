@@ -9,13 +9,13 @@ import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
+import javax.imageio.ImageWriter;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageWriterSpi;
 import javax.imageio.stream.MemoryCacheImageOutputStream;
 
 import java.awt.Dimension;
-import java.awt.image.Raster;
-import java.awt.image.RenderedImage;
+import java.awt.image.*;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteOrder;
@@ -25,7 +25,7 @@ import java.nio.file.Paths;
 /**
  * ImageWriter implementation for Microsoft DirectDraw Surface (DDS) format.
  *
- * @author KhanTypo
+ * @author KhanhTypo
  * @author <a href="mailto:harald.kuhr@gmail.com">Harald Kuhr</a>
  */
 class DDSImageWriter extends ImageWriterBase {
@@ -101,45 +101,91 @@ class DDSImageWriter extends ImageWriterBase {
 
         Raster raster = getRaster(image);
         ensureImageChannels(raster);
-        ensureTextureDimension(raster);
-        mipmapDimension = new Dimension(raster.getWidth(), raster.getHeight());
 
         DDSImageWriteParam ddsParam = param instanceof DDSImageWriteParam
             ? ((DDSImageWriteParam) param)
             : IIOUtil.copyStandardParams(param, getDefaultWriteParam());
 
         DDSType type = ddsParam.type();
+        if (type == null) {
+            //called when uncompression format is being used.
+            type = findUncompressedDDSType(image.getRenderedImage(), ddsParam.isWriteDXT10());
+        }
+
         if (mipmapType == null) {
             mipmapType = type;
-        }
-        else if (type != mipmapType) {
+        } else if (type != mipmapType) {
             processWarningOccurred(mipmapIndex, "All images in DDS mipmap must use same pixel format and compression");
         }
         if (mipmapType == null) {
-            throw new IIOException("Only compressed DDS using DXT1-5 or DXT10 with block compression is currently supported");
+            throw new IIOException("Only compressed DDS using DXT1-5 or DXT10 with block compression and a limited range of uncompressed encoding is currently supported.");
         }
 
         if (mipmapIndex == 0) {
             writeHeader(raster.getWidth(), raster.getHeight(), mipmapType, ddsParam.isWriteDXT10());
             if (ddsParam.isWriteDXT10()) {
-                writeDXT10Header(ddsParam.getDxgiFormat());
+                writeDXT10Header(type.dxgiFormat());
             }
         }
 
         processImageStarted(mipmapIndex);
         processImageProgress(0f);
 
-        DDSImageDataEncoder.writeImageData(imageOutput, raster, mipmapType.compression);
+        if (mipmapType.isBlockCompression()) {
+            //this was meant for block compression, uncompressed formats aren't affected by image size
+            ensureTextureDimension(raster);
+            mipmapDimension = new Dimension(raster.getWidth(), raster.getHeight());
+            DDSImageDataEncoder.writeCompressedImageData(imageOutput, raster, mipmapType.compression);
+        } else DDSImageDataEncoder.writeUncompressedImageData(imageOutput, raster, mipmapType);
 
         processImageProgress(100f);
         processImageComplete();
     }
 
+    /**
+     * Used when compressed mode is disabled. The function will try to analyze the color model of the provided input image,
+     * as this function won't rely on <code>RenderedImage</code> but rather the lowest level possible to ensure the best compatibility.
+     */
+    private DDSType findUncompressedDDSType(RenderedImage renderedImage, boolean writeDXT10) throws IIOException {
+        ColorModel colorModel = renderedImage.getColorModel();
+        if (colorModel instanceof ComponentColorModel) {
+            ComponentColorModel componentModel = (ComponentColorModel) colorModel;
+            int pixelSize = componentModel.getPixelSize();
+            int numBands = componentModel.getNumComponents();
+            if (numBands >= 3 && pixelSize / numBands == 8)
+                return DDSType.A8R8G8B8;
+        }
+        if (colorModel instanceof IndexColorModel) {
+            throw new IIOException("IndexColorModel is not yet supported.");
+        }
+        if (colorModel instanceof DirectColorModel) {
+            DirectColorModel directModel = (DirectColorModel) colorModel;
+            int redMask = directModel.getRedMask();
+            int greenMask = directModel.getGreenMask();
+            int blueMask = directModel.getBlueMask();
+            int alphaMask = directModel.getAlphaMask();
+            if (redMask == 0x000000ff && greenMask == 0x0000ff00 && blueMask == 0x00ff0000) {
+                //BGR
+                if (alphaMask == 0)
+                    return writeDXT10 ? DDSType.A8R8G8B8 : DDSType.X8R8G8B8;
+                else if (alphaMask == 0xff000000)
+                    return DDSType.A8R8G8B8;
+            }
+            if (blueMask == 0x000000ff && greenMask == 0x0000ff00 && redMask == 0x00ff0000) {
+                //RGB
+                if (alphaMask == 0)
+                    return writeDXT10 ? DDSType.A8B8G8R8 : DDSType.X8B8G8R8;
+                else if (alphaMask == 0xff000000)
+                    return DDSType.A8B8G8R8;
+            }
+        }
+        return null;
+    }
+
     private static Raster getRaster(IIOImage image) throws IIOException {
         if (image.hasRaster()) {
             return image.getRaster();
-        }
-        else {
+        } else {
             RenderedImage renderedImage = image.getRenderedImage();
 
             if (renderedImage.getNumXTiles() != 1 || renderedImage.getNumYTiles() != 1) {
@@ -159,13 +205,16 @@ class DDSImageWriter extends ImageWriterBase {
         int numBands = data.getNumBands();
         if (numBands < 3 || numBands > 4) {
             throw new IIOException(
-                "Only image with 3 channels (RGB) or 4 channels (RGBA) is supported, got " + numBands + " channels");
+                    "Only image with 3 channels (RGB) or 4 channels (RGBA) is supported, got " + numBands + " channels");
         }
 
-        int sampleSize = data.getSampleModel().getSampleSize(0);
-        if (sampleSize != 8) {
-            throw new IIOException("Only image with 8 bits/channel is supported, got " + sampleSize);
-        }
+        int redSampleSize = data.getSampleModel().getSampleSize(0);
+        int greenSampleSize = data.getSampleModel().getSampleSize(1);
+        int blueSampleSize = data.getSampleModel().getSampleSize(2);
+
+        //space 8:8:8
+        if ((redSampleSize == greenSampleSize) && (greenSampleSize == blueSampleSize) && (blueSampleSize == 8)) {return;}
+        throw new IIOException("Only color space 8:8:8 is supported, got " + redSampleSize + ':' + greenSampleSize + ':' + blueSampleSize);
     }
 
     /**
@@ -181,10 +230,10 @@ class DDSImageWriter extends ImageWriterBase {
             throw new IIOException(String.format("Image dimensions must be dividable by 4, ideally a power of 2; got %dx%d", width, height));
         }
 
-        if (mipmapDimension != null && (mipmapDimension.width != width * 2|| mipmapDimension.height != height * 2)) {
+        if (mipmapDimension != null && (mipmapDimension.width != width * 2 || mipmapDimension.height != height * 2)) {
             throw new IIOException(
-                String.format("For mipmap, image dimensions must be exactly half of previous (%dx%d); got %dx%d",
-                mipmapDimension.width, mipmapDimension.height, width, height)
+                    String.format("For mipmap, image dimensions must be exactly half of previous (%dx%d); got %dx%d",
+                            mipmapDimension.width, mipmapDimension.height, width, height)
             );
         }
     }
@@ -256,8 +305,7 @@ class DDSImageWriter extends ImageWriterBase {
     private void writeRGBAData(DDSType type, boolean writeDXT10) throws IOException {
         if (!writeDXT10 && !type.isFourCC()) {
             //dwRGBBitCount
-            imageOutput.writeInt(type.blockSize() * 8); // TODO: Is bitcount always a multiple of 8?
-
+            imageOutput.writeInt(type.blockSize());
             //dwRBitMask
             imageOutput.writeInt(type.rgbaMasks[0]);
             //dwGBitMask
@@ -266,8 +314,7 @@ class DDSImageWriter extends ImageWriterBase {
             imageOutput.writeInt(type.rgbaMasks[2]);
             //dwABitMask
             imageOutput.writeInt(type.rgbaMasks[3]);
-        }
-        else {
+        } else {
             //write 5 zero integers as fourCC is used
             imageOutput.write(new byte[20]);
         }
@@ -276,11 +323,9 @@ class DDSImageWriter extends ImageWriterBase {
     private void writeFourCC(DDSType type, boolean writeDXT10) throws IOException {
         if (writeDXT10) {
             imageOutput.writeInt(DDSType.DXT10.fourCC());
-        }
-        else if (type.isFourCC()) {
+        } else if (type.isFourCC()) {
             imageOutput.writeInt(type.fourCC());
-        }
-        else {
+        } else {
             // No fourCC, custom format...
             imageOutput.writeInt(0);
         }
@@ -289,27 +334,25 @@ class DDSImageWriter extends ImageWriterBase {
     private void writePixelFormatFlags(DDSType type, boolean writeDXT10) throws IOException {
         if (writeDXT10 || type.isFourCC()) {
             imageOutput.writeInt(DDS.PIXEL_FORMAT_FLAG_FOURCC);
-        }
-        else {
+        } else {
             imageOutput.writeInt(DDS.PIXEL_FORMAT_FLAG_RGB
-                | (type.rgbaMasks != null && type.rgbaMasks[3] != 0 ? DDS.PIXEL_FORMAT_FLAG_ALPHAPIXELS : 0));
+                    | (type.rgbaMasks != null && type.rgbaMasks[3] != 0 ? DDS.PIXEL_FORMAT_FLAG_ALPHAPIXELS : 0));
         }
     }
 
     private void writePitchOrLinearSize(int height, int width, DDSType type) throws IOException {
         if (type.isBlockCompression()) {
             imageOutput.writeInt(((width + 3) / 4) * ((height + 3) / 4) * type.blockSize());
-        }
-        else {
-            imageOutput.writeInt(width * type.blockSize());
+        } else {
+            imageOutput.writeInt((width * type.blockSize() + 7) / 8);
         }
     }
 
     @Override
     public IIOMetadata getDefaultImageMetadata(ImageTypeSpecifier imageType, ImageWriteParam param) {
         DDSType type = param instanceof DDSImageWriteParam
-            ? ((DDSImageWriteParam) param).type()
-            : DDSImageWriteParam.DEFAULT_TYPE;
+                ? ((DDSImageWriteParam) param).type()
+                : DDSImageWriteParam.DEFAULT_TYPE;
 
         return new DDSImageMetadata(imageType, type);
     }
@@ -325,6 +368,11 @@ class DDSImageWriter extends ImageWriterBase {
             throw new IllegalArgumentException("Use 1 input file at a time.");
         }
 
-        ImageIO.write(ImageIO.read(new File(args[0])), "dds", new MemoryCacheImageOutputStream(Files.newOutputStream(Paths.get("output.dds"))));
+        ImageWriter writer = ImageIO.getImageWritersByFormatName("dds").next();
+        DDSImageWriteParam writeParam = new DDSImageWriteParam();
+        MemoryCacheImageOutputStream ios = new MemoryCacheImageOutputStream(Files.newOutputStream(Paths.get("output.dds")));
+        writeParam.setCompressionMode(ImageWriteParam.MODE_DISABLED);
+        writer.setOutput(ios);
+        writer.write(null, new IIOImage(ImageIO.read(new File(args[0])), null,null), writeParam);
     }
 }
