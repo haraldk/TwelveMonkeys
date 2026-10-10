@@ -1,0 +1,15 @@
+module com.twelvemonkeys.imageio.pcx {
+    requires com.twelvemonkeys.common.io;
+    requires java.xml;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive java.desktop;
+
+    exports com.twelvemonkeys.imageio.plugins.dcx;
+    exports com.twelvemonkeys.imageio.plugins.pcx;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.pcx.PCXImageReaderSpi,
+        com.twelvemonkeys.imageio.plugins.dcx.DCXImageReaderSpi;
+
+}
