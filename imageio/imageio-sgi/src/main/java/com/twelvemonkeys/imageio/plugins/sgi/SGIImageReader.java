@@ -336,7 +336,7 @@ public final class SGIImageReader extends ImageReaderBase {
         int minValue = header.getMinValue();
         int maxValue = header.getMaxValue();
 
-        if (minValue != 0 || maxValue != 0xff) {
+        if ((minValue != 0 || maxValue != 0xff) && maxValue > minValue) {
             // Normalize
             for (int i = start; i < length; i++) {
                 rowData[i] = (byte) ((((rowData[i] & 0xff) - minValue) * 0xff) / (maxValue - minValue));
@@ -348,7 +348,7 @@ public final class SGIImageReader extends ImageReaderBase {
         int minValue = header.getMinValue();
         int maxValue = header.getMaxValue();
 
-        if (minValue != 0 || maxValue != 0xffff) {
+        if ((minValue != 0 || maxValue != 0xffff) && maxValue > minValue) {
             // Normalize
             for (int i = start; i < length; i++) {
                 rowData[i] = (short) ((((rowData[i] & 0xffff) - minValue) * 0xffff) / (maxValue - minValue));
