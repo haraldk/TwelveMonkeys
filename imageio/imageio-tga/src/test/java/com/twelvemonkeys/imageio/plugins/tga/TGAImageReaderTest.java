@@ -86,6 +86,47 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
         }
     }
 
+    @Test
+    public void readColorMappedWithNonZeroColorMapOrigin() throws IOException {
+        // A color-mapped TGA with a non-zero color map origin (the index of the first stored
+        // entry). The origin was passed to IndexColorModel as a byte offset into the map data,
+        // reading past its end and throwing ArrayIndexOutOfBoundsException out of read().
+        byte[] header = {
+                0,          // id length
+                1,          // color map type: present
+                1,          // image type: color-mapped, uncompressed
+                1, 0,       // color map origin: 1
+                2, 0,       // color map length: 2 entries
+                24,         // color map entry depth: 24 bit
+                0, 0, 0, 0, // x/y origin
+                2, 0,       // width: 2
+                1, 0,       // height: 1
+                8,          // pixel depth: 8 bit (index)
+                0,          // image descriptor
+                // color map: 2 entries, BGR, for indices 1 and 2
+                0, 0, (byte) 0xFF, // index 1: red
+                0, (byte) 0xFF, 0, // index 2: green
+                // pixel data: 2 indices
+                1, 2
+        };
+        // Pad past the 26-byte v2 footer so the reader's end-of-file probe stays within the stream.
+        byte[] poc = Arrays.copyOf(header, 60);
+
+        ImageReader reader = createReader();
+        try (ImageInputStream input = new ByteArrayImageInputStream(poc)) {
+            reader.setInput(input);
+
+            BufferedImage image = reader.read(0);
+            assertEquals(2, image.getWidth());
+            assertEquals(1, image.getHeight());
+            assertEquals(0xFFFF0000, image.getRGB(0, 0));
+            assertEquals(0xFF00FF00, image.getRGB(1, 0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(

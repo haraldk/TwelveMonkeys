@@ -339,6 +339,17 @@ final class TGAHeader {
                 throw new IIOException("Unsupported color map depth: " + header.colorMapDepth);
         }
 
-        return new IndexColorModel(header.pixelDepth, size, cmap, header.colorMapStart, hasAlpha);
+        if (header.colorMapStart > 0) {
+            // colorMapStart is the index of the first stored entry, not a byte offset into the
+            // map data. Placing the entries at that index sizes the model to hold them; passing
+            // the origin as the IndexColorModel start offset reads past the end of cmap.
+            int entrySize = hasAlpha ? 4 : 3;
+            byte[] full = new byte[(header.colorMapStart + size) * entrySize];
+            System.arraycopy(cmap, 0, full, header.colorMapStart * entrySize, cmap.length);
+
+            return new IndexColorModel(header.pixelDepth, header.colorMapStart + size, full, 0, hasAlpha);
+        }
+
+        return new IndexColorModel(header.pixelDepth, size, cmap, 0, hasAlpha);
     }
 }
