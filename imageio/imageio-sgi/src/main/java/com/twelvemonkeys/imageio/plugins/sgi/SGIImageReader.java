@@ -165,6 +165,10 @@ public final class SGIImageReader extends ImageReaderBase {
             processWarningOccurred(String.format("Unsupported color mode: %d, colors may look incorrect", header.getColorMode()));
         }
 
+        if (header.getMaxValue() <= header.getMinValue()) {
+            processWarningOccurred(String.format("Invalid pixel value range (min: %d, max: %d), values will not be normalized", header.getMinValue(), header.getMaxValue()));
+        }
+
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 

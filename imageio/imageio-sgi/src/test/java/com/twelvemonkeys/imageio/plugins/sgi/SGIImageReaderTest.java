@@ -44,6 +44,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -242,8 +243,12 @@ public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> 
             SGIImageReader reader = createReader();
             reader.setInput(input);
 
+            List<String> warnings = new ArrayList<>();
+            reader.addIIOReadWarningListener((source, warning) -> warnings.add(warning));
+
             BufferedImage image = reader.read(0);
             assertNotNull(image);
+            assertEquals(1, warnings.size());
 
             DataBuffer buffer = image.getRaster().getDataBuffer();
             assertEquals(10, buffer.getElem(0));
@@ -266,8 +271,12 @@ public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> 
             SGIImageReader reader = createReader();
             reader.setInput(input);
 
+            List<String> warnings = new ArrayList<>();
+            reader.addIIOReadWarningListener((source, warning) -> warnings.add(warning));
+
             BufferedImage image = reader.read(0);
             assertNotNull(image);
+            assertEquals(1, warnings.size());
 
             DataBuffer buffer = image.getRaster().getDataBuffer();
             assertEquals(100, buffer.getElem(0));
