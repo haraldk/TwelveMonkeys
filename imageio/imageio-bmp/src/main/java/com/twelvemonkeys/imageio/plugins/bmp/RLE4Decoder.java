@@ -78,7 +78,9 @@ final class RLE4Decoder extends AbstractRLEDecoder {
 
                     case 0x02:
                         // Delta
-                        deltaX = srcX + stream.read();
+                        // The x displacement comes straight from the stream; clamp it to the
+                        // row bounds so the reposition below can't move past the row
+                        deltaX = Math.min(srcX + checkEOF(stream.read()), row.length * 2);
                         deltaY = srcY + checkEOF(stream.read());
 
                         srcX = row.length * 2;

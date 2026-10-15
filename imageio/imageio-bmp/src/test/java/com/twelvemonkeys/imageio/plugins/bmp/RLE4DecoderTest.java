@@ -180,6 +180,21 @@ public class RLE4DecoderTest {
         assertArrayEquals(DECODED, Arrays.copyOfRange(buffer.array(), 0, count));
     }
 
+    @Test
+    public void decodeDeltaBeyondRowDoesNotOverrun() {
+        // Delta opcode (00 02 dx dy) with an x displacement that runs past the row and a y displacement,
+        // followed by end-of-bitmap (previously threw ArrayIndexOutOfBoundsException).
+        byte[] rle = {
+                0x00, 0x02, (byte) 0xFF, 0x01, // delta dx=255, dy=1
+                0x00, 0x01,                    // end of bitmap
+        };
+
+        Decoder decoder = new RLE4Decoder(8); // row length 4 bytes
+        ByteBuffer buffer = ByteBuffer.allocate(64);
+
+        assertDoesNotThrow(() -> decoder.decode(new ByteArrayInputStream(rle), buffer));
+    }
+
     private void skipFully(final InputStream stream, final long toSkip) throws IOException {
         long skipped = 0;
         while (skipped < toSkip) {
