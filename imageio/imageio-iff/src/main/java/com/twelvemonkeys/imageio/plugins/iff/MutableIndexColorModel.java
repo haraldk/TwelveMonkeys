@@ -68,7 +68,8 @@ final class MutableIndexColorModel extends ColorModel {
     }
 
     private static int[] getRGBs(final IndexColorModel colorModel) {
-        int[] rgbs = new int[colorModel.getMapSize()];
+        // The pixel index is a byte, size the table to the full range as a too-small CMAP is allowed
+        int[] rgbs = new int[Math.max(256, colorModel.getMapSize())];
         colorModel.getRGBs(rgbs);
         return rgbs;
     }
@@ -111,7 +112,10 @@ final class MutableIndexColorModel extends ColorModel {
     }
     
     private void updateRGB(int index, int rgb) {
-        rgbs[index] = rgb;
+        // Ignore out-of-bounds indexes, as the spec says extra registers should be ignored
+        if (index >= 0 && index < rgbs.length) {
+            rgbs[index] = rgb;
+        }
     }
 
     @SuppressWarnings("unused")

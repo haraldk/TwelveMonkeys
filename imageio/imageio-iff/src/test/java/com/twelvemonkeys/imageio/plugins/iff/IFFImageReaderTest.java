@@ -34,10 +34,14 @@ import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import javax.imageio.ImageIO;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.IndexColorModel;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -149,6 +153,77 @@ public class IFFImageReaderTest extends ImageReaderAbstractTest<IFFImageReader> 
             catch (AssertionError err) {
                 throw new AssertionError("Color " + i + " " + err.getMessage(), err);
             }
+        }
+    }
+
+    @Test
+    public void testMultiPaletteShortColorMap() throws IOException {
+        // SHAM ILBM with 8 bitplanes but only a 2-entry CMAP
+        int width = 16;
+        int height = 1;
+        int bitplanes = 8;
+        int planeWidth = 2 * ((width + 15) / 16);
+
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(bytes);
+
+        out.writeInt(IFF.CHUNK_FORM);
+        out.writeInt(0); // FORM length, patched below
+        out.writeInt(IFF.TYPE_ILBM);
+
+        out.writeInt(IFF.CHUNK_BMHD);
+        out.writeInt(20);
+        out.writeShort(width);
+        out.writeShort(height);
+        out.writeShort(0);
+        out.writeShort(0);
+        out.writeByte(bitplanes);
+        out.writeByte(0);
+        out.writeByte(0);
+        out.writeByte(0);
+        out.writeShort(0);
+        out.writeByte(1);
+        out.writeByte(1);
+        out.writeShort(width);
+        out.writeShort(height);
+
+        out.writeInt(IFF.CHUNK_CMAP);
+        out.writeInt(6);
+        out.writeByte(0);
+        out.writeByte(0);
+        out.writeByte(0);
+        out.writeByte(255);
+        out.writeByte(255);
+        out.writeByte(255);
+
+        out.writeInt(IFF.CHUNK_SHAM);
+        out.writeInt(2);
+        out.writeShort(0); // version
+
+        byte[] body = new byte[bitplanes * planeWidth];
+        Arrays.fill(body, (byte) 0xff); // every pixel index = 255
+        out.writeInt(IFF.CHUNK_BODY);
+        out.writeInt(body.length);
+        out.write(body);
+
+        out.flush();
+        byte[] data = bytes.toByteArray();
+        int formLength = data.length - 8;
+        data[4] = (byte) (formLength >>> 24);
+        data[5] = (byte) (formLength >>> 16);
+        data[6] = (byte) (formLength >>> 8);
+        data[7] = (byte) formLength;
+
+        IFFImageReader reader = createReader();
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
+            reader.setInput(input);
+            BufferedImage image = reader.read(0);
+            assertNotNull(image);
+            assertEquals(width, image.getWidth());
+            assertEquals(height, image.getHeight());
+        }
+        finally {
+            reader.dispose();
         }
     }
 }
