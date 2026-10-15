@@ -241,6 +241,11 @@ final class TGAHeader {
         header.colorMapSize = imageInput.readUnsignedShort(); // number of colors, not bytes..?
         header.colorMapDepth = imageInput.readUnsignedByte(); // 15, 16, 24 or 32!
 
+        if (header.colorMapType == TGA.COLORMAP_PALETTE && header.colorMapDepth != 15 && header.colorMapDepth != 16
+                && header.colorMapDepth != 24 && header.colorMapDepth != 32) {
+            throw new IIOException("Unsupported color map depth: " + header.colorMapDepth);
+        }
+
         // Image specification
         header.x = imageInput.readUnsignedShort();
         header.y = imageInput.readUnsignedShort();
@@ -287,20 +292,24 @@ final class TGAHeader {
     }
 
     private static IndexColorModel readColorMap(final DataInput stream, final TGAHeader header) throws IOException {
-        int size = header.colorMapSize;
         int depth = header.colorMapDepth;
-        int bytes = (depth + 7) / 8;
+        int bytesPerEntry = (depth + 7) / 8;
 
-        byte[] cmap = new byte[size * bytes];
-        stream.readFully(cmap);
+        // colorMapStart is the index of the first stored entry, entries below it are left empty
+        int fullTableSize = header.colorMapStart + header.colorMapSize;
+        byte[] cmap = new byte[fullTableSize * bytesPerEntry];
+
+        int cmapOffset = header.colorMapStart * bytesPerEntry;
+        stream.readFully(cmap, cmapOffset, cmap.length - cmapOffset);
 
         boolean hasAlpha;
 
         switch (depth) {
+            case 15:
             case 16:
                 // Expand 16 (15) bit to 24 bit RGB
                 byte[] temp = cmap;
-                cmap = new byte[size * 3];
+                cmap = new byte[fullTableSize * 3];
 
                 for (int i = 0; i < temp.length / 2; i++) {
                     // TODO: Handle attribute bit (A)??
@@ -339,6 +348,6 @@ final class TGAHeader {
                 throw new IIOException("Unsupported color map depth: " + header.colorMapDepth);
         }
 
-        return new IndexColorModel(header.pixelDepth, size, cmap, header.colorMapStart, hasAlpha);
+        return new IndexColorModel(header.pixelDepth, fullTableSize, cmap, 0, hasAlpha);
     }
 }
