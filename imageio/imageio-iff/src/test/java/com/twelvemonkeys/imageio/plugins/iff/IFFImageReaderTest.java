@@ -158,9 +158,7 @@ public class IFFImageReaderTest extends ImageReaderAbstractTest<IFFImageReader> 
 
     @Test
     public void testMultiPaletteShortColorMap() throws IOException {
-        // Multi-palette (SHAM) ILBM declaring 8 bitplanes but only a 2-entry CMAP.
-        // Pixel indices reach 255, beyond the color map, which used to index the
-        // mutable palette out of bounds during RGB conversion.
+        // SHAM ILBM with 8 bitplanes but only a 2-entry CMAP
         int width = 16;
         int height = 1;
         int bitplanes = 8;

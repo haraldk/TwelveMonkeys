@@ -68,10 +68,7 @@ final class MutableIndexColorModel extends ColorModel {
     }
 
     private static int[] getRGBs(final IndexColorModel colorModel) {
-        // The multi-palette pixel index is a full byte, and SHAM/CTBL/PCHG register indices
-        // can exceed the number of CMAP entries. Size the table to the full byte range (like
-        // java.awt.image.IndexColorModel) so missing entries resolve to 0 instead of indexing
-        // out of bounds. A too-small CMAP is explicitly allowed by the ILBM spec.
+        // The pixel index is a byte, size the table to the full range as a too-small CMAP is allowed
         int[] rgbs = new int[Math.max(256, colorModel.getMapSize())];
         colorModel.getRGBs(rgbs);
         return rgbs;
@@ -115,9 +112,7 @@ final class MutableIndexColorModel extends ColorModel {
     }
     
     private void updateRGB(int index, int rgb) {
-        // Register indices come straight from the palette-change chunks and may point past
-        // the table (e.g. a PCHG maxReg far larger than the CMAP). Ignore those, as the spec
-        // says extra registers should be ignored.
+        // Ignore out-of-bounds indexes, as the spec says extra registers should be ignored
         if (index >= 0 && index < rgbs.length) {
             rgbs[index] = rgb;
         }
