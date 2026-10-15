@@ -37,6 +37,7 @@
         <module>imageio-icns</module>
         <module>imageio-iff</module>
         <module>imageio-jpeg</module>
+        <module>imageio-jpegxl</module>
         <module>imageio-pcx</module>
         <module>imageio-pdf</module>
         <module>imageio-pict</module>
