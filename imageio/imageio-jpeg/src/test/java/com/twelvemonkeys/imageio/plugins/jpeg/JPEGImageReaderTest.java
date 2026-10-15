@@ -291,6 +291,54 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
     }
 
     @Test
+    public void testMalformedHuffmanTableTooManyValues() throws IOException {
+        // Crafted file with a DHT segment whose code-length count (L[0]) exceeds the
+        // reader's per-length value array capacity. The count must not be used to index
+        // the value array unchecked (was: ArrayIndexOutOfBoundsException from HuffmanTable.read).
+        byte[] data = jpegWithBogusDHT();
+
+        JPEGImageReader reader = createReader();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
+            reader.setInput(stream);
+
+            assertThrows(IIOException.class, () -> reader.read(0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static byte[] jpegWithBogusDHT() throws IOException {
+        ByteArrayOutputStream base = new ByteArrayOutputStream();
+        assertTrue(ImageIO.write(new BufferedImage(16, 16, BufferedImage.TYPE_3BYTE_BGR), "JPEG", base));
+        byte[] bytes = base.toByteArray();
+
+        ByteArrayOutputStream merged = new ByteArrayOutputStream();
+        merged.write(bytes, 0, 2); // SOI
+
+        // DHT for a single DC table (class 0, id 0) where the number of codes of length 1
+        // is 255, larger than the per-length value array the reader allocates.
+        int count = 255;
+        int length = 2 /* length field */ + 1 /* Tc/Th */ + 16 /* L[1..16] */ + count /* V values */;
+        merged.write(0xFF);
+        merged.write(0xC4); // DHT
+        merged.write((length >> 8) & 0xFF);
+        merged.write(length & 0xFF);
+        merged.write(0x00); // Tc/Th: class 0 (DC), table 0
+        merged.write(count); // L[0]
+        for (int i = 1; i < 16; i++) {
+            merged.write(0x00); // L[1..15]
+        }
+        for (int i = 0; i < count; i++) {
+            merged.write(0x00); // V values
+        }
+
+        merged.write(bytes, 2, bytes.length - 2); // Rest of the JPEG
+
+        return merged.toByteArray();
+    }
+
+    @Test
     public void testTruncatedICCProfile() throws IOException {
         // File contains single 'ICC_PROFILE' chunk, with a truncated (32 000 bytes) "Europe ISO Coated FOGRA27" ICC profile (by Adobe).
         // Profile should have been about 550 000 bytes, split into multiple chunks. Written by GIMP 2.6.11

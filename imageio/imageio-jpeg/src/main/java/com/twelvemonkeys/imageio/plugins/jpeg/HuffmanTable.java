@@ -157,6 +157,9 @@ final class HuffmanTable extends Segment {
             }
 
             for (int i = 0; i < 16; i++) {
+                if (table.l[t][c][i] > table.v[t][c][i].length) {
+                    throw new IIOException("JPEG Huffman Table format error, too many values for code length " + (i + 1) + ": " + table.l[t][c][i]);
+                }
                 for (int j = 0; j < table.l[t][c][i]; j++) {
                     if (count > length) {
                         throw new IIOException("JPEG Huffman Table format error");
