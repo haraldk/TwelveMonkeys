@@ -165,6 +165,10 @@ public final class SGIImageReader extends ImageReaderBase {
             processWarningOccurred(String.format("Unsupported color mode: %d, colors may look incorrect", header.getColorMode()));
         }
 
+        if (header.getMaxValue() <= header.getMinValue()) {
+            processWarningOccurred(String.format("Invalid pixel value range (min: %d, max: %d), values will not be normalized", header.getMinValue(), header.getMaxValue()));
+        }
+
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
@@ -336,7 +340,7 @@ public final class SGIImageReader extends ImageReaderBase {
         int minValue = header.getMinValue();
         int maxValue = header.getMaxValue();
 
-        if (minValue != 0 || maxValue != 0xff) {
+        if ((minValue != 0 || maxValue != 0xff) && maxValue > minValue) {
             // Normalize
             for (int i = start; i < length; i++) {
                 rowData[i] = (byte) ((((rowData[i] & 0xff) - minValue) * 0xff) / (maxValue - minValue));
@@ -348,7 +352,7 @@ public final class SGIImageReader extends ImageReaderBase {
         int minValue = header.getMinValue();
         int maxValue = header.getMaxValue();
 
-        if (minValue != 0 || maxValue != 0xffff) {
+        if ((minValue != 0 || maxValue != 0xffff) && maxValue > minValue) {
             // Normalize
             for (int i = start; i < length; i++) {
                 rowData[i] = (short) ((((rowData[i] & 0xffff) - minValue) * 0xffff) / (maxValue - minValue));

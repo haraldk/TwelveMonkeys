@@ -34,12 +34,16 @@ import com.twelvemonkeys.image.GrayColorModel;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import javax.imageio.ImageIO;
+import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -50,6 +54,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 /**
  * SGIImageReaderTest
@@ -203,6 +210,80 @@ public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> 
             assertEquals(0, buffer.getElem(0), "16-bit offset PixMin value should be black");
             assertEquals(32767, buffer.getElem(1), "16-bit offset mid value should normalize correctly");
             assertEquals(65535, buffer.getElem(2), "16-bit offset PixMax value should normalize to white");
+
+            reader.dispose();
+        }
+    }
+
+    // Builds a minimal, uncompressed single-channel SGI with the given bytes-per-pixel and PixMin/PixMax.
+    private static byte[] grayScaleSGI(int bytesPerPixel, int width, int pixMin, int pixMax, byte[] pixelData) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(bytes);
+        out.writeShort(SGI.MAGIC);
+        out.writeByte(SGI.COMPRESSION_NONE);
+        out.writeByte(bytesPerPixel);
+        out.writeShort(2);         // dimensions
+        out.writeShort(width);
+        out.writeShort(1);         // height
+        out.writeShort(1);         // channels
+        out.writeInt(pixMin);
+        out.writeInt(pixMax);
+        out.writeInt(0);           // ignored
+        out.write(new byte[80]);   // name
+        out.writeInt(0);           // colorMode
+        out.write(new byte[404]);  // padding
+        out.write(pixelData);
+        return bytes.toByteArray();
+    }
+
+    @Test
+    public void testDegenerate8BitRangeDoesNotDivideByZero() throws IOException {
+        // PixMin == PixMax (a constant-valued image) used to divide by (PixMax - PixMin) == 0,
+        // throwing ArithmeticException out of read(). Values are left unscaled instead.
+        byte[] data = grayScaleSGI(1, 2, 100, 100, new byte[] {10, (byte) 250});
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
+            SGIImageReader reader = createReader();
+            reader.setInput(input);
+
+            IIOReadWarningListener listener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(listener);
+
+            BufferedImage image = reader.read(0);
+            assertNotNull(image);
+            verify(listener, times(1)).warningOccurred(eq(reader), contains("Invalid pixel value range"));
+
+            DataBuffer buffer = image.getRaster().getDataBuffer();
+            assertEquals(10, buffer.getElem(0));
+            assertEquals(250, buffer.getElem(1));
+
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testDegenerate16BitRangeDoesNotDivideByZero() throws IOException {
+        // Same degenerate PixMin == PixMax case for the 16-bit path.
+        ByteArrayOutputStream pixels = new ByteArrayOutputStream();
+        DataOutputStream pixelOut = new DataOutputStream(pixels);
+        pixelOut.writeShort(100);
+        pixelOut.writeShort(50000);
+        byte[] data = grayScaleSGI(2, 2, 1000, 1000, pixels.toByteArray());
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
+            SGIImageReader reader = createReader();
+            reader.setInput(input);
+
+            IIOReadWarningListener listener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(listener);
+
+            BufferedImage image = reader.read(0);
+            assertNotNull(image);
+            verify(listener, times(1)).warningOccurred(eq(reader), contains("Invalid pixel value range"));
+
+            DataBuffer buffer = image.getRaster().getDataBuffer();
+            assertEquals(100, buffer.getElem(0));
+            assertEquals(50000, buffer.getElem(1));
 
             reader.dispose();
         }
