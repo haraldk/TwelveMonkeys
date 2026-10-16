@@ -167,7 +167,6 @@
                         <id>attach-sources</id>
                         <goals>
                             <goal>jar-no-fork</goal>
-                            <goal>test-jar</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -200,16 +199,6 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-jar-plugin</artifactId>
                     <version>3.5.1</version>
-                    <inherited>true</inherited>
-                    <executions>
-                        <execution>
-                            <phase>package</phase>
-                            <id>attach-tests</id>
-                            <goals>
-                                <goal>test-jar</goal>
-                            </goals>
-                        </execution>
-                    </executions>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.felix</groupId>
@@ -257,9 +246,7 @@
                         <target>8</target>
                         <showDeprecation>false</showDeprecation>
                         <debuglevel>source,lines</debuglevel>
-                        <compilerArguments>
-                            <encoding>iso-8859-1</encoding>
-                        </compilerArguments>
+                        <encoding>iso-8859-1</encoding>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -267,12 +254,9 @@
                     <artifactId>maven-surefire-plugin</artifactId>
                     <version>3.6.0</version>
                     <configuration>
-                        <systemProperties>
-                            <property>
-                                <name>java.awt.headless</name>
-                                <value>true</value>
-                            </property>
-                        </systemProperties>
+                        <systemPropertyVariables>
+                            <java.awt.headless>true</java.awt.headless>
+                        </systemPropertyVariables>
                     </configuration>
                 </plugin>
                 <plugin>
@@ -316,6 +300,11 @@
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
                     <version>3.6.0</version>
+                </plugin>
+                <plugin>
+                    <groupId>org.sonatype.central</groupId>
+                    <artifactId>central-publishing-maven-plugin</artifactId>
+                    <version>0.11.0</version>
                 </plugin>
             </plugins>
 
