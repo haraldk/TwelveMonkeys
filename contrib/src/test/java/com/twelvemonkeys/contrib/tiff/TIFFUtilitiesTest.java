@@ -67,9 +67,9 @@ public class TIFFUtilitiesTest {
     @Test
     public void testMerge() throws IOException {
         // Files from ImageIO TIFF Plugin
-        InputStream stream1 = getClassLoaderResource("/tiff/ccitt/group3_1d.tif").openStream();
-        InputStream stream2 = getClassLoaderResource("/tiff/ccitt/group3_2d.tif").openStream();
-        InputStream stream3 = getClassLoaderResource("/tiff/ccitt/group4.tif").openStream();
+        InputStream stream1 = getClassLoaderResource("/tiff/group3_1d.tif").openStream();
+        InputStream stream2 = getClassLoaderResource("/tiff/group3_2d.tif").openStream();
+        InputStream stream3 = getClassLoaderResource("/tiff/group4.tif").openStream();
 
         File file1 = File.createTempFile("imageiotest", ".tif");
         File file2 = File.createTempFile("imageiotest", ".tif");
@@ -107,7 +107,7 @@ public class TIFFUtilitiesTest {
 
     @Test
     public void testSplit() throws IOException {
-        InputStream inputStream = getClassLoaderResource("/contrib/tiff/multipage.tif").openStream();
+        InputStream inputStream = getClassLoaderResource("/tiff/multipage.tif").openStream();
         File inputFile = File.createTempFile("imageiotest", "tif");
         byte[] data = FileUtil.read(inputStream);
         FileUtil.write(inputFile, data);
@@ -136,7 +136,7 @@ public class TIFFUtilitiesTest {
     public void testRotate() throws IOException, XPathExpressionException {
         ImageReader reader = ImageIO.getImageReadersByFormatName("TIF").next();
 
-        InputStream inputStream = getClassLoaderResource("/contrib/tiff/multipage.tif").openStream();
+        InputStream inputStream = getClassLoaderResource("/tiff/multipage.tif").openStream();
         File inputFile = File.createTempFile("imageiotest", ".tif");
         byte[] data = FileUtil.read(inputStream);
         FileUtil.write(inputFile, data);
@@ -184,7 +184,7 @@ public class TIFFUtilitiesTest {
 
     @Test
     public void testApplyOrientation() throws IOException {
-        InputStream inputStream = getClassLoaderResource("/contrib/tiff/multipage.tif").openStream();
+        InputStream inputStream = getClassLoaderResource("/tiff/multipage.tif").openStream();
         File inputFile = File.createTempFile("imageiotest", "tif");
         byte[] data = FileUtil.read(inputStream);
         FileUtil.write(inputFile, data);
@@ -209,10 +209,10 @@ public class TIFFUtilitiesTest {
                 "/tiff/old-style-jpeg-bogus-jpeginterchangeformatlength.tif", // InterchangeFormat before StripOffset, length not including StripOffset
                 "/tiff/old-style-jpeg-no-jpeginterchangeformatlength.tif", // missing JPEGInterChangeFormatLength and JPEGInterchangeFormat == StipOffset
                 "/tiff/old-style-jpeg-multiple-strips.tif", // InterchangeFormat with multiple strips
-                "/contrib/tiff/old-style-jpeg-invalid-tables.tif", // AC/DC Tables are invalid (to long) and lie within the JPEGInterchangeFormat stream
-                "/contrib/tiff/smallliz.tif", // InterchangeFormat contains whole JPEG, ByteStrip only raw ImageData after SOS
-                "/contrib/tiff/WangJPEG.tif", // multiple strips, first strip contains SOS
-                "/contrib/tiff/zackthecat.tif" // No JPEGInterchangeFormat, ByteStrip contains only raw image data
+                "/tiff/old-style-jpeg-invalid-tables.tif", // AC/DC Tables are invalid (to long) and lie within the JPEGInterchangeFormat stream
+                "/tiff/smallliz.tif", // InterchangeFormat contains whole JPEG, ByteStrip only raw ImageData after SOS
+                "/tiff/WangJPEG.tif", // multiple strips, first strip contains SOS
+                "/tiff/zackthecat.tif" // No JPEGInterchangeFormat, ByteStrip contains only raw image data
         };
 
         for (String testFile : testFiles) {
