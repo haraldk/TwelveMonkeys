@@ -34,6 +34,7 @@ import com.twelvemonkeys.image.GrayColorModel;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import javax.imageio.ImageIO;
+import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
@@ -44,7 +45,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -54,6 +54,9 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.*;
 
 /**
  * SGIImageReaderTest
@@ -243,12 +246,12 @@ public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> 
             SGIImageReader reader = createReader();
             reader.setInput(input);
 
-            List<String> warnings = new ArrayList<>();
-            reader.addIIOReadWarningListener((source, warning) -> warnings.add(warning));
+            IIOReadWarningListener listener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(listener);
 
             BufferedImage image = reader.read(0);
             assertNotNull(image);
-            assertEquals(1, warnings.size());
+            verify(listener, times(1)).warningOccurred(eq(reader), contains("Invalid pixel value range"));
 
             DataBuffer buffer = image.getRaster().getDataBuffer();
             assertEquals(10, buffer.getElem(0));
@@ -271,12 +274,12 @@ public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> 
             SGIImageReader reader = createReader();
             reader.setInput(input);
 
-            List<String> warnings = new ArrayList<>();
-            reader.addIIOReadWarningListener((source, warning) -> warnings.add(warning));
+            IIOReadWarningListener listener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(listener);
 
             BufferedImage image = reader.read(0);
             assertNotNull(image);
-            assertEquals(1, warnings.size());
+            verify(listener, times(1)).warningOccurred(eq(reader), contains("Invalid pixel value range"));
 
             DataBuffer buffer = image.getRaster().getDataBuffer();
             assertEquals(100, buffer.getElem(0));
