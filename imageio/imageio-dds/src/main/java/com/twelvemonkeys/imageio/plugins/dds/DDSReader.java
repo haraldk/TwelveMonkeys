@@ -86,10 +86,14 @@ final class DDSReader {
         // offset buffer to index mipmap image
         byte[] buffer = null;
         for (int i = 0; i <= imageIndex; i++) {
-            int len = getBufferLength(type, i);
+            long len = getBufferLength(type, i);
 
             if (i == imageIndex) {
-                buffer = new byte[len];
+                if (len > Integer.MAX_VALUE) {
+                    throw new IIOException("Image data too large: " + len);
+                }
+
+                buffer = new byte[(int) len];
                 imageInput.readFully(buffer);
             }
             else {
@@ -136,7 +140,7 @@ final class DDSReader {
         }
     }
 
-    private int getBufferLength(DDSType type, int imageIndex) throws IIOException {
+    private long getBufferLength(DDSType type, int imageIndex) throws IIOException {
         int width = header.getWidth(imageIndex);
         int height = header.getHeight(imageIndex);
 
@@ -146,7 +150,7 @@ final class DDSReader {
             case DXT3:
             case DXT4:
             case DXT5:
-                return type.blockSize() * ((width + 3) / 4) * ((height + 3) / 4);
+                return (long) type.blockSize() * ((width + 3) / 4) * ((height + 3) / 4);
             case A1R5G5B5:
             case X1R5G5B5:
             case A4R4G4B4:
@@ -157,7 +161,7 @@ final class DDSReader {
             case X8B8G8R8:
             case A8R8G8B8:
             case X8R8G8B8:
-                return type.blockSize() * width * height;
+                return (long) type.blockSize() * width * height;
             default:
                 throw new IIOException("Unknown type: " + type);
         }
