@@ -127,13 +127,14 @@ public final class DDSImageReader extends ImageReaderBase {
 
         processImageStarted(imageIndex);
 
-        DDSReader dds = new DDSReader(header);
-        int[] pixels = dds.read(imageInput, imageIndex);
-
         int width = getWidth(imageIndex);
         int height = getHeight(imageIndex);
 
         validateSourceSize(getRawImageType(imageIndex), width, height, imageInput.length(), MAX_EXPANSION_RATIO);
+
+        DDSReader dds = new DDSReader(header);
+        int[] pixels = dds.read(imageInput, imageIndex);
+
         BufferedImage destination = getDestination(param, getImageTypes(imageIndex), width, height);
 
         Rectangle srcRegion = new Rectangle();
