@@ -34,11 +34,13 @@ import com.twelvemonkeys.io.MemoryCacheSeekableStream;
 
 import javax.imageio.stream.MemoryCacheImageInputStream;
 import java.awt.image.ImageProducer;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -185,5 +187,39 @@ public class CompoundDocumentTest {
 
         assertNotNull(catalog);
         assertNotNull(catalog.getInputStream(), "Input stream may not be null");
+    }
+
+    @Test
+    public void testCyclicSIdChain() throws IOException {
+        CompoundDocument document = new CompoundDocument(new ByteArrayInputStream(createDocument(1)));
+        assertThrows(CorruptDocumentException.class, document::getRootEntry);
+    }
+
+    @Test
+    public void testSIdChainOutOfRange() throws IOException {
+        CompoundDocument document = new CompoundDocument(new ByteArrayInputStream(createDocument(5000)));
+        assertThrows(CorruptDocumentException.class, document::getRootEntry);
+    }
+
+    // Minimal document with a single SAT sector, where the directory chain starts at sector 1 and SAT[1] is nextSId
+    private static byte[] createDocument(final int nextSId) {
+        ByteBuffer buffer = ByteBuffer.allocate(512 * 3).order(ByteOrder.LITTLE_ENDIAN);
+        buffer.put(CompoundDocument.MAGIC);
+        buffer.position(28);
+        buffer.putShort((short) 0xfffe).putShort((short) 9).putShort((short) 6);
+        buffer.position(44);
+        buffer.putInt(1).putInt(1); // SAT size, directory SId
+        buffer.position(56);
+        buffer.putInt(4096).putInt(-2).putInt(0).putInt(-2).putInt(0); // Min stream size, no short SAT, no extra master SAT
+        buffer.putInt(0); // Master SAT: SAT in sector 0
+        for (int i = 1; i < 109; i++) {
+            buffer.putInt(-1);
+        }
+        buffer.putInt(-3).putInt(nextSId);
+        for (int i = 2; i < 128; i++) {
+            buffer.putInt(-1);
+        }
+
+        return buffer.array();
     }
 }

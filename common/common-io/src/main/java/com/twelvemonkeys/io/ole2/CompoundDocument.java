@@ -420,6 +420,11 @@ public final class CompoundDocument implements AutoCloseable {
 
         int sid = pSId;
         while (sid != END_OF_CHAIN_SID && sid != FREE_SID) {
+            // A valid chain visits each sector at most once
+            if (sid < 0 || sid >= sat.length || chain.length() >= sat.length) {
+                throw new CorruptDocumentException("Invalid SId chain starting at: " + pSId);
+            }
+
             chain.addSID(sid);
             sid = sat[sid];
         }
