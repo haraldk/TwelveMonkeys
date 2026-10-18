@@ -98,6 +98,19 @@ public class JPEGSegmentImageInputStreamTest {
     }
 
     @Test
+    public void testStreamBad16BitDQTLength() throws IOException {
+        // DQT declaring 16 bit precision but a length too short for a full table (129 bytes)
+        // used to make the downsampling replacement read past its buffer (AIOOBE)
+        byte[] bytes = new byte[132];
+        bytes[0] = (byte) 0xFF; bytes[1] = (byte) 0xD8; // SOI
+        bytes[2] = (byte) 0xFF; bytes[3] = (byte) 0xDB; // DQT
+        bytes[4] = 0x00; bytes[5] = 0x7E;               // length 126
+        bytes[6] = 0x10;                                // Tq 0, Pq 1 (16 bit)
+        ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(new ByteArrayInputStream(bytes)));
+        assertThrows(IIOException.class, () -> stream.readFully(new byte[132]));
+    }
+
+    @Test
     public void testStreamRealData() throws IOException {
         ImageInputStream stream = new JPEGSegmentImageInputStream(ImageIO.createImageInputStream(getClassLoaderResource("/jpeg/invalid-icc-duplicate-sequence-numbers-rgb-internal-kodak-srgb-jfif.jpg")));
         assertEquals(JPEG.SOI, stream.readUnsignedShort());
