@@ -517,7 +517,11 @@ final class JPEGSegmentImageInputStream extends ImageInputStreamImpl {
         }
 
         private static byte[] createMarkerFixedLength(final int length, final int qtInfo, final ImageInputStream stream) throws IOException {
-            int numQTs = length / 128;
+            // A 16 bit table is 1 info byte + 64 * 2 value bytes = 129 bytes, after the 2 byte marker + 2 byte length
+            int numQTs = (length - 4) / 129;
+            if (numQTs < 1) {
+                throw new IIOException("Bad 16 bit DQT segment length: " + length);
+            }
             int newSegmentLength = 2 + (1 + 64) * numQTs; // Len + (qtInfo + qtSize) * numQTs
 
             byte[] replacementData = new byte[length];
