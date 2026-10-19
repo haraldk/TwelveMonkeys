@@ -173,6 +173,12 @@ final class JPEGLosslessDecoder {
 
             scan = readScan();
             numComp = scan.components.length;
+
+            // Ns indexes the fixed per-component tables below, reject counts that don't fit
+            if (numComp < 1 || numComp > nBlock.length) {
+                throw new IIOException("Unsupported number of components in scan: " + numComp);
+            }
+
             selection = scan.spectralSelStart;
 
             final Scan.Component[] scanComps = scan.components;

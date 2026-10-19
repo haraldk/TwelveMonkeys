@@ -2193,4 +2193,48 @@ public class JPEGImageReaderTest extends ImageReaderAbstractTest<JPEGImageReader
              reader.dispose();
          }
     }
+
+    @Test
+    public void testMalformedLosslessScanTooManyComponents() throws IOException {
+        // SOS with Ns = 11 scan components, more than the lossless decoder's fixed
+        // per-component tables (size 10). All reference the single frame component, so
+        // getComponentSpec succeeds and the count is used unchecked to index them
+        // (was: ArrayIndexOutOfBoundsException from JPEGLosslessDecoder.decode).
+        ByteArrayOutputStream data = new ByteArrayOutputStream();
+        int ns = 11;
+
+        data.write(0xFF); data.write(0xD8); // SOI
+
+        // SOF3 (lossless), 8 bit, 1x1, single grayscale component with id 1
+        data.write(0xFF); data.write(0xC3);
+        data.write(0x00); data.write(0x0B);
+        data.write(0x08); // precision
+        data.write(0x00); data.write(0x01); // lines
+        data.write(0x00); data.write(0x01); // samples/line
+        data.write(0x01); // components in frame
+        data.write(0x01); data.write(0x11); data.write(0x00); // id=1, sampling 1x1, qtSel 0
+
+        // SOS with ns components, all selecting frame component 1
+        int sosLength = 6 + ns * 2;
+        data.write(0xFF); data.write(0xDA);
+        data.write((sosLength >> 8) & 0xFF); data.write(sosLength & 0xFF);
+        data.write(ns);
+        for (int i = 0; i < ns; i++) {
+            data.write(0x01); // scan component selector
+            data.write(0x00); // dc/ac table selector
+        }
+        data.write(0x01); data.write(0x00); data.write(0x00); // Ss, Se, Ah/Al
+
+        data.write(0xFF); data.write(0xD9); // EOI
+
+        JPEGImageReader reader = createReader();
+        try (ImageInputStream stream = ImageIO.createImageInputStream(new ByteArrayInputStream(data.toByteArray()))) {
+            reader.setInput(stream);
+
+            assertThrows(IIOException.class, () -> reader.read(0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
 }
