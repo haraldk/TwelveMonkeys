@@ -1021,6 +1021,15 @@ public final class TIFFImageReader extends ImageReaderBase {
         int tilesAcross = (width + stripTileWidth - 1) / stripTileWidth;
         int tilesDown = (height + stripTileHeight - 1) / stripTileHeight;
 
+        long stripTileCount = (long) tilesAcross * tilesDown * (planarConfiguration == TIFFExtension.PLANARCONFIG_PLANAR ? rawType.getNumBands() : 1);
+        if (stripTileOffsets.length < stripTileCount) {
+            throw new IIOException(String.format("Too few StripOffsets/TileOffsets for TIFF: %d, expected %d", stripTileOffsets.length, stripTileCount));
+        }
+        if (stripTileByteCounts != null && stripTileByteCounts.length < stripTileCount) {
+            stripTileByteCounts = null;
+            processWarningOccurred("Ignoring too few StripByteCounts/TileByteCounts for TIFF with compression: " + compression);
+        }
+
         // Raw type may contain extra samples
         WritableRaster rowRaster = rawType.createBufferedImage(stripTileWidth, 1).getRaster();
 

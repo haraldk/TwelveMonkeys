@@ -31,6 +31,8 @@
 package com.twelvemonkeys.imageio.plugins.tiff;
 
 import com.twelvemonkeys.imageio.color.ColorSpaces;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFF;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import javax.imageio.IIOException;
@@ -45,6 +47,7 @@ import java.awt.*;
 import java.awt.color.*;
 import java.awt.image.*;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Collections;
@@ -691,6 +694,68 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
                     assertRGBEquals("Expected white " + x + "," +  y, 0xffffffff, image.getRGB(x, y), 0);
                 }
             }
+        }
+    }
+
+    @Test
+    public void testReadTooFewStripOffsets() throws IOException {
+        TIFFImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(createTwoStripTIFF(1, 1))) {
+            reader.setInput(stream);
+
+            assertThrows(IIOException.class, () -> reader.read(0));
+        }
+    }
+
+    @Test
+    public void testReadTooFewStripByteCounts() throws IOException {
+        TIFFImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(createTwoStripTIFF(2, 1))) {
+            reader.setInput(stream);
+
+            IIOReadWarningListener warningListener = mock(IIOReadWarningListener.class);
+            reader.addIIOReadWarningListener(warningListener);
+
+            BufferedImage image = reader.read(0);
+
+            assertEquals(new Dimension(4, 2), new Dimension(image.getWidth(), image.getHeight()));
+            verify(warningListener).warningOccurred(eq(reader), contains("StripByteCounts"));
+        }
+    }
+
+    // 4x2 8 bit gray, RowsPerStrip 1 (two strips)
+    private static byte[] createTwoStripTIFF(int offsetCount, int byteCountCount) {
+        ByteBuffer buffer = ByteBuffer.allocate(256).order(ByteOrder.LITTLE_ENDIAN);
+        buffer.put((byte) 'I').put((byte) 'I').putShort((short) 42).putInt(8);
+        buffer.putShort((short) 9);
+        putEntry(buffer, TIFF.TAG_IMAGE_WIDTH, TIFF.TYPE_SHORT, 1, 4);
+        putEntry(buffer, TIFF.TAG_IMAGE_HEIGHT, TIFF.TYPE_SHORT, 1, 2);
+        putEntry(buffer, TIFF.TAG_BITS_PER_SAMPLE, TIFF.TYPE_SHORT, 1, 8);
+        putEntry(buffer, TIFF.TAG_COMPRESSION, TIFF.TYPE_SHORT, 1, TIFFBaseline.COMPRESSION_NONE);
+        putEntry(buffer, TIFF.TAG_PHOTOMETRIC_INTERPRETATION, TIFF.TYPE_SHORT, 1, TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO);
+        putEntry(buffer, TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, offsetCount, offsetCount == 1 ? 128 : 200);
+        putEntry(buffer, TIFF.TAG_SAMPLES_PER_PIXEL, TIFF.TYPE_SHORT, 1, 1);
+        putEntry(buffer, TIFF.TAG_ROWS_PER_STRIP, TIFF.TYPE_SHORT, 1, 1);
+        putEntry(buffer, TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, byteCountCount, byteCountCount == 1 ? 4 : 208);
+        buffer.putInt(0);
+
+        buffer.position(200);
+        buffer.putInt(128).putInt(132); // StripOffsets
+        buffer.putInt(4).putInt(4); // StripByteCounts
+
+        return buffer.array();
+    }
+
+    private static void putEntry(ByteBuffer buffer, int tag, short type, int count, int value) {
+        buffer.putShort((short) tag).putShort(type).putInt(count);
+
+        if (type == TIFF.TYPE_SHORT) {
+            buffer.putShort((short) value).putShort((short) 0);
+        }
+        else {
+            buffer.putInt(value);
         }
     }
 
