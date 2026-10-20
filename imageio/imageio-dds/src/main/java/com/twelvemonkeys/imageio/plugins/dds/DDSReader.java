@@ -140,13 +140,16 @@ final class DDSReader {
         int width = header.getWidth(imageIndex);
         int height = header.getHeight(imageIndex);
 
+        long length;
+
         switch (type) {
             case DXT1:
             case DXT2:
             case DXT3:
             case DXT4:
             case DXT5:
-                return type.blockSize() * ((width + 3) / 4) * ((height + 3) / 4);
+                length = (long) type.blockSize() * ((width + 3) / 4) * ((height + 3) / 4);
+                break;
             case A1R5G5B5:
             case X1R5G5B5:
             case A4R4G4B4:
@@ -157,10 +160,17 @@ final class DDSReader {
             case X8B8G8R8:
             case A8R8G8B8:
             case X8R8G8B8:
-                return type.blockSize() * width * height;
+                length = (long) type.blockSize() * width * height;
+                break;
             default:
                 throw new IIOException("Unknown type: " + type);
         }
+
+        if (length > Integer.MAX_VALUE) {
+            throw new IIOException("Image data too large: " + length);
+        }
+
+        return (int) length;
     }
 
 

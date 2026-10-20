@@ -31,9 +31,12 @@
 package com.twelvemonkeys.imageio.plugins.dds;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReader;
 import javax.imageio.metadata.IIOMetadata;
@@ -44,6 +47,8 @@ import javax.imageio.stream.ImageInputStream;
 
 import java.awt.Dimension;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -181,6 +186,25 @@ public class DDSImageReaderTest extends ImageReaderAbstractTest<DDSImageReader> 
             assertEquals(1, alphas.getLength());
             IIOMetadataNode alpha = (IIOMetadataNode) alphas.item(0);
             assertEquals("none", alpha.getAttribute("value"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    void readDimensionsTooLarge() throws IOException {
+        // 65536 x 65536 DXT5, block data length overflows int to 0
+        ByteBuffer dds = ByteBuffer.allocate(128).order(ByteOrder.LITTLE_ENDIAN);
+        dds.putInt(DDS.MAGIC).putInt(DDS.HEADER_SIZE).putInt(0x1007).putInt(65536).putInt(65536);
+        dds.position(76);
+        dds.putInt(DDS.PIXELFORMAT_SIZE).putInt(0x4).putInt(DDSType.DXT5.fourCC());
+
+        ImageReader reader = createReader();
+
+        try {
+            reader.setInput(new ByteArrayImageInputStream(dds.array()));
+            assertThrows(IIOException.class, () -> reader.read(0));
         }
         finally {
             reader.dispose();
