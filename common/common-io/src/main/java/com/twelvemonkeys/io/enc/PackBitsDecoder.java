@@ -33,6 +33,7 @@ package com.twelvemonkeys.io.enc;
 import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 
 /**
@@ -155,7 +156,7 @@ public final class PackBitsDecoder implements Decoder {
             }
             // else NOOP (-128)
         }
-        catch (IndexOutOfBoundsException e) {
+        catch (IndexOutOfBoundsException | BufferOverflowException e) {
             throw new DecodeException("Error in PackBits decompression, data seems corrupt", e);
         }
 

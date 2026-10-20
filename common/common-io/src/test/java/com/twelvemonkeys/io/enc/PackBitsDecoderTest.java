@@ -30,6 +30,13 @@
 
 package com.twelvemonkeys.io.enc;
 
+import org.junit.jupiter.api.Test;
+
+import java.io.ByteArrayInputStream;
+import java.nio.ByteBuffer;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 /**
  * PackBitsDecoderTest
  * <p/>
@@ -44,5 +51,13 @@ public class PackBitsDecoderTest extends DecoderAbstractTest {
 
     public Encoder createCompatibleEncoder() {
         return new PackBitsEncoder();
+    }
+
+    @Test
+    public void testDecodeReplicateRunLargerThanBuffer() {
+        // Run of 128 bytes, but only room for 2
+        ByteArrayInputStream stream = new ByteArrayInputStream(new byte[] {(byte) 0x81, 0x55});
+
+        assertThrows(DecodeException.class, () -> createDecoder().decode(stream, ByteBuffer.allocate(2)));
     }
 }
