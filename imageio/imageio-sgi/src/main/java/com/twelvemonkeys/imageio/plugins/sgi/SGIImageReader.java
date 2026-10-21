@@ -133,6 +133,9 @@ public final class SGIImageReader extends ImageReaderBase {
         // 1 channel: Gray, 2 channel: Gray + Alpha, 3 channel: RGB, 4 channel: RGBA (hopefully never CMYK...)
 
         int channels = header.getChannels();
+        if (channels < 1 || channels > 4) {
+            throw new IIOException("Unsupported number of channels: " + channels);
+        }
 
         ColorSpace cs = channels < 3 ? ColorSpace.getInstance(ColorSpace.CS_GRAY) : ColorSpace.getInstance(ColorSpace.CS_sRGB);
 
@@ -197,6 +200,12 @@ public final class SGIImageReader extends ImageReaderBase {
             scanlineLengths = new int[height * header.getChannels()];
             imageInput.readFully(scanlineOffsets, 0, scanlineOffsets.length);
             imageInput.readFully(scanlineLengths, 0, scanlineLengths.length);
+
+            for (int i = 0; i < scanlineOffsets.length; i++) {
+                if (scanlineOffsets[i] < 0 || scanlineLengths[i] < 0) {
+                    throw new IIOException(String.format("Invalid RLE scanline offset or length: %d, %d", scanlineOffsets[i], scanlineLengths[i]));
+                }
+            }
         }
         else {
             scanlineOffsets = null;

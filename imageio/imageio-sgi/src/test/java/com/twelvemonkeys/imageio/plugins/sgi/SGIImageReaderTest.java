@@ -33,6 +33,7 @@ package com.twelvemonkeys.imageio.plugins.sgi;
 import com.twelvemonkeys.image.GrayColorModel;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.event.IIOReadWarningListener;
 import javax.imageio.spi.ImageReaderSpi;
@@ -54,6 +55,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
@@ -284,6 +286,80 @@ public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> 
             DataBuffer buffer = image.getRaster().getDataBuffer();
             assertEquals(100, buffer.getElem(0));
             assertEquals(50000, buffer.getElem(1));
+
+            reader.dispose();
+        }
+    }
+
+    // Minimal 2x1 single-channel RLE SGI, with the given channel count and scanline offset/length table entries.
+    private static byte[] rleSGI(int channels, int offset, int length) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        DataOutputStream out = new DataOutputStream(bytes);
+        out.writeShort(SGI.MAGIC);
+        out.writeByte(SGI.COMPRESSION_RLE);
+        out.writeByte(1);          // bytes per pixel
+        out.writeShort(2);         // dimensions
+        out.writeShort(2);         // width
+        out.writeShort(1);         // height
+        out.writeShort(channels);
+        out.writeInt(0);
+        out.writeInt(255);
+        out.writeInt(0);           // ignored
+        out.write(new byte[80]);   // name
+        out.writeInt(0);           // colorMode
+        out.write(new byte[404]);  // padding
+        for (int i = 0; i < channels; i++) {
+            out.writeInt(offset);
+        }
+        for (int i = 0; i < channels; i++) {
+            out.writeInt(length);
+        }
+        out.write(new byte[] {(byte) 0x82, 10, 20, 0}); // literal run of 2, end
+        return bytes.toByteArray();
+    }
+
+    @Test
+    public void testRLE() throws IOException {
+        byte[] data = rleSGI(1, 520, 4);
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
+            SGIImageReader reader = createReader();
+            reader.setInput(input);
+
+            DataBuffer buffer = reader.read(0).getRaster().getDataBuffer();
+            assertEquals(10, buffer.getElem(0));
+            assertEquals(20, buffer.getElem(1));
+
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testRLENegativeScanlineOffset() throws IOException {
+        assertReadThrowsIIOException(rleSGI(1, -1, 4));
+    }
+
+    @Test
+    public void testRLENegativeScanlineLength() throws IOException {
+        assertReadThrowsIIOException(rleSGI(1, 520, -1));
+    }
+
+    @Test
+    public void testZeroChannels() throws IOException {
+        assertReadThrowsIIOException(rleSGI(0, 520, 4));
+    }
+
+    @Test
+    public void testTooManyChannels() throws IOException {
+        assertReadThrowsIIOException(rleSGI(5, 552, 4));
+    }
+
+    private void assertReadThrowsIIOException(byte[] data) throws IOException {
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
+            SGIImageReader reader = createReader();
+            reader.setInput(input);
+
+            assertThrows(IIOException.class, () -> reader.read(0));
 
             reader.dispose();
         }
