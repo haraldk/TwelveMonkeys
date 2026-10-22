@@ -38,6 +38,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -140,7 +141,7 @@ public final class BeanUtil {
                     // Not a number... Try String
                     // String -> Hashtable key -> getXXX(String str)
                     // Insert param and it's Class
-                    param[0] = between.toLowerCase();
+                    param[0] = between.toLowerCase(Locale.ROOT);
                     paramClass[0] = String.class;
                 }
             }

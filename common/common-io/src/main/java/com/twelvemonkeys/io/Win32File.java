@@ -34,6 +34,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.util.Locale;
 
 /**
  * Win32File
@@ -47,7 +48,7 @@ final class Win32File extends File {
     private static boolean isWindows() {
         try {
             String os = System.getProperty("os.name");
-            return os.toLowerCase().indexOf("windows") >= 0;
+            return os.toLowerCase(Locale.ROOT).indexOf("windows") >= 0;
         }
         catch (Throwable t) {
             // Ignore

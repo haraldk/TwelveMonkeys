@@ -34,6 +34,7 @@ import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Locale;
 
 /**
  * FileSystem
@@ -57,7 +58,7 @@ abstract class FileSystem {
         String os = System.getProperty("os.name");
         //System.out.println("os = " + os);
 
-        os = os.toLowerCase();
+        os = os.toLowerCase(Locale.ROOT);
         if (os.contains("windows")) {
             return new Win32FileSystem();
         }

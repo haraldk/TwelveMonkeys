@@ -30,6 +30,7 @@
 
 package com.twelvemonkeys.lang;
 
+import java.util.Locale;
 import java.util.Properties;
 
 /**
@@ -74,7 +75,7 @@ public final class Platform {
             throw new IllegalStateException("System property \"os.name\" == null");
         }
 
-        os = os.toLowerCase();
+        os = os.toLowerCase(Locale.ROOT);
 
         if (os.startsWith("windows")) {
             return OperatingSystem.Windows;
@@ -99,7 +100,7 @@ public final class Platform {
             throw new IllegalStateException("System property \"os.arch\" == null");
         }
 
-        arch = arch.toLowerCase();
+        arch = arch.toLowerCase(Locale.ROOT);
 
         if (pOsName == OperatingSystem.Windows && (arch.startsWith("x86") || arch.startsWith("i386"))) {
             return Architecture.X86;
@@ -250,7 +251,7 @@ public final class Platform {
 
         OperatingSystem(String pName, String pId) {
             name = pName;
-            id = pId != null ? pId : pName.toLowerCase();
+            id = pId != null ? pId : pName.toLowerCase(Locale.ROOT);
         }
 
         public String getName() {

@@ -46,6 +46,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.Locale;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
@@ -1169,7 +1170,7 @@ public final class StringUtil {
             if (field == null) {
                 // NOTE: The toLowerCase() on the next line will lose darkGray
                 // and lightGray...
-                field = colorClass.getField(pString.toLowerCase());
+                field = colorClass.getField(pString.toLowerCase(Locale.ROOT));
             }
 
             // Only try to get public final fields
@@ -1966,7 +1967,7 @@ public final class StringUtil {
                 }
 
                 // Append word
-                buf.append(pString.substring(lastPos, i).toLowerCase());
+                buf.append(pString.substring(lastPos, i).toLowerCase(Locale.ROOT));
                 if (previous != '-') {
                     buf.append('-');
                 }
@@ -1984,7 +1985,7 @@ public final class StringUtil {
                     // Sequence end
                     inCharSequence = false;
 
-                    buf.append(pString.substring(lastPos, i).toLowerCase());
+                    buf.append(pString.substring(lastPos, i).toLowerCase(Locale.ROOT));
                     if (current != '-') {
                         buf.append('-');
                     }
@@ -2000,7 +2001,7 @@ public final class StringUtil {
                 }
 
                 // Append word
-                buf.append(pString.substring(lastPos, i).toLowerCase());
+                buf.append(pString.substring(lastPos, i).toLowerCase(Locale.ROOT));
                 if (previous != '-') {
                     buf.append('-');
                 }
@@ -2024,7 +2025,7 @@ public final class StringUtil {
 
                 // NOTE: Special treatment! Last upper case, is first char in
                 // next word, not last char in this word
-                buf.append(pString.substring(lastPos, i - 1).toLowerCase());
+                buf.append(pString.substring(lastPos, i - 1).toLowerCase(Locale.ROOT));
                 if (current != '-') {
                     buf.append('-');
                 }
@@ -2034,11 +2035,11 @@ public final class StringUtil {
 
         if (buf != null) {
             // Append the rest
-            buf.append(pString.substring(lastPos).toLowerCase());
+            buf.append(pString.substring(lastPos).toLowerCase(Locale.ROOT));
             return buf.toString();
         }
         else {
-            return Character.isUpperCase(pString.charAt(0)) ? pString.toLowerCase() : pString;
+            return Character.isUpperCase(pString.charAt(0)) ? pString.toLowerCase(Locale.ROOT) : pString;
         }
     }
 
@@ -2122,14 +2123,14 @@ public final class StringUtil {
                     lastPos++;
                 }
 
-                buf.append(pString.substring(lastPos, i).toLowerCase());
+                buf.append(pString.substring(lastPos, i).toLowerCase(Locale.ROOT));
                 lastPos = i + 1;
             }
         }
 
         if (buf != null) {
             buf.append(Character.toUpperCase(pString.charAt(lastPos)));
-            buf.append(pString.substring(lastPos + 1).toLowerCase());
+            buf.append(pString.substring(lastPos + 1).toLowerCase(Locale.ROOT));
             return buf.toString();
         }
         else {

@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Locale;
 import java.util.Set;
 
 import javax.imageio.ImageIO;
@@ -583,6 +584,64 @@ public class TIFFImageMetadataTest {
 
         assertNotNull(ifd.getEntryById(TIFF.TAG_COPYRIGHT));
         assertEquals(copyrightString, ifd.getEntryById(TIFF.TAG_COPYRIGHT).getValue());
+    }
+
+    @Test
+    public void testSetFromTreeStandardFormatTurkishLocale() throws IOException {
+        Locale defaultLocale = Locale.getDefault();
+
+        try {
+            // In the Turkish locale, "I".toLowerCase() is the dotless i (U+0131), not "i"
+            Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+
+            String descriptionString = "Image description";
+            TIFFImageMetadata metadata = new TIFFImageMetadata(Collections.<Entry>emptySet());
+
+            String standardFormat = IIOMetadataFormatImpl.standardMetadataFormatName;
+            IIOMetadataNode root = new IIOMetadataNode(standardFormat);
+
+            IIOMetadataNode textNode = new IIOMetadataNode("Text");
+            root.appendChild(textNode);
+
+            IIOMetadataNode textEntry = new IIOMetadataNode("TextEntry");
+            textNode.appendChild(textEntry);
+
+            textEntry.setAttribute("keyword", "ImageDescription");
+            textEntry.setAttribute("value", descriptionString);
+
+            metadata.setFromTree(standardFormat, root);
+
+            Directory ifd = metadata.getIFD();
+            assertNotNull(ifd.getEntryById(TIFF.TAG_IMAGE_DESCRIPTION));
+            assertEquals(descriptionString, ifd.getEntryById(TIFF.TAG_IMAGE_DESCRIPTION).getValue());
+        }
+        finally {
+            Locale.setDefault(defaultLocale);
+        }
+    }
+
+    @Test
+    public void testSetFromTreeNativeFormatTurkishLocale() throws IOException {
+        Locale defaultLocale = Locale.getDefault();
+
+        try {
+            // In the Turkish locale, "i".toUpperCase() is the dotted capital I (U+0130), so "Ascii" would not match "ASCII"
+            Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+
+            String softwareString = "12M UberTIFF 1.0";
+            TIFFImageMetadata source = new TIFFImageMetadata(Collections.singleton(new TIFFEntry(TIFF.TAG_SOFTWARE, TIFF.TYPE_ASCII, softwareString)));
+            Node tree = source.getAsTree(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME);
+
+            TIFFImageMetadata metadata = new TIFFImageMetadata(Collections.<Entry>emptySet());
+            metadata.setFromTree(SUN_NATIVE_IMAGE_METADATA_FORMAT_NAME, tree);
+
+            Directory ifd = metadata.getIFD();
+            assertNotNull(ifd.getEntryById(TIFF.TAG_SOFTWARE));
+            assertEquals(softwareString, ifd.getEntryById(TIFF.TAG_SOFTWARE).getValue());
+        }
+        finally {
+            Locale.setDefault(defaultLocale);
+        }
     }
 
     @Test
