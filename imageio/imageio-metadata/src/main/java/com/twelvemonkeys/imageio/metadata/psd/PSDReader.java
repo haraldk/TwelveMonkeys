@@ -93,6 +93,9 @@ public final class PSDReader extends MetadataReader {
     }
 
     protected static class PSDResource {
+        // Safeguard for streams of unknown length, XMP data written by Photoshop may be megabytes
+        private static final int MAX_SIZE_UNKNOWN_LENGTH = 64 * 1024 * 1024;
+
         static String readPascalString(final DataInput pInput) throws IOException {
             int length = pInput.readUnsignedByte();
 
@@ -141,6 +144,12 @@ public final class PSDReader extends MetadataReader {
 
         protected void readData(final ImageInputStream pInput) throws IOException {
             // TODO: This design is ugly, as subclasses readData is invoked BEFORE their respective constructor...
+            long limit = pInput.length() < 0 ? MAX_SIZE_UNKNOWN_LENGTH : pInput.length() - pInput.getStreamPosition();
+
+            if (size > Integer.MAX_VALUE || size > limit) {
+                throw new IIOException(String.format("PSD Resource size exceeds limit (%d): %d", limit, size));
+            }
+
             data = new byte[(int) size];
             pInput.readFully(data);
         }

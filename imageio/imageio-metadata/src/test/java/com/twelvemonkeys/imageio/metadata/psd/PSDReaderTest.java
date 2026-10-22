@@ -32,10 +32,14 @@ package com.twelvemonkeys.imageio.metadata.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -85,6 +89,25 @@ public class PSDReaderTest extends MetadataReaderAbstractTest {
             Directory directory = createReader().read(new SubImageInputStream(stream, 298));
 
             assertEquals(9, directory.size()); // 6 8BIM + 2 PHUT + 1 8 BIM
+        }
+    }
+
+    @Test
+    public void testResourceSizeExceedsInput() throws IOException {
+        for (int size : new int[] {Integer.MAX_VALUE, 0xFFFFFFFF}) {
+            ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+            try (DataOutputStream dataStream = new DataOutputStream(bytes)) {
+                dataStream.writeBytes("8BIM");
+                dataStream.writeShort(PSD.RES_CLIPPING_PATH);
+                dataStream.writeShort(0); // empty pascal name + pad
+                dataStream.writeInt(size);
+                dataStream.write(new byte[64]);
+            }
+
+            try (ImageInputStream stream = new ByteArrayImageInputStream(bytes.toByteArray())) {
+                IIOException exception = assertThrows(IIOException.class, () -> createReader().read(stream));
+                assertTrue(exception.getMessage().contains("Resource size exceeds limit"));
+            }
         }
     }
 }
