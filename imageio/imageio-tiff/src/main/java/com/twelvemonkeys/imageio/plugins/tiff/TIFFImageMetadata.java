@@ -1111,7 +1111,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
             // Software, Artist, HostComputer, InkNames, Copyright
             if (value != null && !value.isEmpty() && keyword != null) {
                 // We do all comparisons in lower case, for compatibility
-                keyword = keyword.toLowerCase();
+                keyword = keyword.toLowerCase(Locale.ROOT);
 
                 TIFFEntry entry;
 
@@ -1205,7 +1205,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
             // malformed, empty or not readable value
             return null;
         }
-        switch (imageOrientation.toLowerCase()) {
+        switch (imageOrientation.toLowerCase(Locale.ROOT)) {
             case "normal":
                 return TIFFBaseline.ORIENTATION_TOPLEFT;
             case "fliph":
@@ -1245,7 +1245,7 @@ public final class TIFFImageMetadata extends AbstractMetadata {
             return TIFF.TYPE_UNDEFINED;
         }
 
-        typeName = typeName.substring(0, typeName.length() - 1).toUpperCase();
+        typeName = typeName.substring(0, typeName.length() - 1).toUpperCase(Locale.ROOT);
 
         for (int i = 1; i < TIFF.TYPE_NAMES.length; i++) {
             if (typeName.equals(TIFF.TYPE_NAMES[i])) {

@@ -36,6 +36,7 @@ import com.twelvemonkeys.imageio.metadata.exif.EXIF;
 import com.twelvemonkeys.lang.Validate;
 
 import java.lang.reflect.Array;
+import java.util.Locale;
 
 /**
  * Represents a TIFF IFD entry.
@@ -302,7 +303,7 @@ public final class TIFFEntry extends AbstractEntry {
                         try {
                             if (field.getType() == Integer.TYPE && field.getName().startsWith("TAG_")) {
                                 if (field.get(null).equals(getIdentifier())) {
-                                    return StringUtil.lispToCamel(field.getName().substring(4).replace("_", "-").toLowerCase(), true);
+                                    return StringUtil.lispToCamel(field.getName().substring(4).replace("_", "-").toLowerCase(Locale.ROOT), true);
                                 }
                             }
                         }
