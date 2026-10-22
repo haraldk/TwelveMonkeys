@@ -45,6 +45,7 @@ import java.awt.image.DataBufferByte;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -335,13 +336,33 @@ public class SGIImageReaderTest extends ImageReaderAbstractTest<SGIImageReader> 
     }
 
     @Test
-    public void testRLENegativeScanlineOffset() throws IOException {
-        assertReadThrowsIIOException(rleSGI(1, -1, 4));
+    public void testRLEUnsignedScanlineOffset() throws IOException {
+        byte[] data = rleSGI(1, 0xFFFFFFFF, 4);
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
+            SGIImageReader reader = createReader();
+            reader.setInput(input);
+
+            assertThrows(EOFException.class, () -> reader.read(0));
+
+            reader.dispose();
+        }
     }
 
     @Test
-    public void testRLENegativeScanlineLength() throws IOException {
-        assertReadThrowsIIOException(rleSGI(1, 520, -1));
+    public void testRLEUnsignedScanlineLength() throws IOException {
+        byte[] data = rleSGI(1, 520, 0xFFFFFFFF);
+
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data))) {
+            SGIImageReader reader = createReader();
+            reader.setInput(input);
+
+            DataBuffer buffer = reader.read(0).getRaster().getDataBuffer();
+            assertEquals(10, buffer.getElem(0));
+            assertEquals(20, buffer.getElem(1));
+
+            reader.dispose();
+        }
     }
 
     @Test

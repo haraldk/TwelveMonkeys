@@ -55,6 +55,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import static java.lang.Integer.toUnsignedLong;
+
 public final class SGIImageReader extends ImageReaderBase {
     /**
      * Maximum plausible decoded-to-input expansion ratio for SGI, used to bound the destination allocation
@@ -200,12 +202,6 @@ public final class SGIImageReader extends ImageReaderBase {
             scanlineLengths = new int[height * header.getChannels()];
             imageInput.readFully(scanlineOffsets, 0, scanlineOffsets.length);
             imageInput.readFully(scanlineLengths, 0, scanlineLengths.length);
-
-            for (int i = 0; i < scanlineOffsets.length; i++) {
-                if (scanlineOffsets[i] < 0 || scanlineLengths[i] < 0) {
-                    throw new IIOException(String.format("Invalid RLE scanline offset or length: %d, %d", scanlineOffsets[i], scanlineLengths[i]));
-                }
-            }
         }
         else {
             scanlineOffsets = null;
@@ -273,8 +269,8 @@ public final class SGIImageReader extends ImageReaderBase {
         DataInput input;
         if (compression == SGI.COMPRESSION_RLE) {
             int scanLineIndex = c * height + y;
-            imageInput.seek(scanlineOffsets[scanLineIndex]);
-            input = new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(imageInput, scanlineLengths[scanLineIndex]), new RLEDecoder()));
+            imageInput.seek(toUnsignedLong(scanlineOffsets[scanLineIndex]));
+            input = new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(imageInput, toUnsignedLong(scanlineLengths[scanLineIndex])), new RLEDecoder()));
         } else {
             input = imageInput;
         }
@@ -310,8 +306,8 @@ public final class SGIImageReader extends ImageReaderBase {
         DataInput input;
         if (compression == SGI.COMPRESSION_RLE) {
             int scanLineIndex = c * height + y;
-            imageInput.seek(scanlineOffsets[scanLineIndex]);
-            input = new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(imageInput, scanlineLengths[scanLineIndex]), new RLEDecoder()));
+            imageInput.seek(toUnsignedLong(scanlineOffsets[scanLineIndex]));
+            input = new DataInputStream(new DecoderStream(IIOUtil.createStreamAdapter(imageInput, toUnsignedLong(scanlineLengths[scanLineIndex])), new RLEDecoder()));
         } else {
             input = imageInput;
         }
