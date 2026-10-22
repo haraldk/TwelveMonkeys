@@ -37,6 +37,7 @@ import java.awt.*;
 import java.awt.color.ColorSpace;
 import java.awt.image.*;
 import java.io.IOException;
+import java.util.Arrays;
 
 import static com.twelvemonkeys.lang.Validate.isTrue;
 import static com.twelvemonkeys.lang.Validate.notNull;
@@ -79,11 +80,14 @@ abstract class ThumbnailReader {
 
         @Override
         public BufferedImage read() throws IOException {
-            DataBufferByte buffer = new DataBufferByte(data, data.length, offset);
+            // Copy the pixel data, rather than using a DataBuffer offset, as not all raster
+            // operations (like BufferedImage.getRGB) honor the DataBuffer offset
+            byte[] pixels = offset == 0 ? data : Arrays.copyOfRange(data, offset, data.length);
+            DataBufferByte buffer = new DataBufferByte(pixels, pixels.length);
             WritableRaster raster;
             ColorModel cm;
 
-            if (data.length == width * height) {
+            if (pixels.length == width * height) {
                 raster = Raster.createInterleavedRaster(buffer, width, height, width, 1, new int[] {0}, null);
                 cm = new ComponentColorModel(ColorSpace.getInstance(ColorSpace.CS_GRAY), false, false, Transparency.OPAQUE, DataBuffer.TYPE_BYTE);
             }
