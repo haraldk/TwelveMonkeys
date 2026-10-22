@@ -71,6 +71,7 @@ final class TGAImageReader extends ImageReaderBase {
 
     private TGAHeader header;
     private TGAExtensions extensions;
+    private long headerEnd;
 
     TGAImageReader(final ImageReaderSpi provider) {
         super(provider);
@@ -80,6 +81,7 @@ final class TGAImageReader extends ImageReaderBase {
     protected void resetMembers() {
         header = null;
         extensions = null;
+        headerEnd = 0;
     }
 
     @Override
@@ -401,14 +403,15 @@ final class TGAImageReader extends ImageReaderBase {
 
             // Read header
             header = TGAHeader.read(imageInput);
-            imageInput.flushBefore(imageInput.getStreamPosition());
+            headerEnd = imageInput.getStreamPosition();
+            imageInput.flushBefore(headerEnd);
 
             // Read footer, if 2.0 format (ends with TRUEVISION-XFILE\0)
             skipToEnd(imageInput);
             long footerOffset = imageInput.getStreamPosition() - 26;
 
             // Files too short to hold a footer after the header can't be 2.0 format
-            if (footerOffset >= imageInput.getFlushedPosition()) {
+            if (footerOffset >= headerEnd) {
                 imageInput.seek(footerOffset);
 
                 long extOffset = imageInput.readUnsignedInt();
@@ -418,7 +421,7 @@ final class TGAImageReader extends ImageReaderBase {
                 imageInput.readFully(magic);
 
                 // Extension area can't overlap the header, ignore if it does
-                if (Arrays.equals(magic, TGA.MAGIC) && extOffset >= imageInput.getFlushedPosition()) {
+                if (Arrays.equals(magic, TGA.MAGIC) && extOffset >= headerEnd) {
                     imageInput.seek(extOffset);
                     int extSize = imageInput.readUnsignedShort();
                     extensions = extSize == 0 ? null : TGAExtensions.read(imageInput, extSize);
@@ -426,7 +429,7 @@ final class TGAImageReader extends ImageReaderBase {
             }
         }
 
-        imageInput.seek(imageInput.getFlushedPosition());
+        imageInput.seek(headerEnd);
     }
 
     // TODO: Candidate util method
@@ -467,7 +470,7 @@ final class TGAImageReader extends ImageReaderBase {
         checkBounds(imageIndex);
         readHeader();
 
-        return extensions != null && extensions.getThumbnailOffset() >= imageInput.getFlushedPosition();
+        return extensions != null && extensions.getThumbnailOffset() >= headerEnd;
     }
 
     @Override
