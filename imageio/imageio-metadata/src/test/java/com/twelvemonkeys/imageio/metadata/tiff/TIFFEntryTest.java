@@ -32,9 +32,13 @@ package com.twelvemonkeys.imageio.metadata.tiff;
 
 import com.twelvemonkeys.imageio.metadata.Entry;
 import com.twelvemonkeys.imageio.metadata.EntryAbstractTest;
+import com.twelvemonkeys.imageio.metadata.exif.EXIF;
+import com.twelvemonkeys.imageio.metadata.exif.GPS;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
@@ -58,6 +62,36 @@ public class TIFFEntryTest extends EntryAbstractTest {
     public void testCreateEXIFEntryIllegalType() {
         assertThrows(IllegalArgumentException.class, () -> createEXIFEntry(0, null, -1));
     }
-    
-    // TODO: TIFF/EXIF specific tests
+
+    @Test
+    public void testGetFieldNameTIFF() {
+        assertEquals("Make", new TIFFEntry(TIFF.TAG_MAKE, "Apple").getFieldName());
+        assertEquals("FNumber", new TIFFEntry(EXIF.TAG_F_NUMBER, new Rational(28, 5)).getFieldName());
+    }
+
+    @Test
+    public void testGetFieldNameEXIF23() {
+        assertEquals("SensitivityType", new TIFFEntry(EXIF.TAG_SENSITIVITY_TYPE, 2).getFieldName());
+        assertEquals("OffsetTimeOriginal", new TIFFEntry(EXIF.TAG_OFFSET_TIME_ORIGINAL, "-05:00").getFieldName());
+        assertEquals("SubsecTimeOriginal", new TIFFEntry(EXIF.TAG_SUBSEC_TIME_ORIGINAL, "42").getFieldName());
+        assertEquals("BodySerialNumber", new TIFFEntry(EXIF.TAG_BODY_SERIAL_NUMBER, "42").getFieldName());
+        assertEquals("LensSpecification", new TIFFEntry(EXIF.TAG_LENS_SPECIFICATION, new int[] {24, 105, 0, 0}).getFieldName());
+        assertEquals("LensMake", new TIFFEntry(EXIF.TAG_LENS_MAKE, "Apple").getFieldName());
+        assertEquals("LensModel", new TIFFEntry(EXIF.TAG_LENS_MODEL, "iPhone 11 back dual wide camera 4.25mm f/1.8").getFieldName());
+        assertEquals("CompositeImage", new TIFFEntry(EXIF.TAG_COMPOSITE_IMAGE, 2).getFieldName());
+    }
+
+    @Test
+    public void testGetFieldNameGPS() {
+        assertEquals("GPSVersionID", new TIFFEntry(GPS.TAG_GPS_VERSION_ID, new byte[] {2, 3, 0, 0}).getFieldName());
+        assertEquals("GPSLongitudeRef", new TIFFEntry(GPS.TAG_GPS_LONGITUDE_REF, "W").getFieldName());
+        assertEquals("GPSLongitude", new TIFFEntry(GPS.TAG_GPS_LONGITUDE, new Rational[] {new Rational(80), new Rational(29, 4), new Rational(0)}).getFieldName());
+        assertEquals("GPSAltitude", new TIFFEntry(GPS.TAG_GPS_ALTITUDE, new Rational(10185, 881)).getFieldName());
+        assertEquals("GPSDateStamp", new TIFFEntry(GPS.TAG_GPS_DATE_STAMP, "2011:10:27").getFieldName());
+
+        // GPS tags 1 (GPSLatitudeRef) and 2 (GPSLatitude) can NOT be named,
+        // as their ids collide with the Interoperability IFD tags 1 and 2
+        assertNull(new TIFFEntry(GPS.TAG_GPS_LATITUDE_REF, "N").getFieldName());
+        assertNull(new TIFFEntry(GPS.TAG_GPS_LATITUDE, new Rational[] {new Rational(25), new Rational(4917, 100), new Rational(0)}).getFieldName());
+    }
 }
