@@ -32,13 +32,23 @@ package com.twelvemonkeys.imageio.plugins.hdr;
 
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
+import org.junit.jupiter.api.Test;
+
+import javax.imageio.IIOException;
+import javax.imageio.ImageIO;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
+import java.io.ByteArrayInputStream;
+import java.io.EOFException;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
 import static java.util.Collections.emptyList;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * HDRImageReaderTest
@@ -81,5 +91,37 @@ public class HDRImageReaderTest extends ImageReaderAbstractTest<HDRImageReader> 
         return Collections.singletonList(
                 "image/vnd.radiance"
         );
+    }
+
+    @Test
+    public void testTruncatedHeader() throws IOException {
+        assertReadThrows(EOFException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n");
+    }
+
+    @Test
+    public void testShortDimensions() throws IOException {
+        assertReadThrows(IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 1\n");
+    }
+
+    @Test
+    public void testNonNumericDimensions() throws IOException {
+        assertReadThrows(IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y x +X 1\n");
+    }
+
+    @Test
+    public void testNonPositiveDimensions() throws IOException {
+        assertReadThrows(IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 1 +X -1\n");
+        assertReadThrows(IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 0 +X 1\n");
+    }
+
+    private void assertReadThrows(Class<? extends IOException> expected, String data) throws IOException {
+        try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data.getBytes(StandardCharsets.US_ASCII)))) {
+            HDRImageReader reader = createReader();
+            reader.setInput(input);
+
+            assertThrows(expected, () -> reader.read(0));
+
+            reader.dispose();
+        }
     }
 }
