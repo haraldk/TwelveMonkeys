@@ -32,10 +32,14 @@ package com.twelvemonkeys.imageio.metadata.psd;
 
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.MetadataReaderAbstractTest;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.stream.ImageInputStream;
+import javax.imageio.stream.MemoryCacheImageInputStream;
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -85,6 +89,36 @@ public class PSDReaderTest extends MetadataReaderAbstractTest {
             Directory directory = createReader().read(new SubImageInputStream(stream, 298));
 
             assertEquals(9, directory.size()); // 6 8BIM + 2 PHUT + 1 8 BIM
+        }
+    }
+
+    private static byte[] resourceWithSize(int size) {
+        return new byte[] {
+                '8', 'B', 'I', 'M',
+                0x04, 0x04, // IPTC resource id
+                0, 0,       // empty pascal name + pad
+                (byte) (size >>> 24), (byte) (size >>> 16), (byte) (size >>> 8), (byte) size,
+                0, 0, 0, 0
+        };
+    }
+
+    @Test
+    public void testResourceSizeExceedsInput() throws IOException {
+        for (int size : new int[] {Integer.MAX_VALUE, 0xffffffff}) {
+            try (ImageInputStream stream = new ByteArrayImageInputStream(resourceWithSize(size))) {
+                IIOException exception = assertThrows(IIOException.class, () -> createReader().read(stream));
+                assertTrue(exception.getMessage().contains("Resource size exceeds limit"));
+            }
+        }
+    }
+
+    @Test
+    public void testResourceSizeExceedsLimitUnknownLength() throws IOException {
+        for (int size : new int[] {Integer.MAX_VALUE, 0xffffffff}) {
+            try (ImageInputStream stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(resourceWithSize(size)))) {
+                IIOException exception = assertThrows(IIOException.class, () -> createReader().read(stream));
+                assertTrue(exception.getMessage().contains("Resource size exceeds limit"));
+            }
         }
     }
 }
