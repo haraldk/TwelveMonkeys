@@ -30,12 +30,12 @@ final class XS24Chunk extends IFFChunk {
         height = input.readUnsignedShort();
         input.readShort(); // Not sure what this is?
 
-        int dataLength = width * height * 3;
+        long dataLength = (long) width * height * 3;
         if (dataLength > chunkLength - 6) {
             throw new IIOException("Bad XS24 chunk: " + width + " * " + height + " * 3 > chunk length (" + chunkLength + ")");
         }
 
-        data = new byte[dataLength];
+        data = new byte[(int) dataLength];
 
         input.readFully(data);
 
