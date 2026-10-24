@@ -181,6 +181,30 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
     }
 
     @Test
+    public void testFromOverflowingDimensionsUncompressed() {
+        // 46341 * 46341 * 3 overflows int to a negative length, which passes the length check
+        List<TIFFEntry> entries = Arrays.asList(
+                new TIFFEntry(TIFF.TAG_COMPRESSION, 1),
+                new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, 0),
+                new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, 46341),
+                new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, 46341)
+        );
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
+    }
+
+    @Test
+    public void testFromWrappedDimensionsUncompressed() {
+        // 16 * 268435457 * 3 wraps to 48, so 48 bytes of data would pass for a 16 x 268435457 thumbnail
+        List<TIFFEntry> entries = Arrays.asList(
+                new TIFFEntry(TIFF.TAG_COMPRESSION, 1),
+                new TIFFEntry(TIFF.TAG_STRIP_OFFSETS, 0),
+                new TIFFEntry(TIFF.TAG_IMAGE_WIDTH, 16),
+                new TIFFEntry(TIFF.TAG_IMAGE_HEIGHT, 268435457)
+        );
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[6 + 48]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
+    }
+
+    @Test
     public void testValidUncompressed() throws IOException {
         List<TIFFEntry> entries = Arrays.asList(
                 new TIFFEntry(TIFF.TAG_COMPRESSION, 1),
@@ -201,6 +225,16 @@ public class EXIFThumbnailReaderTest extends AbstractThumbnailReaderTest {
     @Test
     public void testFromMissingOffsetJPEG() throws IOException {
         List<TIFFEntry> entries = Collections.singletonList(new TIFFEntry(TIFF.TAG_COMPRESSION, 6));
+        assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
+    }
+
+    @Test
+    public void testFromNegativeOffsetJPEG() {
+        List<TIFFEntry> entries = Arrays.asList(
+                new TIFFEntry(TIFF.TAG_COMPRESSION, 6),
+                new TIFFEntry(TIFF.TAG_JPEG_INTERCHANGE_FORMAT, -1),
+                new TIFFEntry(TIFF.TAG_JPEG_INTERCHANGE_FORMAT_LENGTH, 2)
+        );
         assertThrows(IIOException.class, () -> EXIFThumbnail.from(new EXIF(new byte[42]), new EXIFDirectory(new IFD(Collections.<Entry>emptyList()), new IFD(entries)), thumbnailReader));
     }
 

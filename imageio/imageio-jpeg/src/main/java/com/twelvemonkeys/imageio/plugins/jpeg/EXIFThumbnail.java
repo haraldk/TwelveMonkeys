@@ -105,11 +105,11 @@ final class EXIFThumbnail {
             int interpretation = photometricInterpretation != null ? ((Number) photometricInterpretation.getValue()).intValue() : 2;
             long stripOffset = ((Number) stripOffEntry.getValue()).longValue();
 
-            int thumbLength = w * h * 3;
-            if (stripOffset >= 0 && stripOffset + thumbLength <= stream.length()) {
+            long thumbLength = (long) w * h * 3;
+            if (w > 0 && h > 0 && stripOffset >= 0 && stripOffset + thumbLength <= stream.length()) {
                 // Read raw image data, either RGB or YCbCr
                 stream.seek(stripOffset);
-                byte[] thumbData = new byte[thumbLength];
+                byte[] thumbData = new byte[(int) thumbLength];
                 stream.readFully(thumbData);
 
                 switch (interpretation) {
@@ -118,7 +118,7 @@ final class EXIFThumbnail {
                         break;
                     case 6:
                         // YCbCr
-                        for (int i = 0; i < thumbLength; i += 3) {
+                        for (int i = 0; i < thumbData.length; i += 3) {
                             YCbCrConverter.convertJPEGYCbCr2RGB(thumbData, thumbData, i);
                         }
                         break;
@@ -142,7 +142,7 @@ final class EXIFThumbnail {
             long jpegOffset = ((Number) jpegOffEntry.getValue()).longValue();
             long jpegLength = jpegLenEntry != null ? ((Number) jpegLenEntry.getValue()).longValue() : -1;
 
-            if (jpegLength > 0 && jpegOffset + jpegLength <= exif.data.length) {
+            if (jpegOffset >= 0 && jpegLength > 0 && jpegOffset + jpegLength <= exif.data.length) {
                 // Verify first bytes are FFD8
                 stream.seek(jpegOffset);
                 stream.setByteOrder(ByteOrder.BIG_ENDIAN);
