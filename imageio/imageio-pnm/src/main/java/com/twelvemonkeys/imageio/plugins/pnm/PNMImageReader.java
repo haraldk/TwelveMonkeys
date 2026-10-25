@@ -436,16 +436,14 @@ public final class PNMImageReader extends ImageReaderBase {
 
     private void normalize(final byte[] rowData, final int start, final int length) {
         switch (header.getTupleType()) {
-            case BLACKANDWHITE:
-            case BLACKANDWHITE_ALPHA:
-                // Do nothing
-                break;
             case BLACKANDWHITE_WHITE_IS_ZERO:
                 // Invert
                 for (int i = start; i < length; i++) {
                     rowData[i] = (byte) ~rowData[i];
                 }
                 break;
+            case BLACKANDWHITE:
+            case BLACKANDWHITE_ALPHA:
             case GRAYSCALE:
             case GRAYSCALE_ALPHA:
             case RGB:

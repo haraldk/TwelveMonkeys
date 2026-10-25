@@ -29,15 +29,18 @@
  */
 package com.twelvemonkeys.imageio.plugins.pnm;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
 
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageReader;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -126,6 +129,34 @@ public class PAMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> 
             ImageReadParam param = reader.getDefaultReadParam();
             param.setDestinationType(ImageTypeSpecifier.createFromBufferedImageType(type));
             assertImageDataEquals("Images differ from reference for type: " + type, expected, reader.read(0, param));
+        }
+    }
+
+    @Test
+    public void testMaxSample1Gray() throws IOException {
+        // Samples are 0 (black) or 1 (white), and must be scaled to 0 or 255
+        assertArrayEquals(new int[] {0, 255}, readPixels("BLACKANDWHITE", 1, 0, 1));
+        assertArrayEquals(new int[] {0, 255}, readPixels("GRAYSCALE", 1, 0, 1));
+        assertArrayEquals(new int[] {0, 255, 255, 0}, readPixels("BLACKANDWHITE_ALPHA", 2, 0, 1, 1, 0));
+        assertArrayEquals(new int[] {0, 255, 255, 0}, readPixels("GRAYSCALE_ALPHA", 2, 0, 1, 1, 0));
+    }
+
+    private int[] readPixels(final String tupleType, final int depth, final int... samples) throws IOException {
+        String header = String.format("P7\nWIDTH 2\nHEIGHT 1\nDEPTH %d\nMAXVAL 1\nTUPLTYPE %s\nENDHDR\n", depth, tupleType);
+        byte[] headerBytes = header.getBytes(StandardCharsets.US_ASCII);
+        byte[] data = Arrays.copyOf(headerBytes, headerBytes.length + samples.length);
+        for (int i = 0; i < samples.length; i++) {
+            data[headerBytes.length + i] = (byte) samples[i];
+        }
+
+        ImageReader reader = createReader();
+        try (ImageInputStream input = new ByteArrayImageInputStream(data)) {
+            reader.setInput(input);
+
+            return reader.read(0).getRaster().getPixels(0, 0, 2, 1, (int[]) null);
+        }
+        finally {
+            reader.dispose();
         }
     }
 
