@@ -39,8 +39,10 @@ import java.io.DataInput;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
+import java.util.List;
 
 /**
  * Represents a {@code Catalog} structure, typically found in a {@link com.twelvemonkeys.io.ole2.CompoundDocument}. 
@@ -89,14 +91,25 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
     public static Catalog read(final DataInput pDataInput) throws IOException {
         CatalogHeader header = CatalogHeader.read(pDataInput);
 
-        CatalogItem[] items = new CatalogItem[header.getThumbnailCount()];
-        for (int i = 0; i < header.getThumbnailCount(); i++) {
-            CatalogItem item = CatalogItem.read(pDataInput);
-            //System.out.println("item: " + item);
+        int thumbCount = header.getThumbnailCount();
+        if (thumbCount < 0) {
+            throw new IIOException("Illegal Thumbs.db Catalog thumbnail count: " + thumbCount);
+        }
 
+        // Read items before allocating, so a bogus count fails with EOF instead of a huge array
+        List<CatalogItem> read = new ArrayList<>(Math.min(thumbCount, 1024));
+        for (int i = 0; i < thumbCount; i++) {
+            read.add(CatalogItem.read(pDataInput));
+        }
+
+        CatalogItem[] items = new CatalogItem[thumbCount];
+        for (CatalogItem item : read) {
             int index = item.getItemId() - 1;
             if (index < 0 || index >= items.length) {
                 throw new IIOException("Thumbs.db catalog item id out of range: " + item.getItemId());
+            }
+            if (items[index] != null) {
+                throw new IIOException("Duplicate Thumbs.db catalog item id: " + item.getItemId());
             }
 
             items[index] = item;
@@ -244,6 +257,10 @@ public final class Catalog implements Iterable<Catalog.CatalogItem> {
             char ch;
             int nameLen = 0;
             while ((ch = pDataInput.readChar()) != 0) {
+                if (nameLen >= nameSize) {
+                    throw new IIOException("Thumbs.db Catalog item name not NUL-terminated");
+                }
+
                 name[nameLen++] = ch;
             }
             pDataInput.skipBytes(item.size - 16 - (nameLen + 1) * 2);
