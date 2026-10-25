@@ -591,7 +591,6 @@ public class TIFFImageMetadataTest {
         Locale defaultLocale = Locale.getDefault();
 
         try {
-            // In the Turkish locale, "I".toLowerCase() is the dotless i (U+0131), not "i"
             Locale.setDefault(Locale.forLanguageTag("tr-TR"));
 
             String descriptionString = "Image description";
@@ -625,7 +624,6 @@ public class TIFFImageMetadataTest {
         Locale defaultLocale = Locale.getDefault();
 
         try {
-            // In the Turkish locale, "i".toUpperCase() is the dotted capital I (U+0130), so "Ascii" would not match "ASCII"
             Locale.setDefault(Locale.forLanguageTag("tr-TR"));
 
             String softwareString = "12M UberTIFF 1.0";

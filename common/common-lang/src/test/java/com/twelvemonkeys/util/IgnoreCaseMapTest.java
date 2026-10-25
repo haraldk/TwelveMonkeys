@@ -40,9 +40,9 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * IgnoreCaseMapTest
  */
-public class IgnoreCaseMapTest {
+class IgnoreCaseMapTest {
     @Test
-    public void testGetIgnoresCase() {
+    void testGetIgnoresCase() {
         Map<String, String> map = new IgnoreCaseMap<>();
         map.put("TITLE", "value");
 
@@ -52,11 +52,10 @@ public class IgnoreCaseMapTest {
     }
 
     @Test
-    public void testGetIgnoresCaseIndependentOfDefaultLocale() {
+    void testGetIgnoresCaseIndependentOfDefaultLocale() {
         Locale defaultLocale = Locale.getDefault();
 
         try {
-            // In the Turkish locale, "i".toUpperCase() is the dotted capital I (U+0130), not "I"
             Locale.setDefault(Locale.forLanguageTag("tr-TR"));
 
             Map<String, String> map = new IgnoreCaseMap<>();
