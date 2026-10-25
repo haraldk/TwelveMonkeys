@@ -2,6 +2,8 @@ package com.twelvemonkeys.contrib.exif;
 
 import com.twelvemonkeys.contrib.tiff.TIFFUtilities;
 
+import java.util.Locale;
+
 /**
  * Orientation.
  *
@@ -36,10 +38,10 @@ public enum Orientation {
             }
             catch (IllegalArgumentException e) {
                 // Not found, try ignore case match, as some metadata implementations are known to return "normal" etc.
-                String lowerCaseName = orientationName.toLowerCase();
+                String lowerCaseName = orientationName.toLowerCase(Locale.ROOT);
 
                 for (Orientation orientation : values()) {
-                    if (orientation.name().toLowerCase().equals(lowerCaseName)) {
+                    if (orientation.name().toLowerCase(Locale.ROOT).equals(lowerCaseName)) {
                         return orientation;
                     }
                 }
