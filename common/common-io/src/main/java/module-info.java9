@@ -1,0 +1,13 @@
+module com.twelvemonkeys.common.io {
+    requires transitive com.twelvemonkeys.common.lang;
+    requires transitive java.desktop;
+    requires transitive java.xml;
+
+    exports com.twelvemonkeys.io;
+    exports com.twelvemonkeys.io.enc;
+    exports com.twelvemonkeys.io.ole2;
+    exports com.twelvemonkeys.net;
+    exports com.twelvemonkeys.xml;
+
+}
+

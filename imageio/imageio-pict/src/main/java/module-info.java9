@@ -1,0 +1,20 @@
+module com.twelvemonkeys.imageio.pict {
+    requires com.twelvemonkeys.common.image;
+    requires com.twelvemonkeys.common.io;
+    requires com.twelvemonkeys.common.lang;
+    requires java.xml;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive java.desktop;
+
+    exports com.twelvemonkeys.imageio.plugins.pict;
+    exports com.twelvemonkeys.imageio.plugins.pntg;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.pntg.PNTGImageReaderSpi,
+        com.twelvemonkeys.imageio.plugins.pict.PICTImageReaderSpi;
+    provides javax.imageio.spi.ImageWriterSpi with
+        com.twelvemonkeys.imageio.plugins.pict.PICTImageWriterSpi;
+
+}
+

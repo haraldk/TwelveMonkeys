@@ -1,0 +1,28 @@
+module com.twelvemonkeys.imageio.batik {
+    requires batik.anim;
+    requires batik.awt.util;
+    requires batik.bridge;
+    requires batik.dom;
+    requires batik.gvt;
+    requires batik.parser;
+    requires batik.transcoder;
+    requires batik.util;
+    requires com.twelvemonkeys.common.image;
+    requires com.twelvemonkeys.common.lang;
+    requires java.xml;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive java.desktop;
+
+    // Dependency from an automatic module.
+    // com.twelvemonkeys.imageio.plugins.svg.SVGImageReader$Rasterizer -> org.w3c.dom.svg.SVGSVGElement
+    requires xml.apis.ext;
+
+    exports com.twelvemonkeys.imageio.plugins.svg;
+    exports com.twelvemonkeys.imageio.plugins.wmf;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.svg.SVGImageReaderSpi,
+        com.twelvemonkeys.imageio.plugins.wmf.WMFImageReaderSpi;
+
+}
