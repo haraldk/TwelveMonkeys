@@ -454,7 +454,7 @@ public final class PNMImageReader extends ImageReaderBase {
             case CMYK_ALPHA:
                 // Normalize
                 for (int i = start; i < length; i++) {
-                    rowData[i] = (byte) ((rowData[i] * PNM.MAX_VAL_8BIT) / header.getMaxSample());
+                    rowData[i] = (byte) (((rowData[i] & 0xff) * PNM.MAX_VAL_8BIT) / header.getMaxSample());
                 }
                 break;
         }
@@ -463,7 +463,7 @@ public final class PNMImageReader extends ImageReaderBase {
     private void normalize(final short[] rowData) {
         // Normalize
         for (int i = 0; i < rowData.length; i++) {
-            rowData[i] = (short) ((rowData[i] * PNM.MAX_VAL_16BIT) / header.getMaxSample());
+            rowData[i] = (short) (((rowData[i] & 0xffffL) * PNM.MAX_VAL_16BIT) / header.getMaxSample());
         }
     }
 
