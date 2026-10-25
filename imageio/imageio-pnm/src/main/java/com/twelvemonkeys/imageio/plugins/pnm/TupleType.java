@@ -42,9 +42,9 @@ enum TupleType {
     /** B/W + bit mask, uses 2 bytes per pixel. Black is zero (opposite of PBM) */
     BLACKANDWHITE_ALPHA(2, PNM.MAX_VAL_1BIT, PNM.MAX_VAL_1BIT, Transparency.BITMASK),
     /** Grayscale, as PGM. */
-    GRAYSCALE(1, 2, PNM.MAX_VAL_16BIT, Transparency.OPAQUE),
+    GRAYSCALE(1, 1, PNM.MAX_VAL_16BIT, Transparency.OPAQUE),
     /** Grayscale + alpha. YA order. */
-    GRAYSCALE_ALPHA(2, 2, PNM.MAX_VAL_16BIT, Transparency.TRANSLUCENT),
+    GRAYSCALE_ALPHA(2, 1, PNM.MAX_VAL_16BIT, Transparency.TRANSLUCENT),
     /** RGB color, as PPM. RGB order. */
     RGB(3, 1, PNM.MAX_VAL_16BIT, Transparency.OPAQUE),
     /** RGB color + alpha. RGBA order. */
