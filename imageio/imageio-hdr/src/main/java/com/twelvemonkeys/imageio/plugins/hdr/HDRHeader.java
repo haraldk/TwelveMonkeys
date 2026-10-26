@@ -32,6 +32,7 @@ package com.twelvemonkeys.imageio.plugins.hdr;
 
 import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
+import java.io.EOFException;
 import java.io.IOException;
 
 /**
@@ -57,7 +58,7 @@ final class HDRHeader {
         HDRHeader header = new HDRHeader();
 
         while (true) {
-            String line = stream.readLine().trim();
+            String line = readLine(stream);
 
             if (line.isEmpty()) {
                 // This is the last line before the dimensions
@@ -97,18 +98,43 @@ final class HDRHeader {
         }
 
         // TODO: Proper parsing of width/height and orientation!
-        String dimensionsLine = stream.readLine().trim();
+        String dimensionsLine = readLine(stream);
         String[] dims = dimensionsLine.split("\\s");
 
-        if (dims[0].equals("-Y") && dims[2].equals("+X")) {
-            header.height = Integer.parseInt(dims[1]);
-            header.width = Integer.parseInt(dims[3]);
+        if (dims.length >= 4 && dims[0].equals("-Y") && dims[2].equals("+X")) {
+            header.height = parseDimension(dims[1]);
+            header.width = parseDimension(dims[3]);
 
             return header;
         }
         else {
             throw new IIOException("Unsupported RGBE orientation (expected \"-Y ... +X ...\")");
         }
+    }
+
+    private static String readLine(final ImageInputStream stream) throws IOException {
+        String line = stream.readLine();
+
+        if (line == null) {
+            throw new EOFException("Unexpected end of RGBE header");
+        }
+
+        return line.trim();
+    }
+
+    private static int parseDimension(final String value) throws IIOException {
+        try {
+            int dimension = Integer.parseInt(value);
+
+            if (dimension > 0) {
+                return dimension;
+            }
+        }
+        catch (NumberFormatException ignore) {
+            // Will throw IIOException below...
+        }
+
+        throw new IIOException("Invalid RGBE dimension: " + value);
     }
 
     public int getWidth() {
