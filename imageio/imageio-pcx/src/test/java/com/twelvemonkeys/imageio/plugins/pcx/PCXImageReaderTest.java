@@ -174,6 +174,54 @@ public class PCXImageReaderTest extends ImageReaderAbstractTest<PCXImageReader> 
         }
     }
 
+    private static byte[] createHeader(int xMin, int yMin, int xMax, int yMax, int bytesPerLine) {
+        byte[] pcx = new byte[PCX.HEADER_SIZE + 256];
+        ByteBuffer header = ByteBuffer.wrap(pcx).order(ByteOrder.LITTLE_ENDIAN);
+        header.put((byte) 0x0a);     // Magic
+        header.put((byte) 5);        // Version
+        header.put((byte) 0);        // Compression: none
+        header.put((byte) 8);        // Bits per pixel
+        header.putShort((short) xMin);
+        header.putShort((short) yMin);
+        header.putShort((short) xMax);
+        header.putShort((short) yMax);
+        header.putShort((short) 72); // hDPI
+        header.putShort((short) 72); // vDPI
+        header.position(65);         // Skip palette + reserved byte
+        header.put((byte) 1);        // Channels
+        header.putShort((short) bytesPerLine);
+
+        return pcx;
+    }
+
+    @Test
+    public void testReadInvalidHeaderThrowsIIOException() throws IOException {
+        List<byte[]> headers = Arrays.asList(
+                createHeader(0, 0, 15, 0, 0),   // No bytes per line
+                createHeader(0, 0, 99, 0, 60),  // Bytes per line < width
+                createHeader(10, 0, 0, 0, 16),  // Inverted x
+                createHeader(0, 10, 15, 0, 16)  // Inverted y
+        );
+
+        ImageReadParam param = new ImageReadParam();
+        param.setSourceSubsampling(2, 1, 0, 0);
+
+        PCXImageReader reader = createReader();
+
+        try {
+            for (byte[] pcx : headers) {
+                try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(pcx))) {
+                    reader.setInput(input);
+
+                    assertThrows(IIOException.class, () -> reader.read(0, param));
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
     @Override
     @Test
     public void testReadWithSourceRegionParamEqualImage() throws IOException {
