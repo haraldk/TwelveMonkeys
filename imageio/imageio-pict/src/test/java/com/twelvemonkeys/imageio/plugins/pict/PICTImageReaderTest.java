@@ -436,16 +436,19 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
     @Test
     public void testInvalidBitMapRectangles() throws IOException {
         int[] valid = {0, 0, 4, 8};
-        int[] inverted = {8, 0, 4, 8};
-        int[] empty = {4, 0, 4, 8};
+        int[][] invalid = {
+                {8, 0, 4, 8}, // inverted height
+                {4, 0, 4, 8}, // empty height
+                {0, 8, 4, 0}, // inverted width
+                {0, 8, 4, 8}, // empty width
+        };
 
-        assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_BITS_RECT, inverted, valid));
-        assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_BITS_RECT, valid, inverted));
-        assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_BITS_RECT, valid, empty));
-        assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_PACK_BITS_RECT, valid, inverted));
-        assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_PACK_BITS_RECT, valid, empty));
-        assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_DIRECT_BITS_RECT, valid, inverted));
-        assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_DIRECT_BITS_RECT, valid, empty));
+        for (int[] rect : invalid) {
+            assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_BITS_RECT, rect, valid));
+            assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_BITS_RECT, valid, rect));
+            assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_PACK_BITS_RECT, valid, rect));
+            assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_DIRECT_BITS_RECT, valid, rect));
+        }
     }
 
     @Test

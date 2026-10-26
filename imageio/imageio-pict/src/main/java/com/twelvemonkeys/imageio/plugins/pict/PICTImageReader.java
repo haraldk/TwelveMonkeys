@@ -1818,7 +1818,7 @@ public final class PICTImageReader extends ImageReaderBase {
             System.out.print(", srcRect:" + srcRect);
         }
 
-        if (srcRect.height <= 0) {
+        if (srcRect.isEmpty()) {
             throw new IIOException("Invalid source rectangle: " + srcRect);
         }
 
@@ -2068,7 +2068,7 @@ public final class PICTImageReader extends ImageReaderBase {
             System.out.print(", srcRect:" + srcRect);
         }
 
-        if (srcRect.height <= 0) {
+        if (srcRect.isEmpty()) {
             throw new IIOException("Invalid source rectangle: " + srcRect);
         }
 
@@ -2374,7 +2374,7 @@ public final class PICTImageReader extends ImageReaderBase {
         Rectangle srcRect = new Rectangle();
         readRectangle(pStream, srcRect);
 
-        if (bounds.height <= 0 || srcRect.height <= 0) {
+        if (bounds.isEmpty() || srcRect.isEmpty()) {
             throw new IIOException("Invalid bounds or source rectangle: " + bounds + ", " + srcRect);
         }
 
