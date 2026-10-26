@@ -158,8 +158,12 @@ public final class BMPImageReader extends ImageReaderBase {
                     imageInput.seek(offset);
                 }
 
+                // Both values are unsigned 32 bit, IndexColorModel can't index more than 16 bits
+                long colorsUsed = Math.min(Integer.toUnsignedLong(header.getColorsUsed()), 1 << 16);
+                long mapLength = pixelOffset - offset;
+
                 if (header.getSize() == DIB.BITMAP_CORE_HEADER_SIZE) {
-                    colors = new int[Math.min(header.getColorsUsed(), (int) (pixelOffset - DIB.BMP_FILE_HEADER_SIZE - header.getSize()) / 3)];
+                    colors = new int[(int) Math.min(colorsUsed, mapLength / 3)];
 
                     // Byte triplets in BGR form
                     for (int i = 0; i < colors.length; i++) {
@@ -170,7 +174,7 @@ public final class BMPImageReader extends ImageReaderBase {
                     }
                 }
                 else {
-                    colors = new int[Math.min(header.getColorsUsed(), (int) (pixelOffset - DIB.BMP_FILE_HEADER_SIZE - header.getSize()) / 4)];
+                    colors = new int[(int) Math.min(colorsUsed, mapLength / 4)];
 
                     // Byte quadruples in BGRa (or little-endian ints in aRGB) form, where a is "Reserved"
                     for (int i = 0; i < colors.length; i++) {
