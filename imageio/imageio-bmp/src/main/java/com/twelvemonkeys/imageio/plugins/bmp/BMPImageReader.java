@@ -159,7 +159,7 @@ public final class BMPImageReader extends ImageReaderBase {
                 }
 
                 // Both values are unsigned 32 bit, IndexColorModel can't index more than 16 bits
-                long colorsUsed = Math.min(header.getColorsUsed() & 0xffffffffL, 1 << 16);
+                long colorsUsed = Math.min(Integer.toUnsignedLong(header.getColorsUsed()), 1 << 16);
                 long mapLength = pixelOffset - offset;
 
                 if (header.getSize() == DIB.BITMAP_CORE_HEADER_SIZE) {
