@@ -211,6 +211,13 @@ final class PCXHeader {
         header.hScreenSize = imageInput.readUnsignedShort();
         header.vScreenSize = imageInput.readUnsignedShort();
 
+        if (header.width <= 0 || header.height <= 0) {
+            throw new IIOException(String.format("Invalid PCX dimensions: %dx%d", header.width, header.height));
+        }
+        if (header.bytesPerLine < ((long) header.width * header.bitsPerPixel + 7) / 8) {
+            throw new IIOException(String.format("Invalid PCX bytes per line: %d (width: %d, bits per pixel: %d)", header.bytesPerLine, header.width, header.bitsPerPixel));
+        }
+
         imageInput.skipBytes(PCX.HEADER_SIZE - imageInput.getStreamPosition());
 
         return header;
