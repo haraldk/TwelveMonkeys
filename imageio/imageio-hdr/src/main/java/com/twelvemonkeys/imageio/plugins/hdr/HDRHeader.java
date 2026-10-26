@@ -131,6 +131,7 @@ final class HDRHeader {
             }
         }
         catch (NumberFormatException ignore) {
+            // Will throw IIOException below...
         }
 
         throw new IIOException("Invalid RGBE dimension: " + value);

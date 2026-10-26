@@ -94,34 +94,26 @@ public class HDRImageReaderTest extends ImageReaderAbstractTest<HDRImageReader> 
     }
 
     @Test
-    public void testTruncatedHeader() throws IOException {
-        assertReadThrows(EOFException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n");
+    public void testMalformedHeader() throws IOException {
+        HDRImageReader reader = createReader();
+
+        try {
+            assertReadThrows(reader, EOFException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n");
+            assertReadThrows(reader, IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 1\n");
+            assertReadThrows(reader, IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y x +X 1\n");
+            assertReadThrows(reader, IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 1 +X -1\n");
+            assertReadThrows(reader, IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 0 +X 1\n");
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
-    @Test
-    public void testShortDimensions() throws IOException {
-        assertReadThrows(IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 1\n");
-    }
-
-    @Test
-    public void testNonNumericDimensions() throws IOException {
-        assertReadThrows(IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y x +X 1\n");
-    }
-
-    @Test
-    public void testNonPositiveDimensions() throws IOException {
-        assertReadThrows(IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 1 +X -1\n");
-        assertReadThrows(IIOException.class, "#?RADIANCE\nFORMAT=32-bit_rle_rgbe\n\n-Y 0 +X 1\n");
-    }
-
-    private void assertReadThrows(Class<? extends IOException> expected, String data) throws IOException {
+    private static void assertReadThrows(HDRImageReader reader, Class<? extends IOException> expected, String data) throws IOException {
         try (ImageInputStream input = ImageIO.createImageInputStream(new ByteArrayInputStream(data.getBytes(StandardCharsets.US_ASCII)))) {
-            HDRImageReader reader = createReader();
             reader.setInput(input);
 
             assertThrows(expected, () -> reader.read(0));
-
-            reader.dispose();
         }
     }
 }
