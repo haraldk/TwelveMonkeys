@@ -398,22 +398,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (DataOutputStream output = new DataOutputStream(bytes)) {
             output.write(new byte[headerSize]);
-            output.writeShort(0);               // picture size
-            output.writeShort(0);               // frame top
-            output.writeShort(0);               // frame left
-            output.writeShort(1);               // frame bottom
-            output.writeShort(1);               // frame right
-            output.writeShort(0x0011);          // VersionOp
-            output.writeShort(0x02ff);          // version 2
-            output.writeShort(0x0c00);          // HeaderOp
-            output.writeInt(0xfffe0000);        // extended v2 header
-            output.writeInt(72 << 16);          // horizontal resolution
-            output.writeInt(72 << 16);          // vertical resolution
-            output.writeShort(0);               // optimal source top
-            output.writeShort(0);               // optimal source left
-            output.writeShort(1);               // optimal source bottom
-            output.writeShort(1);               // optimal source right
-            output.writeInt(0);                 // reserved
+            writeV2Header(output, 1, 1);
             output.writeShort(opcode);
             if (unsignedShortLength) {
                 output.writeShort(dataLength);
@@ -431,6 +416,25 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         }
 
         return bytes.toByteArray();
+    }
+
+    private static void writeV2Header(DataOutputStream output, int frameBottom, int frameRight) throws IOException {
+        output.writeShort(0);               // picture size
+        output.writeShort(0);               // frame top
+        output.writeShort(0);               // frame left
+        output.writeShort(frameBottom);     // frame bottom
+        output.writeShort(frameRight);      // frame right
+        output.writeShort(0x0011);          // VersionOp
+        output.writeShort(0x02ff);          // version 2
+        output.writeShort(0x0c00);          // HeaderOp
+        output.writeInt(0xfffe0000);        // extended v2 header
+        output.writeInt(72 << 16);          // horizontal resolution
+        output.writeInt(72 << 16);          // vertical resolution
+        output.writeShort(0);               // optimal source top
+        output.writeShort(0);               // optimal source left
+        output.writeShort(frameBottom);     // optimal source bottom
+        output.writeShort(frameRight);      // optimal source right
+        output.writeInt(0);                 // reserved
     }
 
     @Test
@@ -481,16 +485,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
     private static byte[] createBitMapPICT(int opcode, int[] bounds, int[] srcRect) throws IOException {
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (DataOutputStream output = new DataOutputStream(bytes)) {
-            output.writeShort(0);               // picture size
-            output.writeLong(0x0000000000040008L); // frame (0, 0, 4, 8)
-            output.writeShort(0x0011);          // VersionOp
-            output.writeShort(0x02ff);          // version 2
-            output.writeShort(0x0c00);          // HeaderOp
-            output.writeInt(0xfffe0000);        // extended v2 header
-            output.writeInt(72 << 16);          // horizontal resolution
-            output.writeInt(72 << 16);          // vertical resolution
-            output.writeLong(0x0000000000040008L); // optimal source rect (0, 0, 4, 8)
-            output.writeInt(0);                 // reserved
+            writeV2Header(output, 4, 8);
             output.writeShort(opcode);
 
             if (opcode == PICT.OP_DIRECT_BITS_RECT) {
