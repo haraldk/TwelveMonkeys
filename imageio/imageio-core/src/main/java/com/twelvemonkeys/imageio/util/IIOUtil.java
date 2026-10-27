@@ -33,6 +33,7 @@ package com.twelvemonkeys.imageio.util;
 import com.twelvemonkeys.image.ImageUtil;
 import com.twelvemonkeys.lang.Validate;
 
+import javax.imageio.IIOException;
 import javax.imageio.IIOParam;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
@@ -172,6 +173,111 @@ public final class IIOUtil {
 
             length -= skipped;
         }
+    }
+
+    // Some VMs reserve header words in arrays, so the largest safe array length is slightly below Integer.MAX_VALUE
+    private static final int MAX_ARRAY_LENGTH = Integer.MAX_VALUE - 8;
+    private static final int READ_CHUNK_SIZE = 1 << 20;
+
+    /**
+     * Reads exactly {@code length} bytes from the stream into a new array.
+     * <p>
+     * Use this method instead of {@code new byte[length]} followed by {@code readFully}, when {@code length} is
+     * read from the input. The method never allocates more than the stream can supply:
+     * if the stream length is known, a {@code length} larger than the remaining bytes fails before allocating,
+     * otherwise the array grows only as data is actually read.
+     * </p>
+     *
+     * @param stream the stream to read from
+     * @param length the number of bytes to read
+     * @return a new array containing exactly {@code length} bytes
+     * @throws NullPointerException if {@code stream} is {@code null}
+     * @throws IIOException if {@code length} is negative or too large for an array
+     * @throws EOFException if the stream ends before {@code length} bytes are read
+     * @throws IOException if an I/O error occurs
+     */
+    public static byte[] readFully(final ImageInputStream stream, final long length) throws IOException {
+        Objects.requireNonNull(stream, "stream");
+        int size = checkedArrayLength(length);
+
+        long remaining = remaining(stream);
+        if (remaining >= 0) {
+            if (size > remaining) {
+                throw new EOFException(String.format("Length %d exceeds remaining stream length %d", length, remaining));
+            }
+
+            byte[] data = new byte[size];
+            stream.readFully(data);
+
+            return data;
+        }
+
+        byte[] data = new byte[Math.min(size, READ_CHUNK_SIZE)];
+        int read = 0;
+
+        while (read < size) {
+            if (read == data.length) {
+                data = Arrays.copyOf(data, (int) Math.min(size, 2L * data.length));
+            }
+
+            int count = stream.read(data, read, data.length - read);
+            if (count < 0) {
+                throw new EOFException(String.format("Unexpected end of stream after %d of %d bytes", read, length));
+            }
+
+            read += count;
+        }
+
+        return data;
+    }
+
+    /**
+     * Verifies that {@code count} elements of {@code elementSize} bytes each can be read from the stream,
+     * before allocating an array for them. If the stream length is unknown, only the array size is verified.
+     *
+     * @param stream the stream the elements will be read from
+     * @param count the number of elements
+     * @param elementSize the size of each element in the stream, in bytes
+     * @return {@code count} as an {@code int}
+     * @throws NullPointerException if {@code stream} is {@code null}
+     * @throws IIOException if {@code count} is negative or too large for an array
+     * @throws EOFException if the stream does not contain enough bytes
+     * @throws IOException if an I/O error occurs
+     */
+    public static int checkAvailable(final ImageInputStream stream, final long count, final int elementSize) throws IOException {
+        Objects.requireNonNull(stream, "stream");
+        Validate.isTrue(elementSize > 0, "elementSize must be > 0");
+        int length = checkedArrayLength(count);
+
+        long remaining = remaining(stream);
+        if (remaining >= 0 && (long) length * elementSize > remaining) {
+            throw new EOFException(String.format("%d elements of %d bytes exceeds remaining stream length %d", count, elementSize, remaining));
+        }
+
+        return length;
+    }
+
+    /**
+     * Converts {@code count} to an array length, failing on negative or too large values
+     * instead of throwing {@code NegativeArraySizeException} or {@code OutOfMemoryError}.
+     * Use {@link Math#multiplyExact(long, long)} to compute {@code count} from multiple values read from the input.
+     *
+     * @param count the number of elements
+     * @return {@code count} as an {@code int}
+     * @throws IIOException if {@code count} is negative or too large for an array
+     */
+    public static int checkedArrayLength(final long count) throws IIOException {
+        if (count < 0 || count > MAX_ARRAY_LENGTH) {
+            throw new IIOException(String.format("Invalid array length: %d", count));
+        }
+
+        return (int) count;
+    }
+
+    private static long remaining(final ImageInputStream stream) throws IOException {
+        long length = stream.length();
+
+        return length < 0 ? -1 : Math.max(0, length - stream.getStreamPosition());
     }
 
     public static Image fakeSubsampling(final Image pImage, final IIOParam pParam) {
