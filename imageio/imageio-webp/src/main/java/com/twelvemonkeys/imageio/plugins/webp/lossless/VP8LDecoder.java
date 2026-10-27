@@ -285,33 +285,30 @@ public final class VP8LDecoder {
         short distancePrefix = curCodeGroup.distanceCode.readSymbol(lsbBitReader);
         int distanceCode = lz77decode(distancePrefix);
 
-        int xSrc, ySrc;
+        int distance;
 
         if (distanceCode > 120) {
             // Linear distance
-            int distance = distanceCode - 120;
-            ySrc = y - (distance / width);
-            xSrc = x - (distance % width);
+            distance = distanceCode - 120;
         }
         else {
             // See comment of distances array
-            xSrc = x - (8 - (DISTANCES[distanceCode - 1] & 0xf));
-            ySrc = y - (DISTANCES[distanceCode - 1] >> 4);
+            int yOffset = DISTANCES[distanceCode - 1] >> 4;
+            int xOffset = 8 - (DISTANCES[distanceCode - 1] & 0xf);
+
+            // For very narrow images the distance may be < 1, the spec says to use 1 in that case
+            distance = max(yOffset * width + xOffset, 1);
         }
 
-        if (xSrc < 0) {
-            ySrc--;
-            xSrc += width;
-        }
-        else if (xSrc >= width) {
-            xSrc -= width;
-            ySrc++;
-        }
+        int srcPos = y * width + x - distance;
 
-        if (ySrc < 0 || ySrc >= raster.getHeight()) {
+        if (srcPos < 0) {
             throw new IIOException("Corrupt WebP stream, backward reference outside image: distance=" + distanceCode +
-                                   ", x=" + x + ", y=" + y + ", xSrc=" + xSrc + ", ySrc=" + ySrc);
+                                   ", x=" + x + ", y=" + y + ", srcPos=" + srcPos);
         }
+
+        int xSrc = srcPos % width;
+        int ySrc = srcPos / width;
 
         for (int l = length; l > 0; x++, l--) {
             // Check length and xSrc, ySrc not falling outside raster? (Should not occur if image is correct)
