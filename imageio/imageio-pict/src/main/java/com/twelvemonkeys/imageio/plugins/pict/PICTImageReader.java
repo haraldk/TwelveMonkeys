@@ -1818,6 +1818,10 @@ public final class PICTImageReader extends ImageReaderBase {
             System.out.print(", srcRect:" + srcRect);
         }
 
+        if (srcRect.isEmpty()) {
+            throw new IIOException("Invalid source rectangle: " + srcRect);
+        }
+
         // TODO: FixMe...
         // Get destination rectangle. We DO scale the coordinates according to
         // the image resolution, since we are working in display coordinates
@@ -2062,6 +2066,10 @@ public final class PICTImageReader extends ImageReaderBase {
 
         if (DEBUG) {
             System.out.print(", srcRect:" + srcRect);
+        }
+
+        if (srcRect.isEmpty()) {
+            throw new IIOException("Invalid source rectangle: " + srcRect);
         }
 
         // Get destination rectangle. We DO scale the coordinates according to
@@ -2365,6 +2373,10 @@ public final class PICTImageReader extends ImageReaderBase {
 
         Rectangle srcRect = new Rectangle();
         readRectangle(pStream, srcRect);
+
+        if (bounds.isEmpty() || srcRect.isEmpty()) {
+            throw new IIOException("Invalid bounds or source rectangle: " + bounds + ", " + srcRect);
+        }
 
         Rectangle dstRect = new Rectangle();
         readRectangle(pStream, dstRect);
