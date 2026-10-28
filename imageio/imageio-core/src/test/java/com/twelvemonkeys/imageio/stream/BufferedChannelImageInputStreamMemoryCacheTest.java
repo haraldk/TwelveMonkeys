@@ -366,6 +366,41 @@ public class BufferedChannelImageInputStreamMemoryCacheTest {
     }
 
     @Test
+    public void testFlushBeforeAfterSeekPastCachedBlocks() throws IOException {
+        byte[] bytes = new byte[MemoryCache.BLOCK_SIZE * 3];
+        InputStream input = randomDataToInputStream(bytes);
+
+        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new MemoryCache(input))) {
+            assertEquals(bytes[0], stream.readByte());
+
+            int pos = MemoryCache.BLOCK_SIZE * 2 + 42;
+            stream.seek(pos);
+            stream.flushBefore(pos);
+            assertEquals(pos, stream.getFlushedPosition());
+
+            for (int i = pos; i < bytes.length; i++) {
+                assertEquals(bytes[i], stream.readByte());
+            }
+
+            assertEquals(-1, stream.read());
+        }
+    }
+
+    @Test
+    public void testFlushBeforeAfterSeekPastEOF() throws IOException {
+        byte[] bytes = new byte[9];
+        InputStream input = randomDataToInputStream(bytes);
+
+        try (final ImageInputStream stream = new BufferedChannelImageInputStream(new MemoryCache(input))) {
+            long pos = MemoryCache.BLOCK_SIZE * 4L;
+            stream.seek(pos);
+            stream.flushBefore(pos);
+
+            assertEquals(-1, stream.read());
+        }
+    }
+
+    @Test
     public void testClose() throws IOException {
         // Create wrapper stream
         Cache cache = mock(Cache.class);

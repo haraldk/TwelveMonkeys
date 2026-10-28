@@ -152,7 +152,8 @@ final class MemoryCache implements Cache {
             throw new IndexOutOfBoundsException("pos > current position");
         }
 
-        int blocks = (int) (pos / BLOCK_SIZE); // Overflow guarded for in fetchBlock
+        // Seeking does not fetch, so the cache may end before pos
+        int blocks = (int) min(pos / BLOCK_SIZE, cache.size());
 
         // Clear blocks no longer needed
         for (int i = 0; i < blocks; i++) {
