@@ -29,6 +29,7 @@
  */
 package com.twelvemonkeys.imageio.plugins.bmp;
 
+import javax.imageio.IIOException;
 import java.awt.image.*;
 import java.util.Hashtable;
 
@@ -42,8 +43,14 @@ final class BitmapIndexed extends BitmapDescriptor {
     final int[] bits;
     final int[] colors;
 
-    public BitmapIndexed(final DirectoryEntry entry, final DIBHeader header) {
+    public BitmapIndexed(final DirectoryEntry entry, final DIBHeader header) throws IIOException {
         super(entry, header);
+
+        // NOTE: The directory entry bit count takes precedence over the header, and is used to size the palette.
+        // The mask of a direct color bitmap shares the entry, so only reject the mismatch for indexed headers.
+        if (getBitCount() > 8 && header.getBitCount() <= 8) {
+            throw new IIOException(String.format("Unsupported bit count for indexed bitmap: %d", getBitCount()));
+        }
 
         bits = new int[getWidth() * getHeight()];
 

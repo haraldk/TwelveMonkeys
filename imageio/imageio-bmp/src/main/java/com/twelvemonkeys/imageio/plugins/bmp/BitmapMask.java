@@ -30,6 +30,7 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
+import javax.imageio.IIOException;
 import java.awt.image.*;
 
 
@@ -42,7 +43,7 @@ import java.awt.image.*;
 final class BitmapMask extends BitmapDescriptor {
     final BitmapIndexed bitMask;
 
-    public BitmapMask(final DirectoryEntry parent, final DIBHeader header) {
+    public BitmapMask(final DirectoryEntry parent, final DIBHeader header) throws IIOException {
         super(parent, header);
         bitMask = new BitmapIndexed(parent, header);
     }
