@@ -94,6 +94,10 @@ abstract class DirectoryEntry {
         // Size of bitmap in bytes
         size = stream.readInt();
         offset = stream.readInt();
+
+        if (size < 0 || offset < 0) {
+            throw new IIOException(String.format("Negative size or offset in directory entry: size: %d, offset: %d", size, offset));
+        }
     }
 
     void write(final DataOutput output) throws IOException {

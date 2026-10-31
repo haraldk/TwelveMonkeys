@@ -30,10 +30,16 @@
 
 package com.twelvemonkeys.imageio.plugins.bmp;
 
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.util.ImageReaderAbstractTest;
+import com.twelvemonkeys.io.LittleEndianDataOutputStream;
 
+import javax.imageio.IIOException;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -41,6 +47,9 @@ import java.util.List;
 
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * ICOImageReaderTest
@@ -109,5 +118,107 @@ public class ICOImageReaderTest extends ImageReaderAbstractTest<ICOImageReader> 
     @Override
     public void testReadWithSubsampleParamPixels() throws IOException {
         super.testReadWithSubsampleParamPixels();
+    }
+
+    @Test
+    public void testRejectsEntryBitCountOver8ForIndexedBitmap() throws IOException {
+        // Entry bit count 31 makes the palette size 1 << 31 (negative), the DIB header says 8 bit indexed
+        byte[] data = createICO(31, 40 + 256 * 4 + 8, 22, createDIBHeader(8));
+
+        assertReadThrowsIIOException(data);
+    }
+
+    @Test
+    public void testReadsRGBWithMaskAndEntryBitCountOver8() throws IOException {
+        // The 1 bit mask of a 24 bit bitmap shares the directory entry, bit count 31 must not size a palette
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        bytes.write(createDIBHeader(24));
+        bytes.write(new byte[] {(byte) 0xff, 0, 0, 0}); // 1 BGR pixel, padded to 4 bytes
+        bytes.write(new byte[] {0, 0, 0, 0});           // 1 bit mask row, padded to 4 bytes
+        byte[] data = createICO(31, bytes.size(), 22, bytes.toByteArray());
+
+        ICOImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(data)) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0);
+            assertEquals(0xff0000ff, image.getRGB(0, 0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testRejectsNegativeEntryOffset() throws IOException {
+        byte[] data = createICO(8, 40 + 256 * 4 + 8, Integer.MIN_VALUE, createDIBHeader(8));
+
+        assertReadThrowsIIOException(data);
+    }
+
+    @Test
+    public void testRejectsNegativeEntrySize() throws IOException {
+        // PNG magic at the entry offset routes to the PNG reader, using the entry size as stream length
+        byte[] png = {(byte) 0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 'I', 'H', 'D', 'R'};
+        byte[] data = createICO(32, -1, 22, png);
+
+        assertReadThrowsIIOException(data);
+    }
+
+    private void assertReadThrowsIIOException(byte[] data) throws IOException {
+        ICOImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(data)) {
+            reader.setInput(stream);
+
+            assertThrows(IIOException.class, () -> reader.read(0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static byte[] createICO(int bitCount, int size, int offset, byte[] image) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+
+        try (LittleEndianDataOutputStream out = new LittleEndianDataOutputStream(bytes)) {
+            out.writeShort(0);          // Reserved
+            out.writeShort(1);          // Type: ICO
+            out.writeShort(1);          // Image count
+
+            out.writeByte(1);           // Width
+            out.writeByte(1);           // Height
+            out.writeByte(0);           // Color count (0: 1 << bit count)
+            out.writeByte(0);           // Reserved
+            out.writeShort(1);          // Planes
+            out.writeShort(bitCount);   // Bit count
+            out.writeInt(size);         // Size of image data
+            out.writeInt(offset);       // Offset of image data
+
+            out.write(image);
+        }
+
+        return bytes.toByteArray();
+    }
+
+    private static byte[] createDIBHeader(int bitCount) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+
+        try (LittleEndianDataOutputStream out = new LittleEndianDataOutputStream(bytes)) {
+            out.writeInt(40);           // BITMAPINFOHEADER size
+            out.writeInt(1);            // Width
+            out.writeInt(2);            // Height (image + mask)
+            out.writeShort(1);          // Planes
+            out.writeShort(bitCount);   // Bit count
+            out.writeInt(0);            // Compression: BI_RGB
+            out.writeInt(0);            // Image size
+            out.writeInt(0);            // X pixels per meter
+            out.writeInt(0);            // Y pixels per meter
+            out.writeInt(0);            // Colors used
+            out.writeInt(0);            // Colors important
+        }
+
+        return bytes.toByteArray();
     }
 }

@@ -63,7 +63,13 @@ abstract class BitmapDescriptor {
     }
 
     protected final int getColorCount() {
-        return entry.getColorCount() != 0 ? entry.getColorCount() : 1 << getBitCount();
+        if (entry.getColorCount() != 0) {
+            return entry.getColorCount();
+        }
+
+        // Only bitmaps with 8 bits per pixel or less have a palette
+        int bitCount = getBitCount();
+        return bitCount <= 8 ? 1 << bitCount : 0;
     }
 
     protected final int getBitCount() {
