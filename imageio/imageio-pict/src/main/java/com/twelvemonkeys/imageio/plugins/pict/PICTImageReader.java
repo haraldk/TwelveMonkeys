@@ -1577,7 +1577,7 @@ public final class PICTImageReader extends ImageReaderBase {
     MaskSize        Size of mask region in bytes            4
      */
     private Rectangle readCompressedQT(final ImageInputStream pStream) throws IOException {
-        int dataLength = pStream.readInt();
+        long dataLength = pStream.readUnsignedInt();
         long pos = pStream.getStreamPosition();
 
         int version = pStream.readUnsignedShort();
@@ -1613,8 +1613,8 @@ public final class PICTImageReader extends ImageReaderBase {
 
         // ...and more
         int accuracy = pStream.readInt();
-        int maskSize = pStream.readInt();
-        pStream.skipBytes(maskSize);
+        long maskSize = pStream.readUnsignedInt();
+        skipFully(pStream, maskSize);
 
         if (DEBUG) {
             System.out.print("matteSize: " + matteSize);
@@ -1644,7 +1644,8 @@ public final class PICTImageReader extends ImageReaderBase {
             }
             context.copyBits(image, srcRect, dstRect, mode, null);
 
-            pStream.seek(pos + dataLength); // Might be word-align mismatch here
+            pStream.seek(pos);
+            skipFully(pStream, dataLength); // Might be word-align mismatch here
 
             // Skip "QuickTime™ and a ... decompressor required" text
             // NOTE: This algorithm is reverse-engineered by looking at various test inputs and not from any spec...
@@ -1662,7 +1663,8 @@ public final class PICTImageReader extends ImageReaderBase {
             if (DEBUG) {
                 System.out.println("readCompressedQT failed to read image!");
             }
-            pStream.seek(pos + dataLength);
+            pStream.seek(pos);
+            skipFully(pStream, dataLength);
             return null;
         }
     }

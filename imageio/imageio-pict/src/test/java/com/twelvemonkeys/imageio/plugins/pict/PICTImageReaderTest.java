@@ -46,6 +46,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -194,6 +195,92 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
     }
 
     // Regression tests
+
+    @Test
+    public void testCompressedQTNegativeDataLengthDoesNotLoop() {
+        // -6 is the distance back to the opcode, a signed length would re-read it forever
+        assertCompressedQTThrowsIIOException(-6, 0);
+    }
+
+    @Test
+    public void testCompressedQTNegativeMaskSize() {
+        assertCompressedQTThrowsIIOException(150, Integer.MIN_VALUE);
+    }
+
+    @Test
+    public void testCompressedQTDataLengthPastEOFUnknownStreamLength() {
+        assertCompressedQTThrowsIIOException(-6, 0, true);
+    }
+
+    private void assertCompressedQTThrowsIIOException(final int dataLength, final int maskSize) {
+        assertCompressedQTThrowsIIOException(dataLength, maskSize, false);
+    }
+
+    private void assertCompressedQTThrowsIIOException(final int dataLength, final int maskSize, final boolean unknownLength) {
+        assertTimeoutPreemptively(Duration.ofSeconds(5), () -> {
+            PICTImageReader reader = createReader();
+            byte[] data = compressedQTData(dataLength, maskSize);
+
+            try (ImageInputStream stream = unknownLength
+                                           ? new MemoryCacheImageInputStream(new ByteArrayInputStream(data))
+                                           : new ByteArrayImageInputStream(data)) {
+                reader.setInput(stream);
+
+                assertThrows(IIOException.class, () -> reader.read(0, null));
+            }
+            finally {
+                reader.dispose();
+            }
+        });
+    }
+
+    private static byte[] compressedQTData(final int dataLength, final int maskSize) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+
+        try (DataOutputStream output = new DataOutputStream(bytes)) {
+            output.writeShort(0);               // picture size
+            output.write(new byte[] {0, 0, 0, 0, 0, 1, 0, 1}); // frame
+            output.writeShort(0x0011);          // VersionOp
+            output.writeShort(0x02ff);          // version 2
+            output.writeShort(0x0c00);          // HeaderOp
+            output.writeInt(0xfffe0000);        // extended v2 header
+            output.writeInt(72 << 16);          // horizontal resolution
+            output.writeInt(72 << 16);          // vertical resolution
+            output.write(new byte[] {0, 0, 0, 0, 0, 1, 0, 1}); // optimal source rect
+            output.writeInt(0);                 // reserved
+
+            output.writeShort(0x8200);          // CompressedQuickTime
+            output.writeInt(dataLength);
+            output.writeShort(0);               // version
+            output.write(new byte[36]);         // matrix
+            output.writeInt(0);                 // matte size
+            output.write(new byte[8]);          // matte rect
+            output.writeShort(0);               // mode
+            output.write(new byte[8]);          // source rect
+            output.writeInt(0);                 // accuracy
+            output.writeInt(maskSize);
+
+            output.writeInt(86);                // 'idsc' atom size
+            output.writeBytes("xxxx");          // compressor, unknown to all decoders, so nothing to render
+            output.write(new byte[8]);          // reserved
+            output.writeInt(0);                 // version + revision
+            output.writeBytes("xxxx");          // vendor
+            output.writeLong(0);                // temporal + spatial quality
+            output.writeShort(1);               // width
+            output.writeShort(1);               // height
+            output.writeInt(72 << 16);          // horizontal resolution
+            output.writeInt(72 << 16);          // vertical resolution
+            output.writeInt(0);                 // data size
+            output.writeShort(1);               // frame count
+            output.write(new byte[32]);         // compressor name
+            output.writeShort(24);              // depth
+            output.writeShort(-1);              // color table id
+
+            output.writeShort(0x00ff);          // EndOfPicture
+        }
+
+        return bytes.toByteArray();
+    }
 
     @Test
     public void testProviderNotMatchJPEG() throws IOException {
