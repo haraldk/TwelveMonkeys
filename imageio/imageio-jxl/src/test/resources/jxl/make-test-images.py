@@ -74,3 +74,5 @@ write_png(out + '/rgb16.png', 2, 16, rgb16)
 write_png(out + '/rgba16.png', 6, 16, lambda x, y: rgb16(x, y) + (alpha16(x, y),))
 write_png(out + '/rgb8-icc.png', 2, 8, rgb8_primaries, icc)
 write_png(out + '/rgb16-pq.png', 2, 16, lambda x, y: (pq16(x, y),) * 3)
+# Same code values as PQ, encoded as HLG
+write_png(out + '/rgb16-hlg.png', 2, 16, lambda x, y: (pq16(x, y),) * 3)

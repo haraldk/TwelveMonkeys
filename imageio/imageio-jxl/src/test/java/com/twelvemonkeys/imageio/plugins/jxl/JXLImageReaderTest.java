@@ -100,6 +100,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
                 new TestData(getClassLoaderResource("/jxl/rgba16.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb8-icc.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb16-pq.jxl"), new Dimension(64, 48)),
+                new TestData(getClassLoaderResource("/jxl/rgb16-hlg.jxl"), new Dimension(64, 48)),
                 // Container with Exif, brob, split codestream (jxlp) and XMP boxes, see make-test-container.py
                 new TestData(getClassLoaderResource("/jxl/gray8-meta.jxl"), new Dimension(64, 48)),
                 // Container with Brotli compressed Exif and XMP boxes
@@ -111,7 +112,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     protected List<TestData> getTestDataForAffineTransformOpCompatibility() {
         // AffineTransformOp can't handle 16 bit interleaved RGB(A) (TYPE_CUSTOM),
         // or RGBA with a non-sRGB ICC color space (patches-lossless has a "Colour LCD Calibrated" profile)
-        List<String> excluded = asList("/rgb16.jxl", "/rgba16.jxl", "/rgb16-pq.jxl", "/patches-lossless.jxl");
+        List<String> excluded = asList("/rgb16.jxl", "/rgba16.jxl", "/rgb16-pq.jxl", "/rgb16-hlg.jxl", "/patches-lossless.jxl");
 
         List<TestData> testData = new ArrayList<>(getTestData());
         testData.removeIf(data -> excluded.stream().anyMatch(data.toString()::endsWith));
@@ -283,6 +284,15 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
         return Math.pow(Math.max(d - c1, 0) / (c2 - c3 * d), 1 / m1);
     }
 
+    private static double hlgToLinear(final double value) {
+        // Rec. ITU-R BT.2100 HLG inverse OETF, normalized scene light (without the OOTF)
+        double a = 0.17883277;
+        double b = 1 - 4 * a;
+        double c = 0.5 - a * Math.log(4 * a);
+
+        return value <= 0.5 ? value * value / 3 : (Math.exp((value - c) / a) + b) / 12;
+    }
+
     private interface PixelFunction {
         int[] expected(int x, int y);
     }
@@ -405,6 +415,22 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
             int expected = linearToSRGB16(pqToLinear(pq16(x, y) / 65535.0) / peak);
             return new int[] {expected, expected, expected};
         }, 64);
+    }
+
+    @Test
+    void testReadHLGToSRGB() throws IOException {
+        // Neutral gray HLG code values (BT.2100 HLG, BT.2020 primaries), so gamut mapping doesn't change the values.
+        // JXLatte maps scene light 1.0 to sRGB 1.0 (no OOTF, no peak detection for HLG), so the result is rather dark.
+        // NOTE: Requires a JXLatte with the HLG transfer function, otherwise reading fails
+        BufferedImage image = read("/jxl/rgb16-hlg.jxl", null);
+
+        assertTrue(image.getColorModel().getColorSpace().isCS_sRGB());
+        assertEquals(DataBuffer.TYPE_USHORT, image.getRaster().getTransferType());
+
+        assertSamples(image, (x, y) -> {
+            int expected = linearToSRGB16(hlgToLinear(pq16(x, y) / 65535.0));
+            return new int[] {expected, expected, expected};
+        }, 4);
     }
 
     @Test

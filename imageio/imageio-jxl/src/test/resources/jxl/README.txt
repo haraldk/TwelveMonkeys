@@ -7,7 +7,7 @@ Copyright 2022-2024 Leo Izen (Traneptora), MIT License:
 
 Synthetic 64x48 test images, created for this project:
   gray8.jxl, gray16.jxl, gray16-linear.jxl, graya8.jxl, grayf32-lossless.jxl, grayf32-lossy.jxl,
-  rgb16.jxl, rgba16.jxl, rgb8-icc.jxl, rgb16-pq.jxl
+  rgb16.jxl, rgba16.jxl, rgb8-icc.jxl, rgb16-pq.jxl, rgb16-hlg.jxl
 
 The source PNGs are written by make-test-images.py (the pixel formulas are mirrored in JXLImageReaderTest),
 and encoded with ffmpeg using libjxl 0.11:
@@ -25,6 +25,8 @@ and encoded with ffmpeg using libjxl 0.11:
   rgb8-icc.jxl          rgb8-icc.png (embedded ICC profile), -pix_fmt rgb24
   rgb16-pq.jxl          rgb16-pq.png, -pix_fmt rgb48le,
                         -vf setparams=color_primaries=bt2020:color_trc=smpte2084:colorspace=bt2020nc
+  rgb16-hlg.jxl         rgb16-hlg.png (same pixels as rgb16-pq.png), -pix_fmt rgb48le,
+                        -vf setparams=color_primaries=bt2020:color_trc=arib-std-b67:colorspace=bt2020nc
 
 gray8-meta.jxl is gray8.jxl wrapped in a container with Exif, brob, split codestream (jxlp) and XMP boxes:
   python3 make-test-container.py gray8.jxl gray8-meta.jxl
