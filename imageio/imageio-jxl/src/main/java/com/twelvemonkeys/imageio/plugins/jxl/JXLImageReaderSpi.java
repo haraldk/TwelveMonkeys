@@ -32,7 +32,6 @@
 package com.twelvemonkeys.imageio.plugins.jxl;
 
 import com.twelvemonkeys.imageio.spi.ImageReaderSpiBase;
-import com.twelvemonkeys.lang.SystemUtil;
 
 import javax.imageio.ImageReader;
 import javax.imageio.spi.ServiceRegistry;
@@ -48,12 +47,25 @@ import static com.twelvemonkeys.imageio.util.IIOUtil.deregisterProvider;
  * JXLImageReaderSpi.
  * <p>
  * The provider de-registers itself if the JXLatte decoder is not available
- * (missing from the class path, or running on a Java version older than 21).
+ * (missing from the class path, a JXLatte version without {@code JXLDecoder.readHeader()},
+ * or running on a Java version older than 21).
  * </p>
  */
 public final class JXLImageReaderSpi extends ImageReaderSpiBase {
 
-    static final boolean JXLATTE_AVAILABLE = SystemUtil.isClassAvailable(JXL.JXLATTE_DECODER_CLASS, JXLImageReaderSpi.class);
+    static final boolean JXLATTE_AVAILABLE = isJXLatteAvailable(JXL.JXLATTE_DECODER_CLASS, JXLImageReaderSpi.class.getClassLoader());
+
+    static boolean isJXLatteAvailable(final String decoderClassName, final ClassLoader classLoader) {
+        try {
+            // Requires JXLDecoder.readHeader(), not available in JXLatte 0.1.0
+            Class.forName(decoderClassName, true, classLoader).getMethod("readHeader");
+            return true;
+        }
+        catch (ClassNotFoundException | NoSuchMethodException | LinkageError | SecurityException e) {
+            // Not on class path, too old JXLatte, or too old Java version (JXLatte requires Java 21)
+            return false;
+        }
+    }
 
     @SuppressWarnings("WeakerAccess")
     public JXLImageReaderSpi() {

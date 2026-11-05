@@ -12,11 +12,11 @@ This file tracks what the plugin supports, its limits and its quirks. Keep it up
 | Requirement           | Notes |
 |-----------------------|-------|
 | Java 21+ at runtime   | JXLatte is compiled for Java 21. The plugin itself is compiled for Java 8 like the rest of TwelveMonkeys, so it can sit on an older JVM's class path without breaking anything (see below). |
-| JXLatte on class path | `com.traneptora:jxlatte` is a `provided` dependency, so it has to be added explicitly. |
+| JXLatte on class path | `com.traneptora:jxlatte` is a `provided` dependency, so it has to be added explicitly. It must have `JXLDecoder.readHeader()`, which no JXLatte release has yet. For now use the patched build in `lib/` (see "Known issues"). |
 | JDK 21+ to build      | The module is only part of the build when the `jdk21+` profile in `imageio/pom.xml` is active, which happens automatically on JDK 21 or later. |
 
-If JXLatte is missing or can't be loaded (for example on Java older than 21), `JXLImageReaderSpi` removes itself from the
-ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL reader, and nothing fails.
+If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded (for example on Java older than 21),
+`JXLImageReaderSpi` removes itself from the ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL reader, and nothing fails.
 
 ```xml
 <dependency>
@@ -27,7 +27,7 @@ ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL re
 <dependency>
     <groupId>com.traneptora</groupId>
     <artifactId>jxlatte</artifactId>
-    <version>0.1.0</version> <!-- See "Known issues" about the version -->
+    <version>0.1.0-tm.1</version> <!-- Patched build, from lib/ in this module, see "Known issues" -->
 </dependency>
 ```
 
@@ -143,22 +143,19 @@ ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL re
   the existing header parsing out of `decode()`. A following `decode()` continues after the header, and `JXLDecoder`
   doesn't reset the demuxer in that case (the reset would make the container demuxer look for the signature in the
   middle of the data). The plugin needs this API.
-- **Local JXLatte changes:** each fix (and the header API) is on its own branch (for separate upstream PRs), based on
-  JXLatte `main`. The local branch `local-fixes` merges all of them and is what's built and installed into `~/.m2` (still as version
-  `0.1.0`).
-- **No JXLatte on Maven Central:** `com.traneptora:jxlatte:0.1.0` currently has to be installed locally (see below).
-  To release this module, JXLatte has to be published to Maven Central, since Central artifacts can't depend on
-  JitPack.
+- **Patched JXLatte in `lib/`:** each fix (and the header API) is on its own JXLatte branch (for separate upstream PRs),
+  based on JXLatte `main`. The local branch `local-fixes` merges all of them. Its Maven build ships with this module as
+  `com.traneptora:jxlatte:0.1.0-tm.1`, in the file based Maven repository `lib/`, which the module `pom.xml` declares.
+  `lib/README.md` lists the exact commits and how to rebuild. Remove `lib/` and the `<repository>` once JXLatte has a
+  release with these changes.
+- **Release:** to release this module, JXLatte (with these changes) must be on Maven Central, or users need clear
+  instructions where to get the patched jar (the dependency is `provided`, so consumers never resolve it from `lib/`).
+  Check whether Central's validation accepts a POM that declares a file repository.
 
 ## Development
 
-Install JXLatte locally, with the fixes from the `local-fixes` branch (see "Known issues"; without them the truncated
-input and PQ tests fail or hang, and the plugin doesn't compile without the header API), either built with Maven (`mvn install` in the JXLatte checkout), or from an existing
-jar (Meson build):
-
-```sh
-mvn install:install-file -Dfile=../jxlatte/build/src/jxlatte.jar -DpomFile=../jxlatte/pom.xml
-```
+No setup needed: the patched JXLatte is resolved from `lib/`. To test with other JXLatte changes, rebuild and add a
+new version to `lib/` as described in `lib/README.md`.
 
 Run the module tests with decoding limited to one thread:
 

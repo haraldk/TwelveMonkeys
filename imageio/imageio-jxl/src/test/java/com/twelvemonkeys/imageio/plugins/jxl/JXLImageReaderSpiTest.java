@@ -59,22 +59,22 @@ public class JXLImageReaderSpiTest {
     }
 
     @Test
-    public void canDecodeCodestream() throws IOException {
+    void canDecodeCodestream() throws IOException {
         assertTrue(provider.canDecodeInput(stream(0xFF, 0x0A, 0x5F, 0x40, 0x24, 0x08)));
     }
 
     @Test
-    public void canDecodeCodestreamMinimal() throws IOException {
+    void canDecodeCodestreamMinimal() throws IOException {
         assertTrue(provider.canDecodeInput(stream(0xFF, 0x0A)));
     }
 
     @Test
-    public void canDecodeContainer() throws IOException {
+    void canDecodeContainer() throws IOException {
         assertTrue(provider.canDecodeInput(stream(0x00, 0x00, 0x00, 0x0C, 'J', 'X', 'L', ' ', 0x0D, 0x0A, 0x87, 0x0A, 0x00, 0x00, 0x00, 0x14, 'f', 't', 'y', 'p')));
     }
 
     @Test
-    public void cannotDecodeOtherFormats() throws IOException {
+    void cannotDecodeOtherFormats() throws IOException {
         // JPEG
         assertFalse(provider.canDecodeInput(stream(0xFF, 0xD8, 0xFF, 0xE0, 0x00, 0x10, 'J', 'F', 'I', 'F', 0x00, 0x01)));
         // PNG
@@ -86,21 +86,21 @@ public class JXLImageReaderSpiTest {
     }
 
     @Test
-    public void cannotDecodeTruncated() throws IOException {
+    void cannotDecodeTruncated() throws IOException {
         assertFalse(provider.canDecodeInput(stream()));
         assertFalse(provider.canDecodeInput(stream(0xFF)));
         assertFalse(provider.canDecodeInput(stream(0x00, 0x00, 0x00, 0x0C, 'J', 'X', 'L', ' ', 0x0D, 0x0A, 0x87)));
     }
 
     @Test
-    public void cannotDecodeNonStream() throws IOException {
+    void cannotDecodeNonStream() throws IOException {
         assertFalse(provider.canDecodeInput(null));
         assertFalse(provider.canDecodeInput(new Object()));
         assertFalse(provider.canDecodeInput(new byte[] {(byte) 0xFF, 0x0A}));
     }
 
     @Test
-    public void canDecodeInputResetsStream() throws IOException {
+    void canDecodeInputResetsStream() throws IOException {
         try (ImageInputStream input = stream(0x00, 0x00, 0x00, 0x0C, 'J', 'X', 'L', ' ', 0x0D, 0x0A, 0x87, 0x0A)) {
             input.seek(0);
             assertTrue(provider.canDecodeInput(input));
@@ -114,13 +114,25 @@ public class JXLImageReaderSpiTest {
     }
 
     @Test
-    public void jxlatteAvailable() {
+    void jxlatteAvailable() {
         // JXLatte is a provided dependency, available on the test class path
         assertTrue(JXLImageReaderSpi.JXLATTE_AVAILABLE);
     }
 
     @Test
-    public void registeredWithImageIO() {
+    void jxlatteNotAvailable() {
+        ClassLoader classLoader = getClass().getClassLoader();
+
+        // Missing class
+        assertFalse(JXLImageReaderSpi.isJXLatteAvailable("com.traneptora.jxlatte.NoSuchDecoder", classLoader));
+        // Class without readHeader() method (as JXLDecoder in JXLatte 0.1.0)
+        assertFalse(JXLImageReaderSpi.isJXLatteAvailable("com.traneptora.jxlatte.JXLImage", classLoader));
+        // The real thing
+        assertTrue(JXLImageReaderSpi.isJXLatteAvailable(JXL.JXLATTE_DECODER_CLASS, classLoader));
+    }
+
+    @Test
+    void registeredWithImageIO() {
         IIORegistry.getDefaultInstance().registerApplicationClasspathSpis();
 
         Iterator<ImageReader> readers = ImageIO.getImageReadersByFormatName("jxl");
