@@ -40,6 +40,9 @@ import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
+import javax.imageio.metadata.IIOMetadataFormatImpl;
+import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
@@ -56,7 +59,11 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+
+import org.w3c.dom.NodeList;
 
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
@@ -85,7 +92,9 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
                 new TestData(getClassLoaderResource("/jxl/rgb16.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgba16.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb8-icc.jxl"), new Dimension(64, 48)),
-                new TestData(getClassLoaderResource("/jxl/rgb16-pq.jxl"), new Dimension(64, 48))
+                new TestData(getClassLoaderResource("/jxl/rgb16-pq.jxl"), new Dimension(64, 48)),
+                // Container with Exif, brob, split codestream (jxlp) and XMP boxes, see make-test-container.py
+                new TestData(getClassLoaderResource("/jxl/gray8-meta.jxl"), new Dimension(64, 48))
         );
     }
 
@@ -480,6 +489,128 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
                     assertEquals(reader.getHeight(0), image.getHeight(), message);
                 }
             }
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static IIOMetadataNode standardTree(final IIOMetadata metadata) {
+        assertTrue(metadata.isStandardMetadataFormatSupported());
+        return (IIOMetadataNode) metadata.getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+    }
+
+    private static IIOMetadataNode findNode(final IIOMetadataNode root, final String name) {
+        NodeList nodes = root.getElementsByTagName(name);
+        return nodes.getLength() > 0 ? (IIOMetadataNode) nodes.item(0) : null;
+    }
+
+    private static Map<String, String> textEntries(final IIOMetadataNode root) {
+        Map<String, String> entries = new HashMap<>();
+        NodeList nodes = root.getElementsByTagName("TextEntry");
+
+        for (int i = 0; i < nodes.getLength(); i++) {
+            IIOMetadataNode entry = (IIOMetadataNode) nodes.item(i);
+            entries.put(entry.getAttribute("keyword"), entry.getAttribute("value"));
+        }
+
+        return entries;
+    }
+
+    @Test
+    public void testMetadataExifXMP() throws IOException {
+        JXLImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jxl/gray8-meta.jxl"))) {
+            reader.setInput(stream);
+
+            // Read header, then metadata (seeks around in the stream), then decode
+            assertEquals(64, reader.getWidth(0));
+            IIOMetadataNode root = standardTree(reader.getImageMetadata(0));
+
+            assertEquals("GRAY", findNode(root, "ColorSpaceType").getAttribute("name"));
+            assertEquals("1", findNode(root, "NumChannels").getAttribute("value"));
+            assertEquals("JPEG XL", findNode(root, "CompressionTypeName").getAttribute("value"));
+            assertNull(findNode(root, "Lossless"), "Lossless can't be known for non-XYB images");
+
+            // From Exif
+            Map<String, String> text = textEntries(root);
+            assertEquals("JXL test image", text.get("ImageDescription"));
+            assertEquals("TwelveMonkeys", text.get("Make"));
+            assertEquals("ImageIO JXL", text.get("Model"));
+            assertEquals("make-test-container.py", text.get("Software"));
+            assertEquals("CC0", text.get("Copyright"));
+
+            IIOMetadataNode creationTime = findNode(root, "ImageCreationTime");
+            assertNotNull(creationTime);
+            assertEquals("2026", creationTime.getAttribute("year"));
+            assertEquals("11", creationTime.getAttribute("month"));
+            assertEquals("5", creationTime.getAttribute("day"));
+            assertEquals("19", creationTime.getAttribute("hour"));
+            assertEquals("30", creationTime.getAttribute("minute"));
+            assertEquals("42", creationTime.getAttribute("second"));
+
+            // From XMP (after the codestream)
+            String xmp = text.get(JXLImageMetadata.XMP_KEYWORD);
+            assertNotNull(xmp);
+            assertTrue(xmp.startsWith("<?xpacket begin="), xmp);
+            assertTrue(xmp.contains("JXL XMP test"), xmp);
+
+            // Decoding still works after reading the metadata (split codestream)
+            assertSamples(reader.read(0), (x, y) -> new int[] {gray8(x, y)}, 0);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testMetadataXYBIsLossy() throws IOException {
+        JXLImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jxl/lenna.jxl"))) {
+            reader.setInput(stream);
+            IIOMetadataNode root = standardTree(reader.getImageMetadata(0));
+
+            assertEquals("RGB", findNode(root, "ColorSpaceType").getAttribute("name"));
+            assertEquals("FALSE", findNode(root, "Lossless").getAttribute("value"));
+            assertEquals("none", findNode(root, "Alpha").getAttribute("value"));
+            assertTrue(textEntries(root).isEmpty());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testMetadataAlpha16() throws IOException {
+        JXLImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jxl/rgba16.jxl"))) {
+            reader.setInput(stream);
+            IIOMetadataNode root = standardTree(reader.getImageMetadata(0));
+
+            assertEquals("4", findNode(root, "NumChannels").getAttribute("value"));
+            assertEquals("16 16 16 16", findNode(root, "BitsPerSample").getAttribute("value"));
+            assertNull(findNode(root, "SignificantBitsPerSample"));
+            assertEquals("nonpremultiplied", findNode(root, "Alpha").getAttribute("value"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testMetadataSignificantBits() throws IOException {
+        // 12 bits per sample (color and alpha), decoded to 16 bits. Only the header is read, the image is not decoded
+        JXLImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jxl/blendmodes_5.jxl"))) {
+            reader.setInput(stream);
+            IIOMetadataNode root = standardTree(reader.getImageMetadata(0));
+
+            assertEquals("16 16 16 16", findNode(root, "BitsPerSample").getAttribute("value"));
+            assertEquals("12 12 12 12", findNode(root, "SignificantBitsPerSample").getAttribute("value"));
         }
         finally {
             reader.dispose();

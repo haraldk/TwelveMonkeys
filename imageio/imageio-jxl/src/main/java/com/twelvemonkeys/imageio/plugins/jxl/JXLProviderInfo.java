@@ -47,7 +47,7 @@ final class JXLProviderInfo extends ReaderWriterProviderInfo {
                 new String[] {"com.twelvemonkeys.imageio.plugins.jxl.JXLImageReaderSpi"},
                 null, null, // No writer (JXLatte is decode only)
                 false, null, null, null, null,
-                false, null, null, null, null // TODO: Standard image metadata support
+                true, null, null, null, null
         );
     }
 }

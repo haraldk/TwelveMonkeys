@@ -1,6 +1,6 @@
 Sample JPEG XL files from the JXLatte project, https://github.com/Traneptora/jxlatte
 Copyright 2022-2024 Leo Izen (Traneptora), MIT License:
-  art.jxl, bench.jxl, lenna.jxl, patches-lossless.jxl, white.jxl
+  art.jxl, bench.jxl, blendmodes_5.jxl, lenna.jxl, patches-lossless.jxl, white.jxl
 
 *-jxlatte.png are reference images, decoded to 8 bit sRGB PNG by the JXLatte command line tool:
   java -jar jxlatte.jar --png-depth=8 --png-compression=9 <file>.jxl <file>-jxlatte.png
@@ -25,5 +25,8 @@ and encoded with ffmpeg using libjxl 0.11:
   rgb8-icc.jxl          rgb8-icc.png (embedded ICC profile), -pix_fmt rgb24
   rgb16-pq.jxl          rgb16-pq.png, -pix_fmt rgb48le,
                         -vf setparams=color_primaries=bt2020:color_trc=smpte2084:colorspace=bt2020nc
+
+gray8-meta.jxl is gray8.jxl wrapped in a container with Exif, brob, split codestream (jxlp) and XMP boxes:
+  python3 make-test-container.py gray8.jxl gray8-meta.jxl
 
 SwappedRedAndGreen.icc (embedded in rgb8-icc.jxl) is from colord, Copyright 2012 Richard Hughes, CC0-1.0.

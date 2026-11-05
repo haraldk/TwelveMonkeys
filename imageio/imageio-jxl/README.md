@@ -69,8 +69,8 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 | Size and image type without decoding      | ✔ | From the image header, see "Limits". The decoded image is checked against the header (`IIOException` if they differ). |
 | Progress listener                         | ◐ | Decoding happens in one step without callbacks, so progress events only cover the copy to the destination. |
 | Abort                                     | ◐ | Checked while copying to the destination only. Decoding can't be aborted. |
-| Image metadata                            | ✘ | `getImageMetadata` returns `null`. ☐ Step 5 (standard metadata format) |
-| Exif / XMP                                | ✘ | JXLatte doesn't expose these boxes. ☐ Step 5 |
+| Image metadata                            | ✔ | Standard metadata format (`javax_imageio_1.0`) only, no native format. Chroma, data, dimension and transparency describe the decoded image. `SignificantBitsPerSample` is set when the original integer samples have fewer bits (for example 12 bits decoded to 16). CompressionTypeName is `JPEG XL`. `Lossless` is `FALSE` for XYB images, and left out otherwise (see quirks). Needs only the header and the container boxes, not decoding. |
+| Exif / XMP                                | ✔ | Read by the plugin from the container boxes (JXLatte skips them). Exif goes into the standard Text node like in the TIFF plugin (ImageDescription, Make, Model, Software, Artist, Copyright, ...), and DateTime becomes Document/ImageCreationTime. XMP becomes a TextEntry with the keyword `XML:com.adobe.xmp`, as the JDK PNG reader does. Only the first box of each type is used. Brotli-compressed (`brob`) boxes are skipped. |
 | Stream metadata                           | ✘ | `getStreamMetadata` returns `null`. |
 | Thumbnails / preview frame                | ✘ | |
 | Animation / multiple images               | ✘ | JXLatte doesn't support animation. `getNumImages` always returns 1. What JXLatte returns for an animated file hasn't been checked. |
@@ -134,6 +134,17 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 - **Errors:** JXLatte reports invalid data as `InvalidBitstreamException`, but corrupt data can also cause other
   runtime exceptions, possibly wrapped in `CompletionException`. The plugin turns all of these into `IIOException`.
   End of file and other I/O errors are passed on as they are (for example `EOFException`).
+- **Lossless or not is unknown for non-XYB images:** that depends on the frame encoding (VarDCT or Modular, and Modular
+  can be lossy too), which only the frame headers tell. Even JXLatte's `--info` only says "Possibly". So the standard
+  metadata only reports `Lossless` = `FALSE` for XYB images, and leaves it out otherwise.
+- **Metadata boxes can come after the codestream:** to find them, `getImageMetadata` scans all container boxes, which
+  reads through (or seeks over) the whole file. It saves and restores the stream position, as the JXLatte decoder may
+  still continue after the header.
+- **Exif orientation is ignored:** the JPEG XL spec makes the codestream orientation the one that counts, and JXLatte
+  applies it while decoding. So the metadata always reports orientation `Normal`, since the decoded image is already
+  rotated.
+- **No Brotli decoder:** compressed metadata boxes (`brob`, used for example for large XMP) can't be read, as there's
+  no Brotli decoder in the JDK or in JXLatte. They're skipped.
 - **Two JXLatte samples have embedded ICC profiles:** `patches-lossless.jxl` ("Colour LCD Calibrated") and
   `bench.jxl` ("BRG").
 - **JXLatte's sample size info:** `--parse-only` in the JXLatte CLI shows the size before orientation is applied (for
@@ -176,6 +187,7 @@ one small.
    (with JXLatte fixes). Possible later: float output (`TYPE_FLOAT`) and/or HDR output without conversion to SDR
    (custom `ImageReadParam`?)
 4. ✔ Read size, bit depth, alpha and color info from the header without decoding the image (JXLatte header API)
-5. ☐ Metadata: standard metadata format, Exif/XMP from the container
+5. ✔ Metadata: standard metadata format, Exif/XMP from the container. Possible later: native metadata format (raw
+   Exif/XMP, for example a TIFF native tree as the TIFF and JPEG plugins have), and `brob` boxes (needs Brotli)
 6. ☐ Robustness: malformed input tests, memory/size limits, avoid caching a copy when possible
 7. ☐ Integration: project README format table, CI on JDK 21+, release (JXLatte availability on Maven Central)

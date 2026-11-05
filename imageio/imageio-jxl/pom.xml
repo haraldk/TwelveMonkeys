@@ -45,6 +45,10 @@
         </dependency>
         <dependency>
             <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-metadata</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
             <artifactId>imageio-core</artifactId>
             <type>test-jar</type>
             <scope>test</scope>

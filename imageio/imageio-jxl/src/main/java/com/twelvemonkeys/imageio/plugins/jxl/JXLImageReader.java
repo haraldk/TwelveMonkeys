@@ -33,6 +33,9 @@ package com.twelvemonkeys.imageio.plugins.jxl;
 
 import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
+import com.twelvemonkeys.imageio.metadata.Directory;
+import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+import com.twelvemonkeys.imageio.stream.SubImageInputStream;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
@@ -49,6 +52,7 @@ import com.traneptora.jxlatte.util.ImageBuffer;
 import javax.imageio.IIOException;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
+import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.Rectangle;
 import java.awt.color.CMMException;
@@ -61,7 +65,11 @@ import java.awt.image.DataBufferUShort;
 import java.awt.image.PixelInterleavedSampleModel;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
+import java.io.EOFException;
 import java.io.IOException;
+import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Iterator;
 
@@ -87,6 +95,9 @@ import java.util.Iterator;
  */
 final class JXLImageReader extends ImageReaderBase {
 
+    // Ignore unreasonably large Exif/XMP boxes
+    private static final long MAX_METADATA_BOX_LENGTH = 64 * 1024 * 1024;
+
     private long streamStart = -1;
     private JXLDecoder decoder;
 
@@ -94,6 +105,11 @@ final class JXLImageReader extends ImageReaderBase {
     private ImageHeader header;
     private ColorSpace embeddedColorSpace; // null, unless the image has a usable ICC profile
     private ImageTypeSpecifier rawType;
+
+    // From the container boxes, read on demand
+    private boolean metadataBoxesRead;
+    private Directory exif;
+    private String xmp;
 
     // Cached decoded image
     private BufferedImage decoded;
@@ -109,6 +125,9 @@ final class JXLImageReader extends ImageReaderBase {
         header = null;
         embeddedColorSpace = null;
         rawType = null;
+        metadataBoxesRead = false;
+        exif = null;
+        xmp = null;
         decoded = null;
     }
 
@@ -139,6 +158,15 @@ final class JXLImageReader extends ImageReaderBase {
     @Override
     public Iterator<ImageTypeSpecifier> getImageTypes(final int imageIndex) throws IOException {
         return Collections.singletonList(getRawImageType(imageIndex)).iterator();
+    }
+
+    @Override
+    public IIOMetadata getImageMetadata(final int imageIndex) throws IOException {
+        checkBounds(imageIndex);
+        readHeader();
+        readMetadataBoxes();
+
+        return new JXLImageMetadata(rawType, header, exif, xmp);
     }
 
     @Override
@@ -210,6 +238,105 @@ final class JXLImageReader extends ImageReaderBase {
             header = jxlatte(decoder::readHeader);
             embeddedColorSpace = jxlatte(() -> getEmbeddedColorSpace(header));
             rawType = createImageType(header, embeddedColorSpace);
+        }
+    }
+
+    private void readMetadataBoxes() throws IOException {
+        if (metadataBoxesRead) {
+            return;
+        }
+
+        // NOTE: The decoder may still continue reading after the header, restore position and byte order when done
+        long position = imageInput.getStreamPosition();
+        ByteOrder byteOrder = imageInput.getByteOrder();
+
+        try {
+            imageInput.setByteOrder(ByteOrder.BIG_ENDIAN);
+            imageInput.seek(streamStart);
+
+            byte[] signature = new byte[JXL.CONTAINER_SIGNATURE.length];
+            imageInput.readFully(signature);
+
+            if (Arrays.equals(signature, JXL.CONTAINER_SIGNATURE)) {
+                readBoxes(streamStart + signature.length);
+            }
+            // ...else, a raw codestream has no metadata boxes
+
+            metadataBoxesRead = true;
+        }
+        catch (EOFException e) {
+            // Truncated file, use what we have
+            processWarningOccurred("Truncated JPEG XL container: " + e.getMessage());
+            metadataBoxesRead = true;
+        }
+        finally {
+            imageInput.setByteOrder(byteOrder);
+            imageInput.seek(position);
+        }
+    }
+
+    private void readBoxes(long boxStart) throws IOException {
+        while (true) {
+            imageInput.seek(boxStart);
+
+            if (imageInput.read() < 0) {
+                break; // Normal end of file
+            }
+
+            imageInput.seek(boxStart);
+            long size = imageInput.readUnsignedInt();
+            int type = imageInput.readInt();
+            long headerLength = 8;
+
+            if (size == 1) {
+                size = imageInput.readLong();
+                headerLength = 16;
+            }
+
+            // Size 0 means the box extends to the end of the file
+            long contentLength = size == 0 ? imageInput.length() - boxStart - headerLength : size - headerLength;
+
+            if (size != 0 && contentLength < 0) {
+                throw new IIOException(String.format("Invalid JPEG XL container box size: %d", size));
+            }
+
+            if (contentLength >= 0 && contentLength <= MAX_METADATA_BOX_LENGTH) {
+                // NOTE: Only the first box of each type is used, compressed (brob) boxes are not supported
+                if (type == JXL.BOX_EXIF && exif == null) {
+                    exif = readExif(contentLength);
+                }
+                else if (type == JXL.BOX_XML && xmp == null) {
+                    byte[] bytes = new byte[(int) contentLength];
+                    imageInput.readFully(bytes);
+                    xmp = new String(bytes, StandardCharsets.UTF_8);
+                }
+            }
+
+            if (size == 0) {
+                break;
+            }
+
+            boxStart += size;
+        }
+    }
+
+    private Directory readExif(final long contentLength) throws IOException {
+        // Exif box content starts with a 4 byte offset to the TIFF header
+        long tiffOffset = contentLength >= 4 ? imageInput.readUnsignedInt() : -1;
+
+        if (tiffOffset < 0 || tiffOffset > contentLength - 4 - 8) {
+            processWarningOccurred("Invalid Exif box, ignoring");
+            return null;
+        }
+
+        imageInput.skipBytes(tiffOffset);
+
+        try {
+            return new TIFFReader().read(new SubImageInputStream(imageInput, contentLength - 4 - tiffOffset));
+        }
+        catch (IIOException e) {
+            processWarningOccurred("Invalid Exif data, ignoring: " + e.getMessage());
+            return null;
         }
     }
 

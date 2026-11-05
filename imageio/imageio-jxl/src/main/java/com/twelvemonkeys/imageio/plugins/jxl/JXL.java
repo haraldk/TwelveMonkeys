@@ -46,6 +46,10 @@ final class JXL {
             0x00, 0x00, 0x00, 0x0C, 'J', 'X', 'L', ' ', 0x0D, 0x0A, (byte) 0x87, 0x0A
     };
 
+    // ISO BMFF box types used in the container
+    static final int BOX_EXIF = ('E' << 24) | ('x' << 16) | ('i' << 8) | 'f';
+    static final int BOX_XML = ('x' << 24) | ('m' << 16) | ('l' << 8) | ' ';
+
     /** Fully qualified name of the JXLatte decoder class, used to test for availability. */
     static final String JXLATTE_DECODER_CLASS = "com.traneptora.jxlatte.JXLDecoder";
 
