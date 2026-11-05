@@ -139,7 +139,7 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
   reported as [#45](https://github.com/Traneptora/jxlatte/issues/45), PR [#46](https://github.com/Traneptora/jxlatte/pull/46). `JXLImageReaderTest.testReadPQToSRGB` only passes with both PQ fixes.
 - **HLG isn't implemented in JXLatte** (`UnsupportedOperationException`, reported as `IIOException`), unless the image
   is XYB-encoded. Status: implemented in the patched JXLatte in `lib/` (BT.2100 HLG OETF and inverse, without the OOTF),
-  not reported yet. `JXLImageReaderTest.testReadHLGToSRGB` only passes with it. Converting HLG to SDR or PQ still lacks
+  reported as [#50](https://github.com/Traneptora/jxlatte/issues/50), PR [#51](https://github.com/Traneptora/jxlatte/pull/51). `JXLImageReaderTest.testReadHLGToSRGB` only passes with it. Converting HLG to SDR or PQ still lacks
   the OOTF (system gamma) and any scaling of reference white: HLG scene light 1.0 becomes sRGB 1.0 (SDR is too dark),
   or 10000 nits in the JXLatte CLI's PQ output (instead of the nominal 1000 nits).
 - **Lossless 32-bit float fails in JXLatte:** a valid lossless `grayf32` file (decodes fine with libjxl) fails with an

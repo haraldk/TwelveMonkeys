@@ -17,7 +17,7 @@ JXLatte `main` (`61742c3`) plus these changes, each on its own branch for upstre
 | `fix-mathhelper-max-float` | `038f913` | Fix `MathHelper.max(float...)` returning the minimum |
 | `fix-untrusted-allocations` | `a748e3e` | Don't allocate buffers from untrusted lengths before reading the data |
 | `add-header-api`           | `92a98bc` | `JXLDecoder.readHeader()`, read the image header without decoding the image (required by `imageio-jxl`) |
-| `add-hlg-transfer`         | `351b438` | Add the HLG (Hybrid Log-Gamma) transfer function |
+| `#50-add-hlg-transfer`     | `bf6a63d` | Add the HLG (Hybrid Log-Gamma) transfer function |
 
 Built from the merge of all of these, the local JXLatte branch `local-fixes` (`70d862e`).
 
