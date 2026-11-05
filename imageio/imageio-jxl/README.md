@@ -88,7 +88,7 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 ## Limits
 
 - **`getWidth`, `getHeight`, `getRawImageType` and `getImageTypes` only read the header.** They use JXLatte's
-  `JXLDecoder.readHeader()` (added on the JXLatte branch `add-header-api`, see "Known issues"). The header includes the
+  `JXLDecoder.readHeader()` (not in a JXLatte release yet, see "Known issues"). The header includes the
   ICC profile, which is decompressed to find the color space. This takes milliseconds.
 - **`read` always decodes the whole image.** JXLatte can't decode only a region. After decoding, the plugin drops the
   JXLatte decoder, which still holds full-size buffers.
@@ -117,7 +117,7 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 - **Truncated input hangs in JXLatte 0.1.0.** In `Frame.decodeFrame`, a background task reads the parts of the image
   and hands them to the decoder. If it hits end of file it fails, but the parts the decoder is still waiting for never
   arrive. The decoder waits for them with `join()`, which ignores interrupts, so the reading thread blocks forever.
-  Status: fixed on the local JXLatte branch `fix-truncated-input-hang`, to be submitted upstream. Until a JXLatte
+  Status: fixed in the patched JXLatte in `lib/`, reported as [#41](https://github.com/Traneptora/jxlatte/issues/41), PR [#42](https://github.com/Traneptora/jxlatte/pull/42). Until a JXLatte
   release has the fix, `JXLImageReaderTest.testReadTruncated` only passes against a patched JXLatte.
 - **JXLatte's color transforms can drop extra channels.** `JXLImage.transform(...)` (when it has to linearize or convert
   primaries) creates new buffers and only fills the color channels, leaving the extra channels empty. Before
@@ -132,11 +132,11 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
   has `c2 - c3·d`, and both directions use `m1 = 2612/16384` instead of `2610/16384`. PQ samples that need
   linearizing (anything not XYB-encoded, for example lossless PQ) end up around 1e-15, so the image is black.
   XYB-encoded HDR images are decoded straight to linear light and aren't affected by the sign error.
-  Status: fixed on the local JXLatte branch `fix-pq-transfer-function`, to be submitted upstream.
+  Status: fixed in the patched JXLatte in `lib/`, reported as [#43](https://github.com/Traneptora/jxlatte/issues/43), PR [#44](https://github.com/Traneptora/jxlatte/pull/44).
 - **`MathHelper.max(float...)` returns the minimum** (reversed comparison). This breaks peak detection when converting
   PQ to SDR (the peak becomes the largest row minimum, so images are scaled far too bright), and the maximum color
-  when rendering splines. Status: fixed on the local JXLatte branch `fix-mathhelper-max-float`, to be submitted
-  upstream. `JXLImageReaderTest.testReadPQToSRGB` only passes with both PQ fixes.
+  when rendering splines. Status: fixed in the patched JXLatte in `lib/`,
+  reported as [#45](https://github.com/Traneptora/jxlatte/issues/45), PR [#46](https://github.com/Traneptora/jxlatte/pull/46). `JXLImageReaderTest.testReadPQToSRGB` only passes with both PQ fixes.
 - **HLG isn't implemented in JXLatte** (`UnsupportedOperationException`, reported as `IIOException`), unless the image
   is XYB-encoded.
 - **Lossless 32-bit float fails in JXLatte:** a valid lossless `grayf32` file (decodes fine with libjxl) fails with an
@@ -157,8 +157,8 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 - **JXLatte allocated buffers from untrusted lengths:** extension payloads, TOC entries and the encoded ICC profile
   were allocated with their (64-bit) length from the bitstream before reading the data. A few corrupt bits in a
   43-byte file caused allocations of up to 2 GB (`OutOfMemoryError`, found by fuzzing, sample
-  `art-corrupt-extensions.jxl`). Status: fixed on the local JXLatte branch `fix-untrusted-allocations`, to be
-  submitted upstream. Remaining in JXLatte (not fixed): the decoded ICC profile size and frame sizes from frame
+  `art-corrupt-extensions.jxl`). Status: fixed in the patched JXLatte in `lib/`,
+  reported as [#47](https://github.com/Traneptora/jxlatte/issues/47), PR [#48](https://github.com/Traneptora/jxlatte/pull/48). Remaining in JXLatte (not fixed): the decoded ICC profile size and frame sizes from frame
   headers (frames can be larger than the image) are still trusted. The size limit above only covers the image header,
   and the out-of-memory handling is the safety net for these.
 - **Lossless or not is unknown for non-XYB images:** that depends on the frame encoding (VarDCT or Modular, and Modular
@@ -181,19 +181,18 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 - **JXLatte's sample size info:** `--parse-only` in the JXLatte CLI shows the size before orientation is applied (for
   example `bench.jxl` is listed as 500x606 but decodes as 606x500).
 - **JXLatte has no public API to read only the header.** Added `JXLDecoder.readHeader()` (and
-  `JXLCodestreamDecoder.readHeader()`) on the local JXLatte branch `add-header-api`, to be submitted upstream. It moves
+  `JXLCodestreamDecoder.readHeader()`) in the patched JXLatte in `lib/` (previously requested as [#38](https://github.com/Traneptora/jxlatte/issues/38), PR [#49](https://github.com/Traneptora/jxlatte/pull/49)). It moves
   the existing header parsing out of `decode()`. A following `decode()` continues after the header, and `JXLDecoder`
   doesn't reset the demuxer in that case (the reset would make the container demuxer look for the signature in the
   middle of the data). The plugin needs this API.
-- **Patched JXLatte in `lib/`:** each fix (and the header API) is on its own JXLatte branch (for separate upstream PRs),
-  based on JXLatte `main`. The local branch `local-fixes` merges all of them. Its Maven build ships with this module as
-  `com.traneptora:jxlatte:0.1.0-tm.2`, in the file based Maven repository `lib/`, which the module `pom.xml` declares.
-  `lib/README.md` lists the exact commits and how to rebuild. Remove `lib/` and the `<repository>` once JXLatte has a
+- **Patched JXLatte in `lib/`:** JXLatte `main` with the fixes and the header API described above (each submitted
+  upstream as a separate pull request), shipped with this module as `com.traneptora:jxlatte:0.1.0-tm.2`, in the file
+  based Maven repository `lib/`, which the module `pom.xml` declares. `lib/README.md` describes how to rebuild. Remove `lib/` and the `<repository>` once JXLatte has a
   release with these changes.
 - **Not released yet:** the module isn't part of releases for now, and isn't in the BOM (`bom/pom.xml` has a TODO).
   The release job builds on Java 8, so it doesn't build or deploy this module anyway. To release it:
-  - JXLatte with the changes from the tables below should be on Maven Central (upstream release). Then switch
-    `jxlatte.version` to it, and remove `lib/` and the `<repository>` from the module `pom.xml`.
+  - JXLatte with the changes above should be on Maven Central (upstream release). Then switch `jxlatte.version` to
+    it, and remove `lib/` and the `<repository>` from the module `pom.xml`.
   - The release job must build on JDK 21+. As all other modules still target Java 8, the build then needs
     `--release 8` for JDK 9+ (not only `-source`/`-target 8`), otherwise Java 8 users can hit `NoSuchMethodError`s
     (for example covariant `ByteBuffer` methods). Alternatively, deploy this module in a separate JDK 21 step.
@@ -233,33 +232,3 @@ one small.
    Windows, macOS) build and test the module automatically (`jdk21+` profile), the JDK 8/11/17 jobs skip it; the
    JDK 25 javadoc job includes it. ☐ Release: postponed until JXLatte has an upstream release with the changes; not
    in the BOM until then (see "Known issues")
-
-## JXLatte changes to report upstream
-
-Changes on local JXLatte branches (each based on JXLatte `main`, one pull request per branch), see "Quirks and known
-issues" for details. The patched build in `lib/` contains all of them. Update the status column when submitting.
-
-| Change                                                                                            | Local branch                | Commit    | Status       |
-|---------------------------------------------------------------------------------------------------|-----------------------------|-----------|--------------|
-| Truncated input blocks the decoding thread forever (`Frame.decodeFrame`)                          | `fix-truncated-input-hang`  | `93472a7` | Not reported |
-| PQ transfer function wrong: sign error in `toLinear`, `m1` constant (non-XYB PQ images are black) | `fix-pq-transfer-function`  | `76351d4` | Not reported |
-| `MathHelper.max(float...)` returns the minimum (PQ peak detection, splines)                       | `fix-mathhelper-max-float`  | `12b0d09` | Not reported |
-| Buffers allocated from untrusted lengths before reading (up to 2 GB from a 43-byte file)          | `fix-untrusted-allocations` | `99685ac` | Not reported |
-| New API: `JXLDecoder.readHeader()`, read the image header without decoding (required by plugin)   | `add-header-api`            | `4204a87` | Not reported |
-
-### Unfixed JXLatte issues
-
-Known JXLatte problems without a local fix (yet), see "Quirks and known issues" for details. Report as issues, or fix
-on new local branches (and move them to the table above).
-
-| Issue                                                                                    | Where                                            | Effect                                                                     | Plugin workaround                                               | Status       |
-|------------------------------------------------------------------------------------------|--------------------------------------------------|----------------------------------------------------------------------------|-----------------------------------------------------------------|--------------|
-| HLG transfer function not implemented                                                    | `ColorManagement.getTransferFunction`            | Non-XYB HLG images fail (`UnsupportedOperationException`)                  | None, reported as `IIOException`                                | Not reported |
-| Lossless 32-bit float images fail to decode (valid with libjxl)                          | Modular decoding (`ModularChannel.decode`)       | `EOFException`, image can't be read                                        | None (`testReadGrayFloatLosslessUnsupported` tracks it)         | Not reported |
-| `transferInPlace` passes the bit depth where the maximum value belongs                   | `JXLImage.transferInPlace`                       | Integer images tagged linear light come out wrong                          | Converts color samples of linear images to float first          | Not reported |
-| `transform()` fails on gray images: `fillColor()` doesn't extend the bit depth array     | `JXLImage.fillColor`, `JXLImage.toneMapLinear`   | `ArrayIndexOutOfBoundsException` (also in the JXLatte CLI)                 | Uses `transfer()` for gray images                               | Not reported |
-| Color transforms that copy the image leave extra channels empty                          | `JXLImage.transfer(op)`, `JXLImage.toneMapLinear` | Alpha (and other extra channels) lost after linearizing or gamut mapping   | Takes the alpha buffer before transforming                      | Not reported |
-| Decoded ICC profile size is trusted, allocated up front                                  | `ImageHeader.getDecodedICC`                      | Possible huge allocation from corrupt data                                 | `OutOfMemoryError` reported as `IIOException`                   | Not reported |
-| Frame sizes from frame headers are trusted (frames can be larger than the image)         | `Frame`, `FrameHeader`                           | Possible huge allocations, not covered by the plugin's size limit          | `OutOfMemoryError` reported as `IIOException`                   | Not reported |
-| XYB images ignore an embedded ICC profile (not verified with a sample)                   | `JXLImage` constructor                           | Possibly wrong colors for lossy images with a non-enum color space         | None                                                            | Not reported |
-| Decoding always uses the common `ForkJoinPool`, `JXLOptions.threads` is unused           | `Frame.decodeFrame` (`CompletableFuture.runAsync`) | No way to limit or isolate decoding threads per decoder                  | None (documented: `ForkJoinPool.common.parallelism`)            | Not reported |
