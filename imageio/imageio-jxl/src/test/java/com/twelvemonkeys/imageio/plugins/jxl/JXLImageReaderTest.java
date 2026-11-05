@@ -97,6 +97,9 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
                 new TestData(getClassLoaderResource("/jxl/graya8.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/grayf32-lossy.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/grayf32-lossless.jxl"), new Dimension(64, 48)),
+                new TestData(getClassLoaderResource("/jxl/grayf16-lossless.jxl"), new Dimension(64, 48)),
+                new TestData(getClassLoaderResource("/jxl/grayf24-lossless.jxl"), new Dimension(64, 48)),
+                new TestData(getClassLoaderResource("/jxl/rgbaf16-lossless.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb16.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgba16.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb8-icc.jxl"), new Dimension(64, 48)),
@@ -113,7 +116,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     protected List<TestData> getTestDataForAffineTransformOpCompatibility() {
         // AffineTransformOp can't handle 16 bit interleaved RGB(A) (TYPE_CUSTOM),
         // or RGBA with a non-sRGB ICC color space (patches-lossless has a "Colour LCD Calibrated" profile)
-        List<String> excluded = asList("/rgb16.jxl", "/rgba16.jxl", "/rgb16-pq.jxl", "/rgb16-hlg.jxl", "/patches-lossless.jxl");
+        List<String> excluded = asList("/rgb16.jxl", "/rgba16.jxl", "/rgbaf16-lossless.jxl", "/rgb16-pq.jxl", "/rgb16-hlg.jxl", "/patches-lossless.jxl");
 
         List<TestData> testData = new ArrayList<>(getTestData());
         testData.removeIf(data -> excluded.stream().anyMatch(data.toString()::endsWith));
@@ -269,6 +272,11 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
         return (int) Math.round(srgb * 65535);
     }
 
+    private static double float16(final int x, final int y) {
+        // Values exactly representable as f16, first row f16 subnormals, see make-float-images.py
+        return y == 0 ? x * 8 * 0x1p-24 : (x * 16 + y % 16) / 1024.0;
+    }
+
     private static int pq16(final int x, final int y) {
         return x * 1000 + y * 20;
     }
@@ -410,6 +418,44 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
             int expected = linearToSRGB16(pqToLinear(pq16(x, y) / 65535.0) / peak);
             return new int[] {expected, expected, expected};
         }, 64);
+    }
+
+    @Test
+    void testReadGrayFloat16LosslessToSRGB() throws IOException {
+        // Lossless, f16 samples (5 exponent bits) tagged as linear light, including subnormals
+        // NOTE: Requires a JXLatte with fixed lossless float decoding, otherwise the samples are wrong
+        BufferedImage image = read("/jxl/grayf16-lossless.jxl", null);
+
+        assertEquals(BufferedImage.TYPE_USHORT_GRAY, image.getType());
+        assertSamples(image, (x, y) -> new int[] {linearToSRGB16(float16(x, y))}, 2);
+    }
+
+    @Test
+    void testReadGrayFloat24LosslessToSRGB() throws IOException {
+        // Lossless, 24-bit float samples (8 exponent bits) tagged as linear light
+        // NOTE: Requires a JXLatte with fixed lossless float decoding, otherwise the samples are wrong
+        BufferedImage image = read("/jxl/grayf24-lossless.jxl", null);
+
+        assertEquals(BufferedImage.TYPE_USHORT_GRAY, image.getType());
+        assertSamples(image, (x, y) -> new int[] {linearToSRGB16(float16(x, y))}, 2);
+    }
+
+    @Test
+    void testReadRGBAFloat16LosslessToSRGB() throws IOException {
+        // Lossless, f16 color and alpha (extra channel) samples, linear sRGB
+        // NOTE: Requires a JXLatte with fixed lossless float decoding, otherwise the samples are wrong
+        BufferedImage image = read("/jxl/rgbaf16-lossless.jxl", null);
+
+        assertTrue(image.getColorModel().getColorSpace().isCS_sRGB());
+        assertTrue(image.getColorModel().hasAlpha());
+        assertFalse(image.getColorModel().isAlphaPremultiplied());
+        assertEquals(DataBuffer.TYPE_USHORT, image.getRaster().getTransferType());
+        assertSamples(image, (x, y) -> new int[] {
+                linearToSRGB16(float16(x, y)),
+                linearToSRGB16(float16(image.getWidth() - 1 - x, y)),
+                linearToSRGB16(y * 21 / 1024.0),
+                (int) Math.round((y * 16 + x % 16) / 1024.0 * 65535)
+        }, 2);
     }
 
     @Test
