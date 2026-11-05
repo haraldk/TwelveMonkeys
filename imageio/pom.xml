@@ -60,6 +60,19 @@
         <module>imageio-tiff-jdk-interop</module>
     </modules>
 
+    <profiles>
+        <profile>
+            <!-- Wrappers for 3rd party libs requiring Java 21+ -->
+            <id>jdk21+</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
+            <modules>
+                <module>imageio-jxl</module>
+            </modules>
+        </profile>
+    </profiles>
+
     <properties>
         <junit.jupiter.version>5.14.4</junit.jupiter.version>
     </properties>

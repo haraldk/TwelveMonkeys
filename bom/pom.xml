@@ -145,6 +145,12 @@
                 <artifactId>imageio-batik</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <!-- Requires Java 21+ -->
+                <groupId>com.twelvemonkeys.imageio</groupId>
+                <artifactId>imageio-jxl</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- Servlet -->
             <dependency>
