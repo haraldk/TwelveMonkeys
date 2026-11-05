@@ -20,6 +20,7 @@
         <project.jpms.module.name>com.twelvemonkeys.imageio.jxl</project.jpms.module.name>
         <!-- Patched JXLatte, from the module local repository below, see lib/README.md -->
         <jxlatte.version>0.1.0-tm.1</jxlatte.version>
+        <brotli.version>0.1.2</brotli.version>
     </properties>
 
     <repositories>
@@ -61,6 +62,14 @@
             <version>${jxlatte.version}</version>
             <scope>provided</scope>
         </dependency>
+
+        <!-- Optional, enables reading Brotli compressed (brob) Exif and XMP boxes, if added by the user -->
+        <dependency>
+            <groupId>org.brotli</groupId>
+            <artifactId>dec</artifactId>
+            <version>${brotli.version}</version>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -72,6 +81,7 @@
                     <instructions>
                         <Import-Package>
                             com.traneptora.jxlatte.*;resolution:=optional,
+                            org.brotli.dec;resolution:=optional,
                             *
                         </Import-Package>
                         <Provide-Capability>

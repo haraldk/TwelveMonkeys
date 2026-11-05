@@ -35,7 +35,9 @@ import com.twelvemonkeys.imageio.ImageReaderBase;
 import com.twelvemonkeys.imageio.color.ColorSpaces;
 import com.twelvemonkeys.imageio.metadata.Directory;
 import com.twelvemonkeys.imageio.metadata.tiff.TIFFReader;
+import com.twelvemonkeys.imageio.stream.ByteArrayImageInputStream;
 import com.twelvemonkeys.imageio.stream.SubImageInputStream;
+import com.twelvemonkeys.lang.SystemUtil;
 import com.twelvemonkeys.imageio.util.IIOUtil;
 import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 
@@ -54,6 +56,7 @@ import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.metadata.IIOMetadata;
 import javax.imageio.spi.ImageReaderSpi;
+import javax.imageio.stream.ImageInputStream;
 import java.awt.Rectangle;
 import java.awt.color.CMMException;
 import java.awt.color.ColorSpace;
@@ -95,8 +98,14 @@ import java.util.Iterator;
  */
 final class JXLImageReader extends ImageReaderBase {
 
-    // Ignore unreasonably large Exif/XMP boxes
-    private static final long MAX_METADATA_BOX_LENGTH = 64 * 1024 * 1024;
+    // Ignore unreasonably large Exif/XMP boxes (also the limit for decompressed boxes)
+    private static final long MAX_METADATA_BOX_LENGTH = 64L * 1024 * 1024;
+
+    // Optional, for Brotli compressed (brob) boxes
+    static final boolean BROTLI_AVAILABLE = SystemUtil.isClassAvailable("org.brotli.dec.BrotliInputStream", JXLImageReader.class);
+
+    // Allows tests to simulate missing Brotli support
+    boolean brotliAvailable = BROTLI_AVAILABLE;
 
     private long streamStart = -1;
     private JXLDecoder decoder;
@@ -276,63 +285,111 @@ final class JXLImageReader extends ImageReaderBase {
     }
 
     private void readBoxes(long boxStart) throws IOException {
-        while (true) {
-            imageInput.seek(boxStart);
-
-            if (imageInput.read() < 0) {
-                break; // Normal end of file
-            }
-
-            imageInput.seek(boxStart);
-            long size = imageInput.readUnsignedInt();
-            int type = imageInput.readInt();
-            long headerLength = 8;
-
-            if (size == 1) {
-                size = imageInput.readLong();
-                headerLength = 16;
-            }
-
-            // Size 0 means the box extends to the end of the file
-            long contentLength = size == 0 ? imageInput.length() - boxStart - headerLength : size - headerLength;
-
-            if (size != 0 && contentLength < 0) {
-                throw new IIOException(String.format("Invalid JPEG XL container box size: %d", size));
-            }
-
-            if (contentLength >= 0 && contentLength <= MAX_METADATA_BOX_LENGTH) {
-                // NOTE: Only the first box of each type is used, compressed (brob) boxes are not supported
-                if (type == JXL.BOX_EXIF && exif == null) {
-                    exif = readExif(contentLength);
-                }
-                else if (type == JXL.BOX_XML && xmp == null) {
-                    byte[] bytes = new byte[(int) contentLength];
-                    imageInput.readFully(bytes);
-                    xmp = new String(bytes, StandardCharsets.UTF_8);
-                }
-            }
-
-            if (size == 0) {
-                break;
-            }
-
-            boxStart += size;
+        // Until the end of the file, or a box that extends to the end of the file (boxStart < 0)
+        while (boxStart >= 0 && !isEndOfFile(boxStart)) {
+            boxStart = readBox(boxStart);
         }
     }
 
-    private Directory readExif(final long contentLength) throws IOException {
+    private boolean isEndOfFile(final long position) throws IOException {
+        imageInput.seek(position);
+        return imageInput.read() < 0;
+    }
+
+    /**
+     * Reads the box at {@code boxStart}, if it is a wanted metadata box.
+     *
+     * @return the start of the next box, or {@code -1} if this box extends to the end of the file
+     */
+    private long readBox(final long boxStart) throws IOException {
+        imageInput.seek(boxStart);
+        long size = imageInput.readUnsignedInt();
+        int type = imageInput.readInt();
+        long headerLength = 8;
+
+        if (size == 1) {
+            size = imageInput.readLong();
+            headerLength = 16;
+        }
+
+        // Size 0 means the box extends to the end of the file
+        long contentLength = size == 0 ? imageInput.length() - boxStart - headerLength : size - headerLength;
+
+        if (size != 0 && contentLength < 0) {
+            throw new IIOException(String.format("Invalid JPEG XL container box size: %d", size));
+        }
+
+        if (contentLength >= 0 && contentLength <= MAX_METADATA_BOX_LENGTH) {
+            // NOTE: Only the first box of each type (compressed or not) is used
+            if (type == JXL.BOX_BROB && contentLength >= 4) {
+                readCompressedBox(contentLength);
+            }
+            else if (isWantedMetadataBox(type)) {
+                readMetadataBox(type, imageInput, contentLength);
+            }
+        }
+
+        return size == 0 ? -1 : boxStart + size;
+    }
+
+    private boolean isWantedMetadataBox(final int type) {
+        return type == JXL.BOX_EXIF && exif == null || type == JXL.BOX_XML && xmp == null;
+    }
+
+    private void readMetadataBox(final int type, final ImageInputStream input, final long contentLength) throws IOException {
+        if (type == JXL.BOX_EXIF) {
+            exif = readExif(input, contentLength);
+        }
+        else {
+            byte[] bytes = new byte[(int) contentLength];
+            input.readFully(bytes);
+            xmp = new String(bytes, StandardCharsets.UTF_8);
+        }
+    }
+
+    private void readCompressedBox(final long contentLength) throws IOException {
+        // Brotli compressed box: 4 byte type of the compressed box, followed by the Brotli stream
+        int type = imageInput.readInt();
+
+        if (!isWantedMetadataBox(type)) {
+            return;
+        }
+
+        String typeName = JXL.boxTypeName(type);
+
+        if (!brotliAvailable) {
+            processWarningOccurred(String.format("Ignoring Brotli compressed '%s' box, add org.brotli:dec to the class path to read it", typeName));
+            return;
+        }
+
+        byte[] compressed = new byte[(int) (contentLength - 4)];
+        imageInput.readFully(compressed);
+
+        byte[] content;
+        try {
+            content = BrotliDecompressor.decompress(compressed, (int) MAX_METADATA_BOX_LENGTH);
+        }
+        catch (IOException | RuntimeException e) {
+            processWarningOccurred(String.format("Ignoring Brotli compressed '%s' box, could not decompress: %s", typeName, e.getMessage()));
+            return;
+        }
+
+        readMetadataBox(type, new ByteArrayImageInputStream(content), content.length);
+    }
+
+    private Directory readExif(final ImageInputStream input, final long contentLength) throws IOException {
         // Exif box content starts with a 4 byte offset to the TIFF header
-        long tiffOffset = contentLength >= 4 ? imageInput.readUnsignedInt() : -1;
+        long tiffOffset = contentLength >= 4 ? input.readUnsignedInt() : -1;
 
         if (tiffOffset < 0 || tiffOffset > contentLength - 4 - 8) {
             processWarningOccurred("Invalid Exif box, ignoring");
             return null;
         }
 
-        imageInput.skipBytes(tiffOffset);
+        input.skipBytes(tiffOffset);
 
         try {
-            return new TIFFReader().read(new SubImageInputStream(imageInput, contentLength - 4 - tiffOffset));
+            return new TIFFReader().read(new SubImageInputStream(input, contentLength - 4 - tiffOffset));
         }
         catch (IIOException e) {
             processWarningOccurred("Invalid Exif data, ignoring: " + e.getMessage());

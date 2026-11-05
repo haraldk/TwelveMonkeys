@@ -1,6 +1,6 @@
-"""Wrap a JPEG XL codestream in a container with Exif and XMP metadata boxes (pure Python, no dependencies).
+"""Wrap a JPEG XL codestream in a container with Exif and XMP metadata boxes (pure Python, --brob needs the brotli CLI).
 
-Usage: python3 make-test-container.py <codestream.jxl> <out.jxl>
+Usage: python3 make-test-container.py <codestream.jxl> <out.jxl> [--brob]
 The metadata values are mirrored in JXLImageReaderTest, keep them in sync.
 
 Box layout:
@@ -9,8 +9,15 @@ Box layout:
   'brob' (Brotli compressed 'xml ' box, the content is just garbage, readers can't decompress it and must skip it),
   'jxlp' (index 0), 'jxlp' (index 1, last): the codestream split in two parts,
   'xml ' (XMP, after the codestream)
+
+Box layout with --brob (requires the brotli command line tool):
+  'JXL ' signature, 'ftyp',
+  'brob' (Brotli compressed 'Exif', before the codestream),
+  'jxlc' (the codestream),
+  'brob' (Brotli compressed 'xml ', after the codestream)
 """
 import struct
+import subprocess
 import sys
 
 SIGNATURE = b'\x00\x00\x00\x0cJXL \r\n\x87\n'
@@ -31,6 +38,11 @@ XMP = ('<?xpacket begin="﻿" id="W5M0MpCehiHzreSzNTczkc9d"?>'
 
 def box(tag, data):
     return struct.pack('>I', 8 + len(data)) + tag + data
+
+
+def brob(tag, data):
+    compressed = subprocess.run(['brotli', '-q', '11', '-c'], input=data, stdout=subprocess.PIPE, check=True).stdout
+    return box(b'brob', tag + compressed)
 
 
 def tiff(entries):
@@ -58,13 +70,21 @@ assert codestream[:2] == b'\xff\x0a', 'Not a codestream'
 exif = tiff([(270, DESCRIPTION), (271, MAKE), (272, MODEL), (305, SOFTWARE), (306, DATE_TIME), (33432, COPYRIGHT)])
 half = len(codestream) // 2
 
+exif_content = struct.pack('>I', 0) + exif  # 4 byte offset to the TIFF header
+
 container = SIGNATURE
 container += box(b'ftyp', b'jxl ' + struct.pack('>I', 0) + b'jxl ')
-container += box(b'Exif', struct.pack('>I', 0) + exif)  # 4 byte offset to the TIFF header
-container += box(b'brob', b'xml ' + bytes(range(32)))
-container += box(b'jxlp', struct.pack('>I', 0) + codestream[:half])
-container += box(b'jxlp', struct.pack('>I', 0x80000001) + codestream[half:])
-container += box(b'xml ', XMP.encode('utf-8'))
+
+if '--brob' in sys.argv[3:]:
+    container += brob(b'Exif', exif_content)
+    container += box(b'jxlc', codestream)
+    container += brob(b'xml ', XMP.encode('utf-8'))
+else:
+    container += box(b'Exif', exif_content)
+    container += box(b'brob', b'xml ' + bytes(range(32)))
+    container += box(b'jxlp', struct.pack('>I', 0) + codestream[:half])
+    container += box(b'jxlp', struct.pack('>I', 0x80000001) + codestream[half:])
+    container += box(b'xml ', XMP.encode('utf-8'))
 
 with open(sys.argv[2], 'wb') as f:
     f.write(container)

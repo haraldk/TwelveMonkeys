@@ -13,6 +13,7 @@ This file tracks what the plugin supports, its limits and its quirks. Keep it up
 |-----------------------|-------|
 | Java 21+ at runtime   | JXLatte is compiled for Java 21. The plugin itself is compiled for Java 8 like the rest of TwelveMonkeys, so it can sit on an older JVM's class path without breaking anything (see below). |
 | JXLatte on class path | `com.traneptora:jxlatte` is a `provided` dependency, so it has to be added explicitly. It must have `JXLDecoder.readHeader()`, which no JXLatte release has yet. For now use the patched build in `lib/` (see "Known issues"). |
+| Brotli (optional)     | `org.brotli:dec` (pure Java, MIT License) is an optional `provided` dependency. With it on the class path, Brotli-compressed (`brob`) Exif and XMP boxes are read; without it, they are skipped with a warning. |
 | JDK 21+ to build      | The module is only part of the build when the `jdk21+` profile in `imageio/pom.xml` is active, which happens automatically on JDK 21 or later. |
 
 If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded (for example on Java older than 21),
@@ -28,6 +29,12 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
     <groupId>com.traneptora</groupId>
     <artifactId>jxlatte</artifactId>
     <version>0.1.0-tm.1</version> <!-- Patched build, from lib/ in this module, see "Known issues" -->
+</dependency>
+<!-- Optional, for Brotli compressed Exif/XMP boxes -->
+<dependency>
+    <groupId>org.brotli</groupId>
+    <artifactId>dec</artifactId>
+    <version>0.1.2</version>
 </dependency>
 ```
 
@@ -70,7 +77,7 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 | Progress listener                         | ◐ | Decoding happens in one step without callbacks, so progress events only cover the copy to the destination. |
 | Abort                                     | ◐ | Checked while copying to the destination only. Decoding can't be aborted. |
 | Image metadata                            | ✔ | Standard metadata format (`javax_imageio_1.0`) only, no native format. Chroma, data, dimension and transparency describe the decoded image. `SignificantBitsPerSample` is set when the original integer samples have fewer bits (for example 12 bits decoded to 16). CompressionTypeName is `JPEG XL`. `Lossless` is `FALSE` for XYB images, and left out otherwise (see quirks). Needs only the header and the container boxes, not decoding. |
-| Exif / XMP                                | ✔ | Read by the plugin from the container boxes (JXLatte skips them). Exif goes into the standard Text node like in the TIFF plugin (ImageDescription, Make, Model, Software, Artist, Copyright, ...), and DateTime becomes Document/ImageCreationTime. XMP becomes a TextEntry with the keyword `XML:com.adobe.xmp`, as the JDK PNG reader does. Only the first box of each type is used. Brotli-compressed (`brob`) boxes are skipped. |
+| Exif / XMP                                | ✔ | Read by the plugin from the container boxes (JXLatte skips them). Exif goes into the standard Text node like in the TIFF plugin (ImageDescription, Make, Model, Software, Artist, Copyright, ...), and DateTime becomes Document/ImageCreationTime. XMP becomes a TextEntry with the keyword `XML:com.adobe.xmp`, as the JDK PNG reader does. Only the first box of each type (compressed or not) is used. Brotli-compressed (`brob`) boxes are read if `org.brotli:dec` is on the class path, otherwise they are skipped with a warning. Corrupt boxes are skipped with a warning. |
 | Stream metadata                           | ✘ | `getStreamMetadata` returns `null`. |
 | Thumbnails / preview frame                | ✘ | |
 | Animation / multiple images               | ✘ | JXLatte doesn't support animation. `getNumImages` always returns 1. What JXLatte returns for an animated file hasn't been checked. |
@@ -143,8 +150,12 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 - **Exif orientation is ignored:** the JPEG XL spec makes the codestream orientation the one that counts, and JXLatte
   applies it while decoding. So the metadata always reports orientation `Normal`, since the decoded image is already
   rotated.
-- **No Brotli decoder:** compressed metadata boxes (`brob`, used for example for large XMP) can't be read, as there's
-  no Brotli decoder in the JDK or in JXLatte. They're skipped.
+- **Brotli is optional:** neither the JDK nor JXLatte has a Brotli decoder, so compressed metadata boxes (`brob`) need
+  `org.brotli:dec` on the class path. Only `BrotliDecompressor` references it, and only if the library is available
+  (checked once, in `JXLImageReader.BROTLI_AVAILABLE`), so the plugin loads and works without it. The decompressed
+  size has the same 64 MB limit as uncompressed boxes. `org.brotli:dec` 0.1.2 (2017) is the latest release on
+  Maven Central. JXLatte skips `brob` boxes without decompressing them, which is fine, as the codestream can't be
+  Brotli-compressed.
 - **Two JXLatte samples have embedded ICC profiles:** `patches-lossless.jxl` ("Colour LCD Calibrated") and
   `bench.jxl` ("BRG").
 - **JXLatte's sample size info:** `--parse-only` in the JXLatte CLI shows the size before orientation is applied (for
@@ -188,6 +199,6 @@ one small.
    (custom `ImageReadParam`?)
 4. ✔ Read size, bit depth, alpha and color info from the header without decoding the image (JXLatte header API)
 5. ✔ Metadata: standard metadata format, Exif/XMP from the container. Possible later: native metadata format (raw
-   Exif/XMP, for example a TIFF native tree as the TIFF and JPEG plugins have), and `brob` boxes (needs Brotli)
+   Exif/XMP, for example a TIFF native tree as the TIFF and JPEG plugins have), and `brob` boxes (✔ with optional `org.brotli:dec`)
 6. ☐ Robustness: malformed input tests, memory/size limits, avoid caching a copy when possible
 7. ☐ Integration: project README format table, CI on JDK 21+, release (JXLatte availability on Maven Central)

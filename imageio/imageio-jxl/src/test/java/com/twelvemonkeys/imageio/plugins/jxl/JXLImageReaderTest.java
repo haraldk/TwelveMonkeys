@@ -94,7 +94,9 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
                 new TestData(getClassLoaderResource("/jxl/rgb8-icc.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb16-pq.jxl"), new Dimension(64, 48)),
                 // Container with Exif, brob, split codestream (jxlp) and XMP boxes, see make-test-container.py
-                new TestData(getClassLoaderResource("/jxl/gray8-meta.jxl"), new Dimension(64, 48))
+                new TestData(getClassLoaderResource("/jxl/gray8-meta.jxl"), new Dimension(64, 48)),
+                // Container with Brotli compressed Exif and XMP boxes
+                new TestData(getClassLoaderResource("/jxl/gray8-brob.jxl"), new Dimension(64, 48))
         );
     }
 
@@ -517,11 +519,15 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
         return entries;
     }
 
-    @Test
-    public void testMetadataExifXMP() throws IOException {
+    private List<String> readMetadataAndImage(final String resource, final boolean brotliAvailable,
+                                              final boolean expectExifXMP) throws IOException {
         JXLImageReader reader = createReader();
+        reader.brotliAvailable = brotliAvailable;
 
-        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jxl/gray8-meta.jxl"))) {
+        List<String> warnings = new ArrayList<>();
+        reader.addIIOReadWarningListener((source, warning) -> warnings.add(warning));
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource(resource))) {
             reader.setInput(stream);
 
             // Read header, then metadata (seeks around in the stream), then decode
@@ -533,35 +539,71 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
             assertEquals("JPEG XL", findNode(root, "CompressionTypeName").getAttribute("value"));
             assertNull(findNode(root, "Lossless"), "Lossless can't be known for non-XYB images");
 
-            // From Exif
             Map<String, String> text = textEntries(root);
-            assertEquals("JXL test image", text.get("ImageDescription"));
-            assertEquals("TwelveMonkeys", text.get("Make"));
-            assertEquals("ImageIO JXL", text.get("Model"));
-            assertEquals("make-test-container.py", text.get("Software"));
-            assertEquals("CC0", text.get("Copyright"));
-
             IIOMetadataNode creationTime = findNode(root, "ImageCreationTime");
-            assertNotNull(creationTime);
-            assertEquals("2026", creationTime.getAttribute("year"));
-            assertEquals("11", creationTime.getAttribute("month"));
-            assertEquals("5", creationTime.getAttribute("day"));
-            assertEquals("19", creationTime.getAttribute("hour"));
-            assertEquals("30", creationTime.getAttribute("minute"));
-            assertEquals("42", creationTime.getAttribute("second"));
 
-            // From XMP (after the codestream)
-            String xmp = text.get(JXLImageMetadata.XMP_KEYWORD);
-            assertNotNull(xmp);
-            assertTrue(xmp.startsWith("<?xpacket begin="), xmp);
-            assertTrue(xmp.contains("JXL XMP test"), xmp);
+            if (expectExifXMP) {
+                // From Exif
+                assertEquals("JXL test image", text.get("ImageDescription"));
+                assertEquals("TwelveMonkeys", text.get("Make"));
+                assertEquals("ImageIO JXL", text.get("Model"));
+                assertEquals("make-test-container.py", text.get("Software"));
+                assertEquals("CC0", text.get("Copyright"));
 
-            // Decoding still works after reading the metadata (split codestream)
+                assertNotNull(creationTime);
+                assertEquals("2026", creationTime.getAttribute("year"));
+                assertEquals("11", creationTime.getAttribute("month"));
+                assertEquals("5", creationTime.getAttribute("day"));
+                assertEquals("19", creationTime.getAttribute("hour"));
+                assertEquals("30", creationTime.getAttribute("minute"));
+                assertEquals("42", creationTime.getAttribute("second"));
+
+                // From XMP (after the codestream)
+                String xmp = text.get(JXLImageMetadata.XMP_KEYWORD);
+                assertNotNull(xmp);
+                assertTrue(xmp.startsWith("<?xpacket begin="), xmp);
+                assertTrue(xmp.contains("JXL XMP test"), xmp);
+            }
+            else {
+                assertTrue(text.isEmpty(), text.toString());
+                assertNull(creationTime);
+            }
+
+            // Decoding still works after reading the metadata
             assertSamples(reader.read(0), (x, y) -> new int[] {gray8(x, y)}, 0);
         }
         finally {
             reader.dispose();
         }
+
+        return warnings;
+    }
+
+    @Test
+    public void testMetadataExifXMP() throws IOException {
+        // Uncompressed Exif and XMP, split codestream, and a corrupt brob box (garbage, claiming to be XMP)
+        List<String> warnings = readMetadataAndImage("/jxl/gray8-meta.jxl", true, true);
+
+        assertEquals(1, warnings.size(), warnings.toString());
+        assertTrue(warnings.get(0).contains("could not decompress"), warnings.get(0));
+    }
+
+    @Test
+    public void testMetadataBrotliCompressed() throws IOException {
+        assertTrue(JXLImageReader.BROTLI_AVAILABLE, "org.brotli:dec should be on the test class path");
+
+        List<String> warnings = readMetadataAndImage("/jxl/gray8-brob.jxl", true, true);
+        assertTrue(warnings.isEmpty(), warnings.toString());
+    }
+
+    @Test
+    public void testMetadataBrotliUnavailable() throws IOException {
+        // Brotli compressed boxes are skipped with a warning, the image itself is still readable
+        List<String> warnings = readMetadataAndImage("/jxl/gray8-brob.jxl", false, false);
+
+        assertEquals(2, warnings.size(), warnings.toString());
+        assertTrue(warnings.get(0).contains("'Exif'") && warnings.get(0).contains("org.brotli:dec"), warnings.get(0));
+        assertTrue(warnings.get(1).contains("'xml '") && warnings.get(1).contains("org.brotli:dec"), warnings.get(1));
     }
 
     @Test

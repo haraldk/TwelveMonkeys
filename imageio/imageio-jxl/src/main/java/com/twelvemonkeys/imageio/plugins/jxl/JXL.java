@@ -49,6 +49,17 @@ final class JXL {
     // ISO BMFF box types used in the container
     static final int BOX_EXIF = ('E' << 24) | ('x' << 16) | ('i' << 8) | 'f';
     static final int BOX_XML = ('x' << 24) | ('m' << 16) | ('l' << 8) | ' ';
+    static final int BOX_BROB = ('b' << 24) | ('r' << 16) | ('o' << 8) | 'b';
+
+    static String boxTypeName(final int type) {
+        char[] chars = new char[4];
+        for (int i = 0; i < 4; i++) {
+            int c = (type >>> (24 - i * 8)) & 0xFF;
+            chars[i] = c >= 0x20 && c < 0x7F ? (char) c : '?';
+        }
+
+        return new String(chars);
+    }
 
     /** Fully qualified name of the JXLatte decoder class, used to test for availability. */
     static final String JXLATTE_DECODER_CLASS = "com.traneptora.jxlatte.JXLDecoder";

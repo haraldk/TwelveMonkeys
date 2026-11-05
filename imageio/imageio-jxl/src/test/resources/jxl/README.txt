@@ -28,5 +28,7 @@ and encoded with ffmpeg using libjxl 0.11:
 
 gray8-meta.jxl is gray8.jxl wrapped in a container with Exif, brob, split codestream (jxlp) and XMP boxes:
   python3 make-test-container.py gray8.jxl gray8-meta.jxl
+gray8-brob.jxl is the same, but with Brotli compressed (brob) Exif and XMP boxes (needs the brotli CLI, 1.2.0 used):
+  python3 make-test-container.py gray8.jxl gray8-brob.jxl --brob
 
 SwappedRedAndGreen.icc (embedded in rgb8-icc.jxl) is from colord, Copyright 2012 Richard Hughes, CC0-1.0.
