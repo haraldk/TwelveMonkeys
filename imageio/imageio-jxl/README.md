@@ -66,6 +66,7 @@ ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL re
 | Source and destination bands              | ◐ | Implemented but not tested yet (those tests are disabled in `ImageReaderAbstractTest`). |
 | Destination image and offset              | ✔ | Only the type that `getImageTypes` returns is accepted (one type per image right now). |
 | Java2D compatibility                      | ◐ | 16-bit RGB(A) is `TYPE_CUSTOM`, and RGB(A) with an ICC profile has a custom color space. `AffineTransformOp` can't handle either of them (Java2D limitation). |
+| Size and image type without decoding      | ✔ | From the image header, see "Limits". The decoded image is checked against the header (`IIOException` if they differ). |
 | Progress listener                         | ◐ | Decoding happens in one step without callbacks, so progress events only cover the copy to the destination. |
 | Abort                                     | ◐ | Checked while copying to the destination only. Decoding can't be aborted. |
 | Image metadata                            | ✘ | `getImageMetadata` returns `null`. ☐ Step 5 (standard metadata format) |
@@ -79,9 +80,12 @@ ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL re
 
 ## Limits
 
-- **The whole image is always decoded.** JXLatte can't decode only a region, so even `getWidth`/`getHeight` decode the
-  complete image (☐ Step 4: read the header without decoding). The result is cached for the current input, so later calls
-  and further `read`s don't decode again.
+- **`getWidth`, `getHeight`, `getRawImageType` and `getImageTypes` only read the header.** They use JXLatte's
+  `JXLDecoder.readHeader()` (added on the JXLatte branch `add-header-api`, see "Known issues"). The header includes the
+  ICC profile, which is decompressed to find the color space. This takes milliseconds.
+- **`read` always decodes the whole image.** JXLatte can't decode only a region. The result is cached for the
+  current input, so further `read`s don't decode again. After decoding, the plugin drops the JXLatte decoder, which
+  still holds full-size buffers.
 - **Memory:** JXLatte keeps samples in `int`/`float` arrays (4 bytes per sample per channel), and color conversion can
   make full copies. On top of that, the plugin caches the decoded 8-bit image and allocates the destination image.
   Expect memory use to peak at several times the size of the decoded image. There's no size or memory limit yet
@@ -134,8 +138,13 @@ ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL re
   `bench.jxl` ("BRG").
 - **JXLatte's sample size info:** `--parse-only` in the JXLatte CLI shows the size before orientation is applied (for
   example `bench.jxl` is listed as 500x606 but decodes as 606x500).
-- **Local JXLatte fixes:** each fix is on its own branch (for separate upstream PRs), based on JXLatte `main`. The
-  local branch `local-fixes` merges all of them and is what's built and installed into `~/.m2` (still as version
+- **JXLatte has no public API to read only the header.** Added `JXLDecoder.readHeader()` (and
+  `JXLCodestreamDecoder.readHeader()`) on the local JXLatte branch `add-header-api`, to be submitted upstream. It moves
+  the existing header parsing out of `decode()`. A following `decode()` continues after the header, and `JXLDecoder`
+  doesn't reset the demuxer in that case (the reset would make the container demuxer look for the signature in the
+  middle of the data). The plugin needs this API.
+- **Local JXLatte changes:** each fix (and the header API) is on its own branch (for separate upstream PRs), based on
+  JXLatte `main`. The local branch `local-fixes` merges all of them and is what's built and installed into `~/.m2` (still as version
   `0.1.0`).
 - **No JXLatte on Maven Central:** `com.traneptora:jxlatte:0.1.0` currently has to be installed locally (see below).
   To release this module, JXLatte has to be published to Maven Central, since Central artifacts can't depend on
@@ -144,7 +153,7 @@ ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL re
 ## Development
 
 Install JXLatte locally, with the fixes from the `local-fixes` branch (see "Known issues"; without them the truncated
-input and PQ tests fail or hang), either built with Maven (`mvn install` in the JXLatte checkout), or from an existing
+input and PQ tests fail or hang, and the plugin doesn't compile without the header API), either built with Maven (`mvn install` in the JXLatte checkout), or from an existing
 jar (Meson build):
 
 ```sh
@@ -169,7 +178,7 @@ one small.
 3. ✔ Color and bit depth: 16-bit output, gray without RGB expansion, premultiplied alpha, working ICC profiles, PQ
    (with JXLatte fixes). Possible later: float output (`TYPE_FLOAT`) and/or HDR output without conversion to SDR
    (custom `ImageReadParam`?)
-4. ☐ Read size, bit depth, alpha and color info from the header without decoding the image
+4. ✔ Read size, bit depth, alpha and color info from the header without decoding the image (JXLatte header API)
 5. ☐ Metadata: standard metadata format, Exif/XMP from the container
 6. ☐ Robustness: malformed input tests, memory/size limits, avoid caching a copy when possible
 7. ☐ Integration: project README format table, CI on JDK 21+, release (JXLatte availability on Maven Central)

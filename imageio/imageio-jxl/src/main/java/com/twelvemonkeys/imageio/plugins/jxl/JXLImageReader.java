@@ -39,6 +39,7 @@ import com.twelvemonkeys.imageio.util.ImageTypeSpecifiers;
 import com.traneptora.jxlatte.JXLDecoder;
 import com.traneptora.jxlatte.JXLImage;
 import com.traneptora.jxlatte.JXLOptions;
+import com.traneptora.jxlatte.bundle.ImageHeader;
 import com.traneptora.jxlatte.color.ColorFlags;
 import com.traneptora.jxlatte.color.ColorManagement;
 import com.traneptora.jxlatte.io.InvalidBitstreamException;
@@ -67,6 +68,7 @@ import java.util.Iterator;
 /**
  * ImageReader for JPEG XL (JXL) images, backed by the JXLatte pure Java decoder.
  * <p>
+ * Size and image type are read from the header, without decoding the image.
  * JXLatte always decodes the full image, so the image is decoded once per input,
  * and the result is cached. Source region, subsampling and band selection
  * are applied when copying the cached image to the destination.
@@ -85,8 +87,16 @@ import java.util.Iterator;
  */
 final class JXLImageReader extends ImageReaderBase {
 
-    private BufferedImage decoded;
+    private long streamStart = -1;
+    private JXLDecoder decoder;
+
+    // From the header
+    private ImageHeader header;
+    private ColorSpace embeddedColorSpace; // null, unless the image has a usable ICC profile
     private ImageTypeSpecifier rawType;
+
+    // Cached decoded image
+    private BufferedImage decoded;
 
     JXLImageReader(final ImageReaderSpi provider) {
         super(provider);
@@ -94,26 +104,34 @@ final class JXLImageReader extends ImageReaderBase {
 
     @Override
     protected void resetMembers() {
-        decoded = null;
+        streamStart = -1;
+        decoder = null;
+        header = null;
+        embeddedColorSpace = null;
         rawType = null;
+        decoded = null;
     }
 
     @Override
     public int getWidth(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
-        return decode().getWidth();
+        readHeader();
+
+        return header.getOrientedSize().width;
     }
 
     @Override
     public int getHeight(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
-        return decode().getHeight();
+        readHeader();
+
+        return header.getOrientedSize().height;
     }
 
     @Override
     public ImageTypeSpecifier getRawImageType(final int imageIndex) throws IOException {
         checkBounds(imageIndex);
-        decode();
+        readHeader();
 
         return rawType;
     }
@@ -178,47 +196,106 @@ final class JXLImageReader extends ImageReaderBase {
         return destination;
     }
 
-    private BufferedImage decode() throws IOException {
+    private void readHeader() throws IOException {
         assertInput();
 
-        if (decoded == null) {
-            JXLOptions options = new JXLOptions();
-            options.verbosity = Loggers.LOG_BASE - 1; // Silence all logging
+        if (header == null) {
+            if (streamStart < 0) {
+                streamStart = imageInput.getStreamPosition();
+            }
 
-            JXLImage image;
+            // NOTE: Always create a new decoder here, as a previous attempt may have failed
+            decoder = createDecoder();
+
+            header = jxlatte(decoder::readHeader);
+            embeddedColorSpace = jxlatte(() -> getEmbeddedColorSpace(header));
+            rawType = createImageType(header, embeddedColorSpace);
+        }
+    }
+
+    private JXLDecoder createDecoder() throws IOException {
+        imageInput.seek(streamStart);
+
+        JXLOptions options = new JXLOptions();
+        options.verbosity = Loggers.LOG_BASE - 1; // Silence all logging
+
+        return new JXLDecoder(IIOUtil.createStreamAdapter(imageInput), options);
+    }
+
+    private BufferedImage decode() throws IOException {
+        readHeader();
+
+        if (decoded == null) {
+            if (decoder == null) {
+                // A previous decode failed, start over (the new decoder reads the header again)
+                decoder = createDecoder();
+            }
 
             try {
-                image = new JXLDecoder(IIOUtil.createStreamAdapter(imageInput), options).decode();
-                decoded = toBufferedImage(image);
+                JXLImage image = jxlatte(decoder::decode);
+                decoded = jxlatte(() -> toBufferedImage(image, header, embeddedColorSpace, rawType));
             }
-            catch (InvalidBitstreamException e) {
-                throw new IIOException("Invalid JPEG XL bitstream: " + e.getMessage(), e);
+            finally {
+                // The decoder is no longer needed after decoding (and keeps large buffers), or is unusable after failure
+                decoder = null;
             }
-            catch (RuntimeException e) {
-                // JXLatte may throw various runtime exceptions on corrupt data, possibly wrapped by CompletionException
-                Throwable cause = e.getCause() != null ? e.getCause() : e;
-                throw new IIOException("Could not decode JPEG XL image: " + cause.getMessage(), cause);
-            }
-
-            // NOTE: Don't use ImageTypeSpecifier.createFromRenderedImage, as it maps BufferedImages
-            // with a standard type (ie. TYPE_3BYTE_BGR) to the standard (sRGB) type, losing any ICC color space
-            rawType = new ImageTypeSpecifier(decoded.getColorModel(), decoded.getSampleModel());
         }
 
         return decoded;
     }
 
-    private static BufferedImage toBufferedImage(JXLImage image) {
+    private interface JXLatteOperation<T> {
+        T run() throws IOException;
+    }
+
+    private static <T> T jxlatte(final JXLatteOperation<T> operation) throws IOException {
+        try {
+            return operation.run();
+        }
+        catch (InvalidBitstreamException e) {
+            throw new IIOException("Invalid JPEG XL bitstream: " + e.getMessage(), e);
+        }
+        catch (RuntimeException e) {
+            // JXLatte may throw various runtime exceptions on corrupt data, possibly wrapped by CompletionException
+            Throwable cause = e.getCause() != null ? e.getCause() : e;
+            throw new IIOException("Could not decode JPEG XL image: " + cause.getMessage(), cause);
+        }
+    }
+
+    private static ImageTypeSpecifier createImageType(final ImageHeader header, final ColorSpace embeddedColorSpace) {
+        int colors = header.getColorChannelCount();
+        boolean hasAlpha = header.hasAlpha();
+
+        int colorBitDepth = header.getBitDepthHeader().bitsPerSample;
+        int alphaBitDepth = hasAlpha ? header.getExtraChannelInfo(header.getAlphaIndex(0)).bitDepth.bitsPerSample : 0;
+        // Use 16 bits per sample for anything more than 8 bits, including float samples
+        int dataType = Math.max(colorBitDepth, alphaBitDepth) > 8 ? DataBuffer.TYPE_USHORT : DataBuffer.TYPE_BYTE;
+
+        ColorSpace colorSpace = embeddedColorSpace;
+
+        if (colorSpace == null) {
+            // Without a usable ICC profile, images are converted to sRGB, gray uses the sRGB transfer function in CS_GRAY
+            colorSpace = ColorSpace.getInstance(colors == 1 ? ColorSpace.CS_GRAY : ColorSpace.CS_sRGB);
+        }
+
+        int bands = colors + (hasAlpha ? 1 : 0);
+
+        return ImageTypeSpecifiers.createInterleaved(colorSpace, createBandOffsets(bands, hasAlpha), dataType, hasAlpha, false);
+    }
+
+    private static BufferedImage toBufferedImage(final JXLImage image, final ImageHeader header,
+                                                 final ColorSpace embeddedColorSpace, final ImageTypeSpecifier type) throws IIOException {
+        validateAgainstHeader(image, header);
+
         int colors = image.getColorChannelCount();
         int colorBitDepth = image.getTaggedBitDepth(0); // All color channels share the same bit depth
         ImageBuffer[] buffers = image.getBuffer(false);
 
         // NOTE: Get alpha before any color transform, as JXLatte's transforms don't necessarily retain extra channels
-        boolean hasAlpha = image.hasAlpha();
         ImageBuffer alpha = null;
         int alphaBitDepth = 0;
 
-        if (hasAlpha) {
+        if (image.hasAlpha()) {
             int alphaChannel = colors + image.getAlphaIndex();
             alpha = buffers[alphaChannel];
             alphaBitDepth = image.getTaggedBitDepth(alphaChannel);
@@ -229,32 +306,11 @@ final class JXLImageReader extends ImageReaderBase {
             }
         }
 
-        ColorSpace colorSpace = getEmbeddedColorSpace(image);
-
-        if (colorSpace == null) {
-            // No (usable) ICC profile, convert to sRGB (or gray with sRGB transfer function)
-            if (image.getTransfer() == ColorFlags.TF_LINEAR) {
-                // JXLatte's transfer functions scale int samples wrong for linear images (divides by bit depth, not max value)
-                toFloat(buffers, colors, colorBitDepth);
-            }
-
-            if (colors == 1) {
-                // NOTE: We can't use transform for gray, as JXLatte may expand gray to RGB,
-                // without updating the bit depths, causing ArrayIndexOutOfBoundsException.
-                // Following the convention of the JDK readers, gray is stored with the sRGB transfer function in CS_GRAY.
-                image = image.transfer(ColorFlags.TF_SRGB, JXLOptions.PEAK_DETECT_AUTO);
-                colorSpace = ColorSpace.getInstance(ColorSpace.CS_GRAY);
-            }
-            else {
-                // HDR images (PQ or HLG transfer, wide gamut primaries) are tone mapped to SDR
-                image = image.transform(ColorManagement.PRI_SRGB, ColorManagement.WP_D65, ColorFlags.TF_SRGB, JXLOptions.PEAK_DETECT_AUTO);
-                colorSpace = ColorSpace.getInstance(ColorSpace.CS_sRGB);
-            }
-
-            buffers = image.getBuffer(false);
+        if (embeddedColorSpace == null) {
+            buffers = convertToSRGB(image, colors, colorBitDepth).getBuffer(false);
         }
 
-        int bands = colors + (hasAlpha ? 1 : 0);
+        int bands = colors + (alpha != null ? 1 : 0);
         ImageBuffer[] channels = new ImageBuffer[bands];
         int[] bitDepths = new int[bands];
 
@@ -263,57 +319,93 @@ final class JXLImageReader extends ImageReaderBase {
             bitDepths[c] = colorBitDepth;
         }
 
-        if (hasAlpha) {
+        if (alpha != null) {
             channels[colors] = alpha;
             bitDepths[colors] = alphaBitDepth;
         }
 
-        // Use 16 bits per sample for anything more than 8 bits, including float samples
-        int bitsPerSample = Math.max(colorBitDepth, alphaBitDepth) > 8 ? 16 : 8;
-        int maxValue = (1 << bitsPerSample) - 1;
+        int maxValue = type.getSampleModel().getDataType() == DataBuffer.TYPE_BYTE ? 0xFF : 0xFFFF;
         toIntSamples(channels, bitDepths, maxValue);
 
-        int width = image.getWidth();
-        int height = image.getHeight();
+        BufferedImage result = type.createBufferedImage(image.getWidth(), image.getHeight());
+        interleave(channels, result);
 
-        int dataType = bitsPerSample == 8 ? DataBuffer.TYPE_BYTE : DataBuffer.TYPE_USHORT;
-        ImageTypeSpecifier type = ImageTypeSpecifiers.createInterleaved(colorSpace, createBandOffsets(bands, hasAlpha), dataType, hasAlpha, false);
-        BufferedImage result = type.createBufferedImage(width, height);
+        return result;
+    }
 
-        DataBuffer dataBuffer = result.getRaster().getDataBuffer();
-        byte[] bytes = dataType == DataBuffer.TYPE_BYTE ? ((DataBufferByte) dataBuffer).getData() : null;
-        short[] shorts = dataType == DataBuffer.TYPE_USHORT ? ((DataBufferUShort) dataBuffer).getData() : null;
-        int[] offsets = ((PixelInterleavedSampleModel) result.getSampleModel()).getBandOffsets();
+    private static void validateAgainstHeader(final JXLImage image, final ImageHeader header) throws IIOException {
+        // Sanity check, the decoded image should always match the header
+        if (image.getWidth() != header.getOrientedSize().width || image.getHeight() != header.getOrientedSize().height
+                || image.getColorChannelCount() != header.getColorChannelCount() || image.hasAlpha() != header.hasAlpha()) {
+            throw new IIOException(String.format("Decoded JPEG XL image (%dx%d, %d colors, alpha: %b) does not match header",
+                    image.getWidth(), image.getHeight(), image.getColorChannelCount(), image.hasAlpha()));
+        }
+    }
+
+    private static JXLImage convertToSRGB(final JXLImage image, final int colors, final int colorBitDepth) {
+        // No (usable) ICC profile, convert to sRGB (or gray with sRGB transfer function)
+        if (image.getTransfer() == ColorFlags.TF_LINEAR) {
+            // JXLatte's transfer functions scale int samples wrong for linear images (divides by bit depth, not max value)
+            toFloat(image.getBuffer(false), colors, colorBitDepth);
+        }
+
+        if (colors == 1) {
+            // NOTE: We can't use transform for gray, as JXLatte may expand gray to RGB,
+            // without updating the bit depths, causing ArrayIndexOutOfBoundsException.
+            // Following the convention of the JDK readers, gray is stored with the sRGB transfer function in CS_GRAY.
+            return image.transfer(ColorFlags.TF_SRGB, JXLOptions.PEAK_DETECT_AUTO);
+        }
+
+        // HDR images (PQ or HLG transfer, wide gamut primaries) are tone mapped to SDR
+        return image.transform(ColorManagement.PRI_SRGB, ColorManagement.WP_D65, ColorFlags.TF_SRGB, JXLOptions.PEAK_DETECT_AUTO);
+    }
+
+    private static void interleave(final ImageBuffer[] channels, final BufferedImage destination) {
+        // Copies the (int) samples of each channel into the pixel interleaved destination
+        int width = destination.getWidth();
+        int height = destination.getHeight();
+        int bands = channels.length;
+
+        DataBuffer dataBuffer = destination.getRaster().getDataBuffer();
+        int[] offsets = ((PixelInterleavedSampleModel) destination.getSampleModel()).getBandOffsets();
 
         for (int c = 0; c < bands; c++) {
             int[][] samples = channels[c].getIntBuffer();
 
             for (int y = 0; y < height; y++) {
-                int[] row = samples[y];
                 int pos = y * width * bands + offsets[c];
 
-                if (bytes != null) {
-                    for (int x = 0; x < width; x++, pos += bands) {
-                        bytes[pos] = (byte) row[x];
-                    }
+                if (dataBuffer instanceof DataBufferByte) {
+                    copyRow(samples[y], width, ((DataBufferByte) dataBuffer).getData(), pos, bands);
                 }
                 else {
-                    for (int x = 0; x < width; x++, pos += bands) {
-                        shorts[pos] = (short) row[x];
-                    }
+                    copyRow(samples[y], width, ((DataBufferUShort) dataBuffer).getData(), pos, bands);
                 }
             }
         }
-
-        return result;
     }
 
-    private static ColorSpace getEmbeddedColorSpace(final JXLImage image) {
-        if (image.hasICCProfile()) {
-            try {
-                ColorSpace colorSpace = ColorSpaces.createColorSpace(ICC_Profile.getInstance(image.getICCProfile()));
+    private static void copyRow(final int[] row, final int width, final byte[] destination, int pos, final int stride) {
+        for (int x = 0; x < width; x++, pos += stride) {
+            destination[pos] = (byte) row[x];
+        }
+    }
 
-                if (colorSpace.getNumComponents() == image.getColorChannelCount()) {
+    private static void copyRow(final int[] row, final int width, final short[] destination, int pos, final int stride) {
+        for (int x = 0; x < width; x++, pos += stride) {
+            destination[pos] = (short) row[x];
+        }
+    }
+
+    private static ColorSpace getEmbeddedColorSpace(final ImageHeader header) throws IOException {
+        // NOTE: JXLatte ignores the ICC profile for XYB encoded images, and converts from the header's color encoding
+        byte[] iccProfile = header.isXYBEncoded() ? null : header.getDecodedICC();
+
+        if (iccProfile != null) {
+            try {
+                ColorSpace colorSpace = ColorSpaces.createColorSpace(ICC_Profile.getInstance(iccProfile));
+
+                if (colorSpace.getNumComponents() == header.getColorChannelCount()) {
                     return colorSpace;
                 }
             }

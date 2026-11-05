@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Timeout;
 import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageReadParam;
+import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.spi.ImageReaderSpi;
 import javax.imageio.stream.ImageInputStream;
 import javax.imageio.stream.MemoryCacheImageInputStream;
@@ -408,6 +409,81 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
         int green = image.getRGB(32, 10);
         assertTrue(((red >> 8) & 0xFF) > ((red >> 16) & 0xFF) + 100, String.format("Expected green: %08x", red));
         assertTrue(((green >> 16) & 0xFF) > ((green >> 8) & 0xFF) + 100, String.format("Expected red: %08x", green));
+    }
+
+    private JXLImageReader readerForTruncated(final String resource, final int length) throws IOException {
+        JXLImageReader reader = createReader();
+        reader.setInput(new MemoryCacheImageInputStream(new ByteArrayInputStream(Arrays.copyOf(readResource(resource), length))));
+        return reader;
+    }
+
+    @Test
+    @Timeout(30)
+    public void testHeaderOnlyCodestream() throws IOException {
+        // The header is intact, but the image data is truncated: Size and type must be available without decoding
+        JXLImageReader reader = readerForTruncated("/jxl/lenna.jxl", 1024);
+
+        try {
+            assertEquals(512, reader.getWidth(0));
+            assertEquals(512, reader.getHeight(0));
+
+            ImageTypeSpecifier rawType = reader.getRawImageType(0);
+            assertEquals(BufferedImage.TYPE_3BYTE_BGR, rawType.getBufferedImageType());
+            assertTrue(rawType.getColorModel().getColorSpace().isCS_sRGB());
+
+            assertThrows(IOException.class, () -> reader.read(0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    @Timeout(30)
+    public void testHeaderOnlyContainerOrientationICC() throws IOException {
+        // Container, orientation (stored as 500x606) and embedded ICC profile, image data truncated
+        JXLImageReader reader = readerForTruncated("/jxl/bench.jxl", 8192);
+
+        try {
+            assertEquals(606, reader.getWidth(0));
+            assertEquals(500, reader.getHeight(0));
+
+            ColorSpace colorSpace = reader.getRawImageType(0).getColorModel().getColorSpace();
+            assertInstanceOf(ICC_ColorSpace.class, colorSpace);
+            assertFalse(colorSpace.isCS_sRGB());
+
+            assertThrows(IOException.class, () -> reader.read(0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testRawImageTypeMatchesDecoded() throws IOException {
+        JXLImageReader reader = createReader();
+
+        try {
+            for (TestData data : getTestData()) {
+                try (ImageInputStream stream = data.getInputStream()) {
+                    reader.setInput(stream);
+
+                    ImageTypeSpecifier rawType = reader.getRawImageType(0);
+                    BufferedImage image = reader.read(0);
+
+                    String message = data.toString();
+                    assertSame(rawType.getColorModel().getColorSpace(), image.getColorModel().getColorSpace(), message);
+                    assertEquals(rawType.getColorModel(), image.getColorModel(), message);
+                    assertEquals(rawType.getSampleModel().getDataType(), image.getSampleModel().getDataType(), message);
+                    assertEquals(rawType.getNumBands(), image.getSampleModel().getNumBands(), message);
+                    assertEquals(reader.getWidth(0), image.getWidth(), message);
+                    assertEquals(reader.getHeight(0), image.getHeight(), message);
+                }
+            }
+        }
+        finally {
+            reader.dispose();
+        }
     }
 
     private byte[] readResource(final String resource) throws IOException {
