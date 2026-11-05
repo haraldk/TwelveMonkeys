@@ -96,6 +96,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
                 new TestData(getClassLoaderResource("/jxl/gray16-linear.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/graya8.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/grayf32-lossy.jxl"), new Dimension(64, 48)),
+                new TestData(getClassLoaderResource("/jxl/grayf32-lossless.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb16.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgba16.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb8-icc.jxl"), new Dimension(64, 48)),
@@ -361,19 +362,13 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    @Timeout(30)
-    void testReadGrayFloatLosslessUnsupported() throws IOException {
-        // NOTE: Valid file (decodes with libjxl), but JXLatte fails to decode lossless 32 bit float samples.
-        // If this test fails, JXLatte has been fixed, update the test and README.md
-        JXLImageReader reader = createReader();
+    void testReadGrayFloatLosslessToSRGB() throws IOException {
+        // Lossless, float samples tagged as linear light, generated from gray16
+        // NOTE: Requires a JXLatte with fixed lossless float decoding, otherwise reading fails
+        BufferedImage image = read("/jxl/grayf32-lossless.jxl", null);
 
-        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jxl/grayf32-lossless.jxl"))) {
-            reader.setInput(stream);
-            assertThrows(IOException.class, () -> reader.read(0));
-        }
-        finally {
-            reader.dispose();
-        }
+        assertEquals(BufferedImage.TYPE_USHORT_GRAY, image.getType());
+        assertSamples(image, (x, y) -> new int[] {linearToSRGB16(gray16(x, y))}, 2);
     }
 
     @Test

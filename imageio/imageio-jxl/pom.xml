@@ -19,7 +19,7 @@
     <properties>
         <project.jpms.module.name>com.twelvemonkeys.imageio.jxl</project.jpms.module.name>
         <!-- Patched JXLatte, from the module local repository below, see lib/README.md -->
-        <jxlatte.version>0.1.0-tm.3</jxlatte.version>
+        <jxlatte.version>0.1.0-tm.4</jxlatte.version>
         <brotli.version>0.1.2</brotli.version>
     </properties>
 

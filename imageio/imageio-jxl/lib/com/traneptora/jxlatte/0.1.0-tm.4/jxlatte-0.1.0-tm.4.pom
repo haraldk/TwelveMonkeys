@@ -6,7 +6,7 @@
 
     <groupId>com.traneptora</groupId>
     <artifactId>jxlatte</artifactId>
-    <version>0.1.0-tm.3</version>
+    <version>0.1.0-tm.4</version>
     <packaging>jar</packaging>
     <name>jxlatte</name>
 
