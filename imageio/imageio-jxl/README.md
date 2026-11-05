@@ -28,7 +28,7 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 <dependency>
     <groupId>com.traneptora</groupId>
     <artifactId>jxlatte</artifactId>
-    <version>0.1.0-tm.1</version> <!-- Patched build, from lib/ in this module, see "Known issues" -->
+    <version>0.1.0-tm.2</version> <!-- Patched build, from lib/ in this module, see "Known issues" -->
 </dependency>
 <!-- Optional, for Brotli compressed Exif/XMP boxes -->
 <dependency>
@@ -74,7 +74,7 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 | Destination image and offset              | ✔ | Only the type that `getImageTypes` returns is accepted (one type per image right now). |
 | Java2D compatibility                      | ◐ | 16-bit RGB(A) is `TYPE_CUSTOM`, and RGB(A) with an ICC profile has a custom color space. `AffineTransformOp` can't handle either of them (Java2D limitation). |
 | Size and image type without decoding      | ✔ | From the image header, see "Limits". The decoded image is checked against the header (`IIOException` if they differ). |
-| Progress listener                         | ◐ | Decoding happens in one step without callbacks, so progress events only cover the copy to the destination. |
+| Progress listener                         | ◐ | Decoding happens in one step without callbacks, before `imageStarted`. Progress events only cover the copy to the destination (a default `read` reports 100% at once). |
 | Abort                                     | ◐ | Checked while copying to the destination only. Decoding can't be aborted. |
 | Image metadata                            | ✔ | Standard metadata format (`javax_imageio_1.0`) only, no native format. Chroma, data, dimension and transparency describe the decoded image. `SignificantBitsPerSample` is set when the original integer samples have fewer bits (for example 12 bits decoded to 16). CompressionTypeName is `JPEG XL`. `Lossless` is `FALSE` for XYB images, and left out otherwise (see quirks). Needs only the header and the container boxes, not decoding. |
 | Exif / XMP                                | ✔ | Read by the plugin from the container boxes (JXLatte skips them). Exif goes into the standard Text node like in the TIFF plugin (ImageDescription, Make, Model, Software, Artist, Copyright, ...), and DateTime becomes Document/ImageCreationTime. XMP becomes a TextEntry with the keyword `XML:com.adobe.xmp`, as the JDK PNG reader does. Only the first box of each type (compressed or not) is used. Brotli-compressed (`brob`) boxes are read if `org.brotli:dec` is on the class path, otherwise they are skipped with a warning. Corrupt boxes are skipped with a warning. |
@@ -90,13 +90,23 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 - **`getWidth`, `getHeight`, `getRawImageType` and `getImageTypes` only read the header.** They use JXLatte's
   `JXLDecoder.readHeader()` (added on the JXLatte branch `add-header-api`, see "Known issues"). The header includes the
   ICC profile, which is decompressed to find the color space. This takes milliseconds.
-- **`read` always decodes the whole image.** JXLatte can't decode only a region. The result is cached for the
-  current input, so further `read`s don't decode again. After decoding, the plugin drops the JXLatte decoder, which
-  still holds full-size buffers.
+- **`read` always decodes the whole image.** JXLatte can't decode only a region. After decoding, the plugin drops the
+  JXLatte decoder, which still holds full-size buffers.
+  - A `read` without parameters (or with default ones) returns the decoded image itself, without copying it. As the
+    caller may modify that image, it isn't kept, so a further `read` decodes again.
+  - A `read` with a source region, subsampling, bands or a destination copies from the decoded image, which is kept
+    for further reads of the same input.
+- **Size limit:** before decoding, the plugin estimates JXLatte's memory use from the header (width × height ×
+  all channels, including extra channels × 4 bytes) and refuses larger images with an `IIOException`. The limit is
+  the one `ImageReaderBase` uses for input of unknown length: by default half the heap, at most 512 MB and at least
+  64 MB; change it with `-Dcom.twelvemonkeys.imageio.maxImageBytes=<bytes>`. An expansion ratio based on the file size,
+  as other plugins use, doesn't work for JPEG XL: valid files compress extremely well (JXLatte's `quilt.jxl` is 27
+  bytes for 1024x1024 RGB, more than 100,000:1).
 - **Memory:** JXLatte keeps samples in `int`/`float` arrays (4 bytes per sample per channel), and color conversion can
-  make full copies. On top of that, the plugin caches the decoded 8-bit image and allocates the destination image.
-  Expect memory use to peak at several times the size of the decoded image. There's no size or memory limit yet
-  (☐ Step 6).
+  make full copies. On top of that comes the decoded image (and the destination, when copying). Expect memory use to
+  peak at a few times the estimate above.
+- **Out of memory:** an `OutOfMemoryError` while JXLatte reads or decodes (typically a single, too large allocation
+  from corrupt data) is reported as `IIOException`, as `ImageReaderBase.getDestination` does.
 - **CPU:** JXLatte runs parts of decoding with `CompletableFuture.runAsync`, which uses the JVM's **common
   `ForkJoinPool`**, normally one thread per core. Set `-Djava.util.concurrent.ForkJoinPool.common.parallelism=N`
   to limit it. Note that this affects everything using the common pool. `JXLOptions.threads` exists but JXLatte
@@ -141,6 +151,16 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 - **Errors:** JXLatte reports invalid data as `InvalidBitstreamException`, but corrupt data can also cause other
   runtime exceptions, possibly wrapped in `CompletionException`. The plugin turns all of these into `IIOException`.
   End of file and other I/O errors are passed on as they are (for example `EOFException`).
+  `JXLImageReaderTest.testReadCorruptedFuzz` checks this with 200 deterministic random corruptions of small samples
+  (results are only success or `IOException`, no other exceptions, errors or hangs). A larger run of 1,350 cases
+  (256 MB heap) found nothing else after the fix below.
+- **JXLatte allocated buffers from untrusted lengths:** extension payloads, TOC entries and the encoded ICC profile
+  were allocated with their (64-bit) length from the bitstream before reading the data. A few corrupt bits in a
+  43-byte file caused allocations of up to 2 GB (`OutOfMemoryError`, found by fuzzing, sample
+  `art-corrupt-extensions.jxl`). Status: fixed on the local JXLatte branch `fix-untrusted-allocations`, to be
+  submitted upstream. Remaining in JXLatte (not fixed): the decoded ICC profile size and frame sizes from frame
+  headers (frames can be larger than the image) are still trusted. The size limit above only covers the image header,
+  and the out-of-memory handling is the safety net for these.
 - **Lossless or not is unknown for non-XYB images:** that depends on the frame encoding (VarDCT or Modular, and Modular
   can be lossy too), which only the frame headers tell. Even JXLatte's `--info` only says "Possibly". So the standard
   metadata only reports `Lossless` = `FALSE` for XYB images, and leaves it out otherwise.
@@ -167,7 +187,7 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
   middle of the data). The plugin needs this API.
 - **Patched JXLatte in `lib/`:** each fix (and the header API) is on its own JXLatte branch (for separate upstream PRs),
   based on JXLatte `main`. The local branch `local-fixes` merges all of them. Its Maven build ships with this module as
-  `com.traneptora:jxlatte:0.1.0-tm.1`, in the file based Maven repository `lib/`, which the module `pom.xml` declares.
+  `com.traneptora:jxlatte:0.1.0-tm.2`, in the file based Maven repository `lib/`, which the module `pom.xml` declares.
   `lib/README.md` lists the exact commits and how to rebuild. Remove `lib/` and the `<repository>` once JXLatte has a
   release with these changes.
 - **Release:** to release this module, JXLatte (with these changes) must be on Maven Central, or users need clear
@@ -200,5 +220,6 @@ one small.
 4. ✔ Read size, bit depth, alpha and color info from the header without decoding the image (JXLatte header API)
 5. ✔ Metadata: standard metadata format, Exif/XMP from the container. Possible later: native metadata format (raw
    Exif/XMP, for example a TIFF native tree as the TIFF and JPEG plugins have), and `brob` boxes (✔ with optional `org.brotli:dec`)
-6. ☐ Robustness: malformed input tests, memory/size limits, avoid caching a copy when possible
+6. ✔ Robustness: fuzz regression test, size limit before decoding, out of memory as `IIOException`, no copy for
+   default reads, JXLatte allocation fix
 7. ☐ Integration: project README format table, CI on JDK 21+, release (JXLatte availability on Maven Central)

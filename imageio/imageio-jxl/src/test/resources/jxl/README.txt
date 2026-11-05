@@ -31,4 +31,7 @@ gray8-meta.jxl is gray8.jxl wrapped in a container with Exif, brob, split codest
 gray8-brob.jxl is the same, but with Brotli compressed (brob) Exif and XMP boxes (needs the brotli CLI, 1.2.0 used):
   python3 make-test-container.py gray8.jxl gray8-brob.jxl --brob
 
+art-corrupt-extensions.jxl is art.jxl with 3 bytes changed (found by fuzzing), corrupting the image header extensions
+(unpatched JXLatte allocates up to 2 GB for it).
+
 SwappedRedAndGreen.icc (embedded in rgb8-icc.jxl) is from colord, Copyright 2012 Richard Hughes, CC0-1.0.

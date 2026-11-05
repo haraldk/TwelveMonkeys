@@ -182,7 +182,13 @@ final class JXLImageReader extends ImageReaderBase {
     public BufferedImage read(final int imageIndex, final ImageReadParam param) throws IOException {
         checkBounds(imageIndex);
 
-        Raster source = decode().getRaster();
+        BufferedImage image = decode();
+
+        if (isDefaultReadParam(param)) {
+            return handOutDecoded(imageIndex, image);
+        }
+
+        Raster source = image.getRaster();
         int width = source.getWidth();
         int height = source.getHeight();
 
@@ -203,18 +209,48 @@ final class JXLImageReader extends ImageReaderBase {
         WritableRaster dest = destination.getRaster().createWritableChild(destRegion.x, destRegion.y, destRegion.width, destRegion.height, 0, 0, destBands);
 
         processImageStarted(imageIndex);
+        copyRows(src, dest, xSub, ySub);
+        processImageComplete();
 
+        return destination;
+    }
+
+    private BufferedImage handOutDecoded(final int imageIndex, final BufferedImage image) {
+        // Fast path: Hand out the decoded image itself, instead of copying it.
+        // As the caller may modify it, it can't be cached any longer, a subsequent read decodes again
+        decoded = null;
+
+        processImageStarted(imageIndex);
+
+        if (!abortRequested()) {
+            processImageProgress(100f);
+        }
+
+        if (abortRequested()) {
+            processReadAborted();
+        }
+        else {
+            processImageComplete();
+        }
+
+        return image;
+    }
+
+    private void copyRows(final Raster src, final WritableRaster dest, final int xSub, final int ySub) {
+        // Copies all rows of dest from src, using the given subsampling (src is already cropped to the source region)
+        int width = dest.getWidth();
+        int height = dest.getHeight();
         Object data = null;
 
-        for (int y = 0; y < destRegion.height; y++) {
+        for (int y = 0; y < height; y++) {
             int srcY = y * ySub;
 
             if (xSub == 1) {
-                data = src.getDataElements(0, srcY, destRegion.width, 1, data);
-                dest.setDataElements(0, y, destRegion.width, 1, data);
+                data = src.getDataElements(0, srcY, width, 1, data);
+                dest.setDataElements(0, y, width, 1, data);
             }
             else {
-                for (int x = 0; x < destRegion.width; x++) {
+                for (int x = 0; x < width; x++) {
                     data = src.getDataElements(x * xSub, srcY, data);
                     dest.setDataElements(x, y, data);
                 }
@@ -225,12 +261,8 @@ final class JXLImageReader extends ImageReaderBase {
                 break;
             }
 
-            processImageProgress(100f * (y + 1) / destRegion.height);
+            processImageProgress(100f * (y + 1) / height);
         }
-
-        processImageComplete();
-
-        return destination;
     }
 
     private void readHeader() throws IOException {
@@ -406,12 +438,39 @@ final class JXLImageReader extends ImageReaderBase {
         return new JXLDecoder(IIOUtil.createStreamAdapter(imageInput), options);
     }
 
+    private static boolean isDefaultReadParam(final ImageReadParam param) {
+        return param == null
+                || !hasExplicitDestination(param)
+                && param.getSourceRegion() == null
+                && param.getSourceXSubsampling() == 1 && param.getSourceYSubsampling() == 1
+                && param.getSubsamplingXOffset() == 0 && param.getSubsamplingYOffset() == 0
+                && param.getSourceBands() == null && param.getDestinationBands() == null;
+    }
+
+    /**
+     * Estimates the memory JXLatte needs to decode the image: All channels (including extra channels),
+     * as int or float samples. Conversions may need more (temporary copies), and the decoded image comes on top.
+     */
+    static long estimateDecodingBytes(final ImageHeader header) {
+        return (long) header.getSize().width * header.getSize().height * header.getTotalChannelCount() * 4;
+    }
+
     private BufferedImage decode() throws IOException {
         readHeader();
 
         if (decoded == null) {
+            // JPEG XL compresses extremely well (ie. a 27 byte file can decode to 1024x1024 pixels), so an expansion ratio
+            // based on the input length doesn't work. Instead, check against the configurable maximum image size
+            // (the limit ImageReaderBase uses for input of unknown length), before allocating anything
+            try {
+                validateSourceSize(estimateDecodingBytes(header), -1, 1);
+            }
+            catch (IIOException e) {
+                throw new IIOException("JPEG XL image too large to decode: " + e.getMessage(), e);
+            }
+
             if (decoder == null) {
-                // A previous decode failed, start over (the new decoder reads the header again)
+                // A previous decode failed (or the image was handed out), start over (the new decoder reads the header again)
                 decoder = createDecoder();
             }
 
@@ -443,6 +502,12 @@ final class JXLImageReader extends ImageReaderBase {
             // JXLatte may throw various runtime exceptions on corrupt data, possibly wrapped by CompletionException
             Throwable cause = e.getCause() != null ? e.getCause() : e;
             throw new IIOException("Could not decode JPEG XL image: " + cause.getMessage(), cause);
+        }
+        catch (OutOfMemoryError e) {
+            // Typically a single, too large allocation caused by corrupt data or a too large image (the heap is still fine).
+            // Surface it as an IIOException, so callers treat it as a read error rather than a fatal Error,
+            // like ImageReaderBase.getDestination does
+            throw new IIOException("Could not decode JPEG XL image, out of memory (corrupt data or image too large)", e);
         }
     }
 

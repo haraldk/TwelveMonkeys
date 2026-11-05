@@ -58,10 +58,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.io.UncheckedIOException;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.w3c.dom.NodeList;
 
@@ -158,17 +165,17 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testReadModularSameAsReference() throws IOException {
+    void testReadModularSameAsReference() throws IOException {
         assertSameAsReference("art");
     }
 
     @Test
-    public void testReadVarDCTSameAsReference() throws IOException {
+    void testReadVarDCTSameAsReference() throws IOException {
         assertSameAsReference("white");
     }
 
     @Test
-    public void testReadRGBRawType() throws IOException {
+    void testReadRGBRawType() throws IOException {
         BufferedImage image = read("/jxl/lenna.jxl", null);
 
         assertEquals(BufferedImage.TYPE_3BYTE_BGR, image.getType());
@@ -176,7 +183,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testReadAlpha() throws IOException {
+    void testReadAlpha() throws IOException {
         // Read only a small region, to save some time
         ImageReadParam param = new ImageReadParam();
         param.setSourceRegion(new java.awt.Rectangle(0, 0, 64, 64));
@@ -191,7 +198,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
 
     @Test
     @Timeout(30)
-    public void testReadTruncated() throws IOException {
+    void testReadTruncated() throws IOException {
         // NOTE: Unpatched JXLatte 0.1.0 blocks forever (not interruptible) on truncated input,
         // requires the fix in Frame.decodeFrame that fails pending TOC entry readers
         byte[] data = readResource("/jxl/lenna.jxl");
@@ -209,7 +216,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
 
     @Test
     @Timeout(30)
-    public void testReadCorrupt() throws IOException {
+    void testReadCorrupt() throws IOException {
         // Valid signature, followed by garbage
         byte[] data = new byte[256];
         for (int i = 2; i < data.length; i++) {
@@ -299,7 +306,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testReadGray8() throws IOException {
+    void testReadGray8() throws IOException {
         BufferedImage image = read("/jxl/gray8.jxl", null);
 
         assertEquals(BufferedImage.TYPE_BYTE_GRAY, image.getType());
@@ -307,7 +314,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testReadGray16() throws IOException {
+    void testReadGray16() throws IOException {
         BufferedImage image = read("/jxl/gray16.jxl", null);
 
         assertEquals(BufferedImage.TYPE_USHORT_GRAY, image.getType());
@@ -315,7 +322,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testReadGrayAlpha8() throws IOException {
+    void testReadGrayAlpha8() throws IOException {
         BufferedImage image = read("/jxl/graya8.jxl", null);
 
         assertEquals(ColorSpace.TYPE_GRAY, image.getColorModel().getColorSpace().getType());
@@ -326,7 +333,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testReadGray16LinearToSRGB() throws IOException {
+    void testReadGray16LinearToSRGB() throws IOException {
         // Same samples as gray16, but tagged as linear light (int samples, see JXLatte's transferInPlace bug)
         BufferedImage image = read("/jxl/gray16-linear.jxl", null);
 
@@ -335,7 +342,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testReadGrayFloatLossyToSRGB() throws IOException {
+    void testReadGrayFloatLossyToSRGB() throws IOException {
         // Lossy, float samples tagged as linear light, generated from gray16
         BufferedImage image = read("/jxl/grayf32-lossy.jxl", null);
 
@@ -345,7 +352,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
 
     @Test
     @Timeout(30)
-    public void testReadGrayFloatLosslessUnsupported() throws IOException {
+    void testReadGrayFloatLosslessUnsupported() throws IOException {
         // NOTE: Valid file (decodes with libjxl), but JXLatte fails to decode lossless 32 bit float samples.
         // If this test fails, JXLatte has been fixed, update the test and README.md
         JXLImageReader reader = createReader();
@@ -360,7 +367,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testReadRGB16() throws IOException {
+    void testReadRGB16() throws IOException {
         BufferedImage image = read("/jxl/rgb16.jxl", null);
 
         assertTrue(image.getColorModel().getColorSpace().isCS_sRGB());
@@ -370,7 +377,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testReadRGBA16() throws IOException {
+    void testReadRGBA16() throws IOException {
         BufferedImage image = read("/jxl/rgba16.jxl", null);
 
         assertTrue(image.getColorModel().getColorSpace().isCS_sRGB());
@@ -384,7 +391,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testReadPQToSRGB() throws IOException {
+    void testReadPQToSRGB() throws IOException {
         // Neutral gray PQ code values (BT.2100 PQ, BT.2020 primaries), so gamut mapping doesn't change the values.
         // JXLatte's peak detection (auto) scales the linear values so that the brightest pixel becomes 1.0.
         // NOTE: Requires a JXLatte with fixed PQ transfer function, otherwise the result is black
@@ -401,7 +408,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testReadICCProfile() throws IOException {
+    void testReadICCProfile() throws IOException {
         // Pure red, green and blue thirds, with a profile that swaps red and green
         BufferedImage image = read("/jxl/rgb8-icc.jxl", null);
 
@@ -430,7 +437,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
 
     @Test
     @Timeout(30)
-    public void testHeaderOnlyCodestream() throws IOException {
+    void testHeaderOnlyCodestream() throws IOException {
         // The header is intact, but the image data is truncated: Size and type must be available without decoding
         JXLImageReader reader = readerForTruncated("/jxl/lenna.jxl", 1024);
 
@@ -451,7 +458,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
 
     @Test
     @Timeout(30)
-    public void testHeaderOnlyContainerOrientationICC() throws IOException {
+    void testHeaderOnlyContainerOrientationICC() throws IOException {
         // Container, orientation (stored as 500x606) and embedded ICC profile, image data truncated
         JXLImageReader reader = readerForTruncated("/jxl/bench.jxl", 8192);
 
@@ -471,7 +478,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testRawImageTypeMatchesDecoded() throws IOException {
+    void testRawImageTypeMatchesDecoded() throws IOException {
         JXLImageReader reader = createReader();
 
         try {
@@ -580,7 +587,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testMetadataExifXMP() throws IOException {
+    void testMetadataExifXMP() throws IOException {
         // Uncompressed Exif and XMP, split codestream, and a corrupt brob box (garbage, claiming to be XMP)
         List<String> warnings = readMetadataAndImage("/jxl/gray8-meta.jxl", true, true);
 
@@ -589,7 +596,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testMetadataBrotliCompressed() throws IOException {
+    void testMetadataBrotliCompressed() throws IOException {
         assertTrue(JXLImageReader.BROTLI_AVAILABLE, "org.brotli:dec should be on the test class path");
 
         List<String> warnings = readMetadataAndImage("/jxl/gray8-brob.jxl", true, true);
@@ -597,7 +604,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testMetadataBrotliUnavailable() throws IOException {
+    void testMetadataBrotliUnavailable() throws IOException {
         // Brotli compressed boxes are skipped with a warning, the image itself is still readable
         List<String> warnings = readMetadataAndImage("/jxl/gray8-brob.jxl", false, false);
 
@@ -607,7 +614,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testMetadataXYBIsLossy() throws IOException {
+    void testMetadataXYBIsLossy() throws IOException {
         JXLImageReader reader = createReader();
 
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jxl/lenna.jxl"))) {
@@ -625,7 +632,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testMetadataAlpha16() throws IOException {
+    void testMetadataAlpha16() throws IOException {
         JXLImageReader reader = createReader();
 
         try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jxl/rgba16.jxl"))) {
@@ -643,7 +650,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     @Test
-    public void testMetadataSignificantBits() throws IOException {
+    void testMetadataSignificantBits() throws IOException {
         // 12 bits per sample (color and alpha), decoded to 16 bits. Only the header is read, the image is not decoded
         JXLImageReader reader = createReader();
 
@@ -653,6 +660,232 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
 
             assertEquals("16 16 16 16", findNode(root, "BitsPerSample").getAttribute("value"));
             assertEquals("12 12 12 12", findNode(root, "SignificantBitsPerSample").getAttribute("value"));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    /** Minimal JPEG XL codestream header writer, bits are packed LSB first. */
+    private static final class BitWriter {
+        private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        private long buffer;
+        private int bits;
+
+        BitWriter write(final int value, final int count) {
+            buffer |= ((long) value & ((1L << count) - 1)) << bits;
+            bits += count;
+
+            while (bits >= 8) {
+                bytes.write((int) buffer & 0xFF);
+                buffer >>>= 8;
+                bits -= 8;
+            }
+
+            return this;
+        }
+
+        byte[] toByteArray(final int padding) {
+            if (bits > 0) {
+                write(0, 8 - bits);
+            }
+
+            byte[] result = bytes.toByteArray();
+            return Arrays.copyOf(result, result.length + padding);
+        }
+    }
+
+    private static byte[] codestreamHeader(final int width, final int height) {
+        return new BitWriter()
+                .write(0xFF, 8).write(0x0A, 8) // Signature
+                .write(0, 1) // SizeHeader: div8 = false
+                .write(2, 2).write(height - 1, 18) // height: U32 selector 2, 1 + u(18)
+                .write(0, 3) // ratio = 0, explicit width
+                .write(2, 2).write(width - 1, 18) // width: U32 selector 2, 1 + u(18)
+                .write(1, 1) // ImageMetadata: all_default
+                .write(1, 1) // CustomTransformData: all_default
+                .toByteArray(16); // Some bytes for the (missing) frame data
+    }
+
+    @Test
+    @Timeout(30)
+    void testReadHugeDeclaredSize() throws IOException {
+        // 32768 x 32768 RGB (within level 5 limits), would need 12 GB as int/float samples in JXLatte
+        JXLImageReader reader = createReader();
+
+        try (ImageInputStream stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(codestreamHeader(32768, 32768)))) {
+            reader.setInput(stream);
+
+            // The header is fine
+            assertEquals(32768, reader.getWidth(0));
+            assertEquals(32768, reader.getHeight(0));
+            assertEquals(3, reader.getRawImageType(0).getNumBands());
+
+            // ...but decoding is refused, before allocating anything
+            IIOException e = assertThrows(IIOException.class, () -> reader.read(0));
+            assertTrue(e.getMessage().contains("too large"), e.getMessage());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    void testEstimateDecodingBytes() throws IOException {
+        JXLImageReader reader = createReader();
+
+        try (ImageInputStream stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(codestreamHeader(1000, 500)))) {
+            reader.setInput(stream);
+            reader.getWidth(0); // Reads the header
+
+            // 3 channels, 4 bytes per sample
+            assertEquals(1000L * 500 * 3 * 4, JXLImageReader.estimateDecodingBytes(readHeaderOf(reader)));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static com.traneptora.jxlatte.bundle.ImageHeader readHeaderOf(final JXLImageReader reader) throws IOException {
+        // Reads the header of the current input, using the JXLatte API directly
+        ImageInputStream input = (ImageInputStream) reader.getInput();
+        input.seek(0);
+
+        return new com.traneptora.jxlatte.JXLDecoder(com.twelvemonkeys.imageio.util.IIOUtil.createStreamAdapter(input)).readHeader();
+    }
+
+    @Test
+    @Timeout(30)
+    void testReadCorruptExtensions() throws IOException {
+        // Corrupt image header extensions, unpatched JXLatte allocates (up to) 2 GB, causing OutOfMemoryError
+        JXLImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jxl/art-corrupt-extensions.jxl"))) {
+            reader.setInput(stream);
+            assertThrows(IOException.class, () -> reader.read(0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    @Timeout(120)
+    void testReadCorruptedFuzz() throws Exception {
+        // Deterministic random byte changes and truncations of small samples:
+        // reading must either succeed, or throw IOException. No other exceptions, errors or hangs.
+        String[] resources = {
+                "/jxl/art.jxl", "/jxl/gray8.jxl", "/jxl/graya8.jxl", "/jxl/white.jxl",
+                "/jxl/rgb16.jxl", "/jxl/gray8-meta.jxl", "/jxl/gray8-brob.jxl", "/jxl/rgb8-icc.jxl"
+        };
+
+        ExecutorService executor = Executors.newSingleThreadExecutor(runnable -> {
+            Thread thread = new Thread(runnable, "jxl-fuzz");
+            thread.setDaemon(true); // Don't keep the JVM alive, if a case hangs
+            return thread;
+        });
+
+        try {
+            for (String resource : resources) {
+                byte[] original = readResource(resource);
+                Random random = new Random(resource.hashCode());
+
+                for (int i = 0; i < 25; i++) {
+                    byte[] data;
+                    String mutation;
+
+                    if (i % 4 == 3) {
+                        int length = 2 + random.nextInt(original.length - 2);
+                        data = Arrays.copyOf(original, length);
+                        mutation = "truncated to " + length;
+                    }
+                    else {
+                        data = original.clone();
+                        StringBuilder positions = new StringBuilder("changed bytes @");
+
+                        for (int k = random.nextInt(4); k >= 0; k--) {
+                            // Keep the signature, so the reader is still selected
+                            int pos = 2 + random.nextInt(data.length - 2);
+                            data[pos] = (byte) random.nextInt(256);
+                            positions.append(' ').append(pos);
+                        }
+
+                        mutation = positions.toString();
+                    }
+
+                    String description = resource + ", " + mutation;
+                    Future<Throwable> result = executor.submit(() -> readCompletely(data));
+
+                    Throwable thrown;
+                    try {
+                        thrown = result.get(20, TimeUnit.SECONDS);
+                    }
+                    catch (TimeoutException e) {
+                        fail("Timeout (hang?): " + description);
+                        return;
+                    }
+
+                    if (thrown != null && !(thrown instanceof IOException)) {
+                        throw new AssertionError("Unexpected " + thrown + ": " + description, thrown);
+                    }
+                }
+            }
+        }
+        finally {
+            executor.shutdownNow();
+        }
+    }
+
+    private Throwable readCompletely(final byte[] data) {
+        JXLImageReader reader = createReaderUnchecked();
+
+        try (ImageInputStream stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(data))) {
+            reader.setInput(stream);
+            reader.getWidth(0);
+            reader.getImageTypes(0).next();
+            reader.getImageMetadata(0).getAsTree(IIOMetadataFormatImpl.standardMetadataFormatName);
+            reader.read(0);
+
+            return null;
+        }
+        catch (Throwable t) {
+            return t;
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private JXLImageReader createReaderUnchecked() {
+        try {
+            return createReader();
+        }
+        catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+    }
+
+    @Test
+    void testReadDefaultParamDoesNotCache() throws IOException {
+        JXLImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/jxl/gray8.jxl"))) {
+            reader.setInput(stream);
+
+            // Default reads hand out the decoded image itself, each read must return a new image
+            BufferedImage first = reader.read(0);
+            BufferedImage second = reader.read(0, reader.getDefaultReadParam());
+            assertNotSame(first, second);
+
+            // Modifying the first doesn't affect later reads
+            first.getRaster().setSample(0, 0, 0, 255);
+            assertSamples(second, (x, y) -> new int[] {gray8(x, y)}, 0);
+
+            // Reading with a source region still works (decodes and caches again)
+            ImageReadParam param = reader.getDefaultReadParam();
+            param.setSourceRegion(new java.awt.Rectangle(10, 5, 20, 10));
+            BufferedImage region = reader.read(0, param);
+            assertSamples(region, (x, y) -> new int[] {gray8(x + 10, y + 5)}, 0);
         }
         finally {
             reader.dispose();
