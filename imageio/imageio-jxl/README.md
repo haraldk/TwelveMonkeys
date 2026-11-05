@@ -53,14 +53,19 @@ ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL re
 | Losslessly recompressed JPEGs             | ✔ | Decoded to pixels. The original JPEG bytes are not reconstructed. |
 | Orientation                               | ✔ | JXLatte applies the orientation from the header, so width and height are those of the rotated image. |
 | Alpha channel                             | ✔ | Premultiplied alpha is converted to straight alpha. |
-| Embedded ICC profile                      | ◐ | Used as the image's color space if Java can load it and it has the right number of components. Otherwise the image is converted to sRGB. |
-| Color conversion to sRGB                  | ✔ | Done for images without a usable ICC profile, the same way as JXLatte's own PNG output. |
-| Bit depth > 8 / HDR / float samples       | ◐ | Decoded, but reduced to 8 bits per sample. HDR (PQ/HLG) is tone mapped to sRGB. ☐ Step 3 |
-| Grayscale                                 | ◐ | Without an ICC profile, gray is expanded to RGB (sRGB). ☐ Step 3. No test samples yet. |
+| Embedded ICC profile                      | ✔ | Used as the image's color space if Java can load it and it has the right number of components. Otherwise the image is converted as if it had no profile. The samples are not converted. Exception: XYB (lossy) images, see quirks. |
+| Color conversion to sRGB                  | ✔ | Done by JXLatte for color images without a usable ICC profile, the same way as its own PNG output. Colors outside sRGB (wide gamut) are clipped (not tested). |
+| 1–8 bits per sample                       | ✔ | Returned as 8 bits per sample (`TYPE_BYTE`), scaled to the full 0–255 range. |
+| 9–16 bits per sample                      | ✔ | Returned as 16 bits per sample (`TYPE_USHORT`), scaled to the full 0–65535 range. The sample count decides: if color or alpha needs more than 8 bits, all bands use 16 bits. |
+| Float samples                             | ◐ | Returned as 16 bits per sample, clipped to 0–1. Lossy float works. Lossless 32-bit float fails in JXLatte (see quirks). |
+| HDR (PQ, HLG)                             | ◐ | Tone mapped to SDR sRGB by JXLatte (16 bits per sample). PQ only works for XYB (lossy) images, other PQ images come out black. HLG fails with `IIOException`. See quirks. |
+| Grayscale                                 | ✔ | `TYPE_BYTE_GRAY` / `TYPE_USHORT_GRAY` (or gray + alpha) in `CS_GRAY`, with samples using the sRGB transfer function (gamma). That's the same convention as the JDK's PNG and JPEG readers. A gray ICC profile is used if embedded (not tested). |
+| Premultiplied alpha                       | ◐ | Converted to straight alpha before any color conversion. Not tested (no sample). |
 | Extra channels other than the first alpha | ✘ | Ignored (depth, spot colors, more alpha channels, ...). |
 | Source region and subsampling             | ✔ | Applied when copying from the cached full decoded image, so they don't make decoding faster. |
 | Source and destination bands              | ◐ | Implemented but not tested yet (those tests are disabled in `ImageReaderAbstractTest`). |
 | Destination image and offset              | ✔ | Only the type that `getImageTypes` returns is accepted (one type per image right now). |
+| Java2D compatibility                      | ◐ | 16-bit RGB(A) is `TYPE_CUSTOM`, and RGB(A) with an ICC profile has a custom color space. `AffineTransformOp` can't handle either of them (Java2D limitation). |
 | Progress listener                         | ◐ | Decoding happens in one step without callbacks, so progress events only cover the copy to the destination. |
 | Abort                                     | ◐ | Checked while copying to the destination only. Decoding can't be aborted. |
 | Image metadata                            | ✘ | `getImageMetadata` returns `null`. ☐ Step 5 (standard metadata format) |
@@ -96,13 +101,32 @@ ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL re
 - **JXLatte's color transforms can drop extra channels.** `JXLImage.transform(...)` (when it has to linearize or convert
   primaries) creates new buffers and only fills the color channels, leaving the extra channels empty. Before
   transforming, the plugin therefore takes the alpha buffer from the image as decoded.
-- **After `JXLImage.fillColor()`, bit depths are wrong:** gray-to-RGB expansion adds two buffers but doesn't extend the
-  bit depth array. The plugin doesn't use `fillColor()` and expands gray itself.
+- **`JXLImage.transform(...)` fails on gray images:** it can expand gray to RGB (`fillColor()`), but doesn't extend the
+  bit depth array, so `toneMapLinear` throws `ArrayIndexOutOfBoundsException` (for example on a linear 16-bit gray
+  image, also with the JXLatte CLI). For gray images the plugin only uses `JXLImage.transfer(...)`.
+- **`JXLImage.transferInPlace` scales int samples wrong:** it calls `castToFloatWithMax(bitDepth)` with the bit depth
+  where the maximum value belongs. That breaks integer images tagged as linear light. Before converting, the plugin
+  turns the color samples of linear images into floats itself.
+- **JXLatte's PQ transfer function is wrong:** `TransferFunction.TF_PQ.toLinear` uses `c2 + c3·d` where SMPTE ST 2084
+  has `c2 - c3·d`, and both directions use `m1 = 2612/16384` instead of `2610/16384`. PQ samples that need
+  linearizing (anything not XYB-encoded, for example lossless PQ) end up around 1e-15, so the image is black.
+  XYB-encoded HDR images are decoded straight to linear light and aren't affected by the sign error.
+- **HLG isn't implemented in JXLatte** (`UnsupportedOperationException`, reported as `IIOException`), unless the image
+  is XYB-encoded.
+- **Lossless 32-bit float fails in JXLatte:** a valid lossless `grayf32` file (decodes fine with libjxl) fails with an
+  `EOFException` while decoding modular data. Lossy float images decode.
+- **XYB images ignore their ICC profile:** for XYB-encoded (lossy) images, JXLatte doesn't return the ICC profile and
+  converts from the color encoding in the header instead. Not verified with a sample.
+- **`ImageTypeSpecifier.createFromRenderedImage` loses ICC color spaces:** Java2D classifies the decoded image's layout
+  as a standard type (such as `TYPE_3BYTE_BGR`), and `createFromRenderedImage` then returns that standard type in sRGB.
+  So the plugin creates its image type from the decoded image's own color model and sample model.
 - **Logging:** by default JXLatte writes to `System.err`. The plugin turns this off by setting
   `JXLOptions.verbosity = Loggers.LOG_BASE - 1`.
 - **Errors:** JXLatte reports invalid data as `InvalidBitstreamException`, but corrupt data can also cause other
   runtime exceptions, possibly wrapped in `CompletionException`. The plugin turns all of these into `IIOException`.
   End of file and other I/O errors are passed on as they are (for example `EOFException`).
+- **Two JXLatte samples have embedded ICC profiles:** `patches-lossless.jxl` ("Colour LCD Calibrated") and
+  `bench.jxl` ("BRG").
 - **JXLatte's sample size info:** `--parse-only` in the JXLatte CLI shows the size before orientation is applied (for
   example `bench.jxl` is listed as 500x606 but decodes as 606x500).
 - **No JXLatte on Maven Central:** `com.traneptora:jxlatte:0.1.0` currently has to be installed locally (see below).
@@ -131,9 +155,10 @@ one small.
 ## Roadmap
 
 1. ✔ Module skeleton, SPI, format detection
-2. ✔ Minimal reader (8-bit RGB/RGBA/gray, ICC or sRGB)
-3. ☐ Color and bit depth: 16-bit and float output, HDR handling, gray without RGB expansion, premultiplied alpha
-   handling
+2. ✔ Minimal reader (8-bit RGB/RGBA, ICC or sRGB)
+3. ◐ Color and bit depth: 16-bit output, gray without RGB expansion, premultiplied alpha, working ICC profiles.
+   Open: PQ (JXLatte bug), float output (`TYPE_FLOAT`) and/or HDR output without tone mapping (custom
+   `ImageReadParam`?)
 4. ☐ Read size, bit depth, alpha and color info from the header without decoding the image
 5. ☐ Metadata: standard metadata format, Exif/XMP from the container
 6. ☐ Robustness: malformed input tests, memory/size limits, avoid caching a copy when possible

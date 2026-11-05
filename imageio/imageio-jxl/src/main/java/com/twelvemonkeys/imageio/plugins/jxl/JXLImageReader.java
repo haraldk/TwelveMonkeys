@@ -56,6 +56,7 @@ import java.awt.color.ICC_Profile;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBuffer;
 import java.awt.image.DataBufferByte;
+import java.awt.image.DataBufferUShort;
 import java.awt.image.PixelInterleavedSampleModel;
 import java.awt.image.Raster;
 import java.awt.image.WritableRaster;
@@ -71,9 +72,15 @@ import java.util.Iterator;
  * are applied when copying the cached image to the destination.
  * </p>
  * <p>
- * NOTE: Work in progress. Currently, all images are decoded to 8 bits per sample.
- * Images with an embedded ICC profile are returned in that color space,
- * other images are converted to sRGB.
+ * Images with up to 8 bits per sample are decoded to 8 bits per sample, anything more
+ * (including float samples) to 16 bits per sample.
+ * Images with an embedded ICC profile are returned in that color space.
+ * Other color images are converted to sRGB (HDR images are tone mapped),
+ * gray images are converted to the sRGB transfer function and returned as {@code CS_GRAY},
+ * like the JDK readers do.
+ * </p>
+ * <p>
+ * See README.md in this module for capabilities, limits and quirks.
  * </p>
  */
 final class JXLImageReader extends ImageReaderBase {
@@ -193,15 +200,18 @@ final class JXLImageReader extends ImageReaderBase {
                 throw new IIOException("Could not decode JPEG XL image: " + cause.getMessage(), cause);
             }
 
-            rawType = ImageTypeSpecifier.createFromRenderedImage(decoded);
+            // NOTE: Don't use ImageTypeSpecifier.createFromRenderedImage, as it maps BufferedImages
+            // with a standard type (ie. TYPE_3BYTE_BGR) to the standard (sRGB) type, losing any ICC color space
+            rawType = new ImageTypeSpecifier(decoded.getColorModel(), decoded.getSampleModel());
         }
 
         return decoded;
     }
 
     private static BufferedImage toBufferedImage(JXLImage image) {
-        // All color channels share the same bit depth
-        int colorBitDepth = image.getTaggedBitDepth(0);
+        int colors = image.getColorChannelCount();
+        int colorBitDepth = image.getTaggedBitDepth(0); // All color channels share the same bit depth
+        ImageBuffer[] buffers = image.getBuffer(false);
 
         // NOTE: Get alpha before any color transform, as JXLatte's transforms don't necessarily retain extra channels
         boolean hasAlpha = image.hasAlpha();
@@ -209,66 +219,88 @@ final class JXLImageReader extends ImageReaderBase {
         int alphaBitDepth = 0;
 
         if (hasAlpha) {
-            int alphaChannel = image.getColorChannelCount() + image.getAlphaIndex();
-            alpha = image.getBuffer(false)[alphaChannel];
+            int alphaChannel = colors + image.getAlphaIndex();
+            alpha = buffers[alphaChannel];
             alphaBitDepth = image.getTaggedBitDepth(alphaChannel);
+
+            if (image.isAlphaPremultiplied()) {
+                // Un-premultiply before any color transform, as these are only correct for un-associated values
+                unpremultiply(buffers, colors, colorBitDepth, alpha, alphaBitDepth);
+            }
         }
 
-        boolean premultiplied = image.isAlphaPremultiplied();
         ColorSpace colorSpace = getEmbeddedColorSpace(image);
 
         if (colorSpace == null) {
-            // No (usable) ICC profile, convert to sRGB
-            image = image.transform(ColorManagement.PRI_SRGB, ColorManagement.WP_D65, ColorFlags.TF_SRGB, JXLOptions.PEAK_DETECT_AUTO);
-            colorSpace = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+            // No (usable) ICC profile, convert to sRGB (or gray with sRGB transfer function)
+            if (image.getTransfer() == ColorFlags.TF_LINEAR) {
+                // JXLatte's transfer functions scale int samples wrong for linear images (divides by bit depth, not max value)
+                toFloat(buffers, colors, colorBitDepth);
+            }
+
+            if (colors == 1) {
+                // NOTE: We can't use transform for gray, as JXLatte may expand gray to RGB,
+                // without updating the bit depths, causing ArrayIndexOutOfBoundsException.
+                // Following the convention of the JDK readers, gray is stored with the sRGB transfer function in CS_GRAY.
+                image = image.transfer(ColorFlags.TF_SRGB, JXLOptions.PEAK_DETECT_AUTO);
+                colorSpace = ColorSpace.getInstance(ColorSpace.CS_GRAY);
+            }
+            else {
+                // HDR images (PQ or HLG transfer, wide gamut primaries) are tone mapped to SDR
+                image = image.transform(ColorManagement.PRI_SRGB, ColorManagement.WP_D65, ColorFlags.TF_SRGB, JXLOptions.PEAK_DETECT_AUTO);
+                colorSpace = ColorSpace.getInstance(ColorSpace.CS_sRGB);
+            }
+
+            buffers = image.getBuffer(false);
         }
 
-        // NOTE: Gray may still be single channel, even if the color space is now sRGB, in that case we expand
-        ImageBuffer[] buffers = image.getBuffer(false);
-        boolean gray = image.getColorChannelCount() == 1;
-        int colorBands = colorSpace.getNumComponents();
-        int bands = colorBands + (hasAlpha ? 1 : 0);
-
+        int bands = colors + (hasAlpha ? 1 : 0);
         ImageBuffer[] channels = new ImageBuffer[bands];
         int[] bitDepths = new int[bands];
 
-        for (int c = 0; c < colorBands; c++) {
-            channels[c] = buffers[gray ? 0 : c];
+        for (int c = 0; c < colors; c++) {
+            channels[c] = buffers[c];
             bitDepths[c] = colorBitDepth;
         }
 
         if (hasAlpha) {
-            channels[colorBands] = alpha;
-            bitDepths[colorBands] = alphaBitDepth;
-
-            if (premultiplied) {
-                unpremultiply(channels, bitDepths);
-            }
+            channels[colors] = alpha;
+            bitDepths[colors] = alphaBitDepth;
         }
 
-        toBytes(channels, bitDepths);
+        // Use 16 bits per sample for anything more than 8 bits, including float samples
+        int bitsPerSample = Math.max(colorBitDepth, alphaBitDepth) > 8 ? 16 : 8;
+        int maxValue = (1 << bitsPerSample) - 1;
+        toIntSamples(channels, bitDepths, maxValue);
 
         int width = image.getWidth();
         int height = image.getHeight();
 
-        int[] bandOffsets = createBandOffsets(bands, hasAlpha);
-        ImageTypeSpecifier type = ImageTypeSpecifiers.createInterleaved(colorSpace, bandOffsets, DataBuffer.TYPE_BYTE, hasAlpha, false);
+        int dataType = bitsPerSample == 8 ? DataBuffer.TYPE_BYTE : DataBuffer.TYPE_USHORT;
+        ImageTypeSpecifier type = ImageTypeSpecifiers.createInterleaved(colorSpace, createBandOffsets(bands, hasAlpha), dataType, hasAlpha, false);
         BufferedImage result = type.createBufferedImage(width, height);
 
-        byte[] data = ((DataBufferByte) result.getRaster().getDataBuffer()).getData();
+        DataBuffer dataBuffer = result.getRaster().getDataBuffer();
+        byte[] bytes = dataType == DataBuffer.TYPE_BYTE ? ((DataBufferByte) dataBuffer).getData() : null;
+        short[] shorts = dataType == DataBuffer.TYPE_USHORT ? ((DataBufferUShort) dataBuffer).getData() : null;
         int[] offsets = ((PixelInterleavedSampleModel) result.getSampleModel()).getBandOffsets();
 
         for (int c = 0; c < bands; c++) {
             int[][] samples = channels[c].getIntBuffer();
-            int offset = offsets[c];
 
             for (int y = 0; y < height; y++) {
                 int[] row = samples[y];
-                int pos = y * width * bands + offset;
+                int pos = y * width * bands + offsets[c];
 
-                for (int x = 0; x < width; x++) {
-                    data[pos] = (byte) row[x];
-                    pos += bands;
+                if (bytes != null) {
+                    for (int x = 0; x < width; x++, pos += bands) {
+                        bytes[pos] = (byte) row[x];
+                    }
+                }
+                else {
+                    for (int x = 0; x < width; x++, pos += bands) {
+                        shorts[pos] = (short) row[x];
+                    }
                 }
             }
         }
@@ -294,19 +326,18 @@ final class JXLImageReader extends ImageReaderBase {
     }
 
     private static int[] createBandOffsets(final int bands, final boolean hasAlpha) {
-        // Use standard BGR/ABGR layout for RGB(A), for best performance
         int[] offsets = new int[bands];
 
         if (bands >= 3) {
+            // Use standard BGR/ABGR layout for RGB(A), alpha (if any) is first
             int colorBands = hasAlpha ? bands - 1 : bands;
 
             for (int c = 0; c < colorBands; c++) {
                 offsets[c] = bands - 1 - c;
             }
-
-            // Alpha is the first offset
         }
         else {
+            // Gray, gray + alpha
             for (int c = 0; c < bands; c++) {
                 offsets[c] = c;
             }
@@ -315,23 +346,28 @@ final class JXLImageReader extends ImageReaderBase {
         return offsets;
     }
 
-    private static void unpremultiply(final ImageBuffer[] channels, final int[] bitDepths) {
-        ImageBuffer alphaBuffer = channels[channels.length - 1];
-        alphaBuffer.castToFloat(bitDepths[channels.length - 1]);
+    private static int maxValue(final int bitDepth) {
+        return bitDepth >= 31 ? Integer.MAX_VALUE : (1 << bitDepth) - 1;
+    }
+
+    private static void toFloat(final ImageBuffer[] buffers, final int count, final int bitDepth) {
+        for (int c = 0; c < count; c++) {
+            buffers[c].castToFloatWithMax(maxValue(bitDepth)); // No-op for float buffers
+        }
+    }
+
+    private static void unpremultiply(final ImageBuffer[] buffers, final int colors, final int colorBitDepth,
+                                      final ImageBuffer alphaBuffer, final int alphaBitDepth) {
+        alphaBuffer.castToFloatWithMax(maxValue(alphaBitDepth));
+        toFloat(buffers, colors, colorBitDepth);
+
         float[][] alpha = alphaBuffer.getFloatBuffer();
 
-        for (int c = 0; c < channels.length - 1; c++) {
-            ImageBuffer channel = channels[c];
+        for (int c = 0; c < colors; c++) {
+            float[][] samples = buffers[c].getFloatBuffer();
 
-            if (isDuplicate(channels, c)) {
-                continue;
-            }
-
-            channel.castToFloat(bitDepths[c]);
-            float[][] samples = channel.getFloatBuffer();
-
-            for (int y = 0; y < channel.height; y++) {
-                for (int x = 0; x < channel.width; x++) {
+            for (int y = 0; y < alphaBuffer.height; y++) {
+                for (int x = 0; x < alphaBuffer.width; x++) {
                     float a = alpha[y][x];
                     samples[y][x] = a > 0 ? samples[y][x] / a : 0;
                 }
@@ -339,31 +375,16 @@ final class JXLImageReader extends ImageReaderBase {
         }
     }
 
-    private static void toBytes(final ImageBuffer[] channels, final int[] bitDepths) {
+    private static void toIntSamples(final ImageBuffer[] channels, final int[] bitDepths, final int maxValue) {
         for (int c = 0; c < channels.length; c++) {
             ImageBuffer channel = channels[c];
 
-            if (isDuplicate(channels, c)) {
-                continue;
+            if (channel.isInt() && maxValue(bitDepths[c]) != maxValue) {
+                channel.castToFloatWithMax(maxValue(bitDepths[c]));
             }
 
-            if (channel.isInt() && bitDepths[c] != 8) {
-                channel.castToFloat(bitDepths[c]);
-            }
-
-            channel.castToIntWithMax(0xFF); // No-op for int buffers
-            channel.clamp(0xFF);
+            channel.castToIntWithMax(maxValue); // Scales and rounds float buffers, no-op for int buffers
+            channel.clamp(maxValue);
         }
-    }
-
-    private static boolean isDuplicate(final ImageBuffer[] channels, final int index) {
-        // Expanded gray uses the same buffer for multiple bands, these must only be converted once
-        for (int c = 0; c < index; c++) {
-            if (channels[c] == channels[index]) {
-                return true;
-            }
-        }
-
-        return false;
     }
 }
