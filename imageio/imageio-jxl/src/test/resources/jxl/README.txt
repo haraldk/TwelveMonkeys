@@ -7,7 +7,7 @@ Copyright 2022-2024 Leo Izen (Traneptora), MIT License:
 
 Synthetic 64x48 test images, created for this project:
   gray8.jxl, gray16.jxl, gray16-linear.jxl, graya8.jxl, grayf32-lossless.jxl, grayf32-lossy.jxl,
-  rgb16.jxl, rgba16.jxl, rgb8-icc.jxl
+  rgb16.jxl, rgba16.jxl, rgb8-icc.jxl, rgb16-pq.jxl
 
 The source PNGs are written by make-test-images.py (the pixel formulas are mirrored in JXLImageReaderTest),
 and encoded with ffmpeg using libjxl 0.11:
@@ -23,5 +23,7 @@ and encoded with ffmpeg using libjxl 0.11:
   rgb16.jxl             rgb16.png,  -pix_fmt rgb48le
   rgba16.jxl            rgba16.png, -pix_fmt rgba64le
   rgb8-icc.jxl          rgb8-icc.png (embedded ICC profile), -pix_fmt rgb24
+  rgb16-pq.jxl          rgb16-pq.png, -pix_fmt rgb48le,
+                        -vf setparams=color_primaries=bt2020:color_trc=smpte2084:colorspace=bt2020nc
 
 SwappedRedAndGreen.icc (embedded in rgb8-icc.jxl) is from colord, Copyright 2012 Richard Hughes, CC0-1.0.

@@ -58,7 +58,7 @@ ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL re
 | 1–8 bits per sample                       | ✔ | Returned as 8 bits per sample (`TYPE_BYTE`), scaled to the full 0–255 range. |
 | 9–16 bits per sample                      | ✔ | Returned as 16 bits per sample (`TYPE_USHORT`), scaled to the full 0–65535 range. The sample count decides: if color or alpha needs more than 8 bits, all bands use 16 bits. |
 | Float samples                             | ◐ | Returned as 16 bits per sample, clipped to 0–1. Lossy float works. Lossless 32-bit float fails in JXLatte (see quirks). |
-| HDR (PQ, HLG)                             | ◐ | Tone mapped to SDR sRGB by JXLatte (16 bits per sample). PQ only works for XYB (lossy) images, other PQ images come out black. HLG fails with `IIOException`. See quirks. |
+| HDR (PQ, HLG)                             | ◐ | Converted to SDR sRGB by JXLatte (16 bits per sample): linear light is scaled so that the brightest pixel becomes 1.0 (if it's below 1.0, i.e. 10000 nits), then gamut mapped and clipped. That isn't real tone mapping, highlights clip. PQ needs the JXLatte fixes (see quirks). HLG fails with `IIOException`. |
 | Grayscale                                 | ✔ | `TYPE_BYTE_GRAY` / `TYPE_USHORT_GRAY` (or gray + alpha) in `CS_GRAY`, with samples using the sRGB transfer function (gamma). That's the same convention as the JDK's PNG and JPEG readers. A gray ICC profile is used if embedded (not tested). |
 | Premultiplied alpha                       | ◐ | Converted to straight alpha before any color conversion. Not tested (no sample). |
 | Extra channels other than the first alpha | ✘ | Ignored (depth, spot colors, more alpha channels, ...). |
@@ -111,6 +111,11 @@ ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL re
   has `c2 - c3·d`, and both directions use `m1 = 2612/16384` instead of `2610/16384`. PQ samples that need
   linearizing (anything not XYB-encoded, for example lossless PQ) end up around 1e-15, so the image is black.
   XYB-encoded HDR images are decoded straight to linear light and aren't affected by the sign error.
+  Status: fixed on the local JXLatte branch `fix-pq-transfer-function`, to be submitted upstream.
+- **`MathHelper.max(float...)` returns the minimum** (reversed comparison). This breaks peak detection when converting
+  PQ to SDR (the peak becomes the largest row minimum, so images are scaled far too bright), and the maximum color
+  when rendering splines. Status: fixed on the local JXLatte branch `fix-mathhelper-max-float`, to be submitted
+  upstream. `JXLImageReaderTest.testReadPQToSRGB` only passes with both PQ fixes.
 - **HLG isn't implemented in JXLatte** (`UnsupportedOperationException`, reported as `IIOException`), unless the image
   is XYB-encoded.
 - **Lossless 32-bit float fails in JXLatte:** a valid lossless `grayf32` file (decodes fine with libjxl) fails with an
@@ -129,13 +134,18 @@ ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL re
   `bench.jxl` ("BRG").
 - **JXLatte's sample size info:** `--parse-only` in the JXLatte CLI shows the size before orientation is applied (for
   example `bench.jxl` is listed as 500x606 but decodes as 606x500).
+- **Local JXLatte fixes:** each fix is on its own branch (for separate upstream PRs), based on JXLatte `main`. The
+  local branch `local-fixes` merges all of them and is what's built and installed into `~/.m2` (still as version
+  `0.1.0`).
 - **No JXLatte on Maven Central:** `com.traneptora:jxlatte:0.1.0` currently has to be installed locally (see below).
   To release this module, JXLatte has to be published to Maven Central, since Central artifacts can't depend on
   JitPack.
 
 ## Development
 
-Install JXLatte locally, either built with Maven (`mvn install` in the JXLatte checkout), or from an existing jar:
+Install JXLatte locally, with the fixes from the `local-fixes` branch (see "Known issues"; without them the truncated
+input and PQ tests fail or hang), either built with Maven (`mvn install` in the JXLatte checkout), or from an existing
+jar (Meson build):
 
 ```sh
 mvn install:install-file -Dfile=../jxlatte/build/src/jxlatte.jar -DpomFile=../jxlatte/pom.xml
@@ -156,9 +166,9 @@ one small.
 
 1. ✔ Module skeleton, SPI, format detection
 2. ✔ Minimal reader (8-bit RGB/RGBA, ICC or sRGB)
-3. ◐ Color and bit depth: 16-bit output, gray without RGB expansion, premultiplied alpha, working ICC profiles.
-   Open: PQ (JXLatte bug), float output (`TYPE_FLOAT`) and/or HDR output without tone mapping (custom
-   `ImageReadParam`?)
+3. ✔ Color and bit depth: 16-bit output, gray without RGB expansion, premultiplied alpha, working ICC profiles, PQ
+   (with JXLatte fixes). Possible later: float output (`TYPE_FLOAT`) and/or HDR output without conversion to SDR
+   (custom `ImageReadParam`?)
 4. ☐ Read size, bit depth, alpha and color info from the header without decoding the image
 5. ☐ Metadata: standard metadata format, Exif/XMP from the container
 6. ☐ Robustness: malformed input tests, memory/size limits, avoid caching a copy when possible

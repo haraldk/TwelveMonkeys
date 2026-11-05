@@ -83,7 +83,8 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
                 new TestData(getClassLoaderResource("/jxl/grayf32-lossy.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb16.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgba16.jxl"), new Dimension(64, 48)),
-                new TestData(getClassLoaderResource("/jxl/rgb8-icc.jxl"), new Dimension(64, 48))
+                new TestData(getClassLoaderResource("/jxl/rgb8-icc.jxl"), new Dimension(64, 48)),
+                new TestData(getClassLoaderResource("/jxl/rgb16-pq.jxl"), new Dimension(64, 48))
         );
     }
 
@@ -91,8 +92,10 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     protected List<TestData> getTestDataForAffineTransformOpCompatibility() {
         // AffineTransformOp can't handle 16 bit interleaved RGB(A) (TYPE_CUSTOM),
         // or RGBA with a non-sRGB ICC color space (patches-lossless has a "Colour LCD Calibrated" profile)
+        List<String> excluded = asList("/rgb16.jxl", "/rgba16.jxl", "/rgb16-pq.jxl", "/patches-lossless.jxl");
+
         List<TestData> testData = new ArrayList<>(getTestData());
-        testData.removeIf(data -> data.toString().matches(".*/(rgba?16|patches-lossless)\\.jxl.*"));
+        testData.removeIf(data -> excluded.stream().anyMatch(data.toString()::endsWith));
         return testData;
     }
 
@@ -237,9 +240,28 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     private static int linearToSRGB16(final int value) {
-        double linear = value / 65535.0;
+        return linearToSRGB16(value / 65535.0);
+    }
+
+    private static int linearToSRGB16(final double linear) {
         double srgb = linear <= 0.0031308 ? 12.92 * linear : 1.055 * Math.pow(linear, 1 / 2.4) - 0.055;
         return (int) Math.round(srgb * 65535);
+    }
+
+    private static int pq16(final int x, final int y) {
+        return x * 1000 + y * 20;
+    }
+
+    private static double pqToLinear(final double value) {
+        // SMPTE ST 2084 EOTF, normalized to 10000 cd/m2
+        double m1 = 2610 / 16384.0;
+        double m2 = 2523 / 4096.0 * 128;
+        double c1 = 3424 / 4096.0;
+        double c2 = 2413 / 4096.0 * 32;
+        double c3 = 2392 / 4096.0 * 32;
+
+        double d = Math.pow(value, 1 / m2);
+        return Math.pow(Math.max(d - c1, 0) / (c2 - c3 * d), 1 / m1);
     }
 
     private interface PixelFunction {
@@ -347,6 +369,23 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
             int[] rgb = rgb16(x, y);
             return new int[] {rgb[0], rgb[1], rgb[2], alpha16(x, y)};
         }, 0);
+    }
+
+    @Test
+    public void testReadPQToSRGB() throws IOException {
+        // Neutral gray PQ code values (BT.2100 PQ, BT.2020 primaries), so gamut mapping doesn't change the values.
+        // JXLatte's peak detection (auto) scales the linear values so that the brightest pixel becomes 1.0.
+        // NOTE: Requires a JXLatte with fixed PQ transfer function, otherwise the result is black
+        BufferedImage image = read("/jxl/rgb16-pq.jxl", null);
+
+        assertTrue(image.getColorModel().getColorSpace().isCS_sRGB());
+        assertEquals(DataBuffer.TYPE_USHORT, image.getRaster().getTransferType());
+
+        double peak = pqToLinear(pq16(image.getWidth() - 1, image.getHeight() - 1) / 65535.0);
+        assertSamples(image, (x, y) -> {
+            int expected = linearToSRGB16(pqToLinear(pq16(x, y) / 65535.0) / peak);
+            return new int[] {expected, expected, expected};
+        }, 64);
     }
 
     @Test

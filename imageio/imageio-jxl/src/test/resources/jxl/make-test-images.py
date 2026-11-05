@@ -53,6 +53,11 @@ def alpha16(x, y):
     return ((x + y) * 700) & 0xFFFF
 
 
+def pq16(x, y):
+    # PQ code values, neutral gray (R = G = B)
+    return x * 1000 + y * 20
+
+
 def rgb8_primaries(x, y):
     # Left third red, middle third green, right third blue
     return [(255, 0, 0), (0, 255, 0), (0, 0, 255)][min(x * 3 // W, 2)]
@@ -68,3 +73,4 @@ write_png(out + '/graya8.png', 4, 8, lambda x, y: (gray8(x, y), alpha8(y)))
 write_png(out + '/rgb16.png', 2, 16, rgb16)
 write_png(out + '/rgba16.png', 6, 16, lambda x, y: rgb16(x, y) + (alpha16(x, y),))
 write_png(out + '/rgb8-icc.png', 2, 8, rgb8_primaries, icc)
+write_png(out + '/rgb16-pq.png', 2, 16, lambda x, y: (pq16(x, y),) * 3)
