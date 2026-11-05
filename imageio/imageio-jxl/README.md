@@ -236,3 +236,20 @@ issues" for details. The patched build in `lib/` contains all of them. Update th
 | `MathHelper.max(float...)` returns the minimum (PQ peak detection, splines)                       | `fix-mathhelper-max-float`  | `12b0d09` | Not reported |
 | Buffers allocated from untrusted lengths before reading (up to 2 GB from a 43-byte file)          | `fix-untrusted-allocations` | `99685ac` | Not reported |
 | New API: `JXLDecoder.readHeader()`, read the image header without decoding (required by plugin)   | `add-header-api`            | `4204a87` | Not reported |
+
+### Unfixed JXLatte issues
+
+Known JXLatte problems without a local fix (yet), see "Quirks and known issues" for details. Report as issues, or fix
+on new local branches (and move them to the table above).
+
+| Issue                                                                                    | Where                                            | Effect                                                                     | Plugin workaround                                               | Status       |
+|------------------------------------------------------------------------------------------|--------------------------------------------------|----------------------------------------------------------------------------|-----------------------------------------------------------------|--------------|
+| HLG transfer function not implemented                                                    | `ColorManagement.getTransferFunction`            | Non-XYB HLG images fail (`UnsupportedOperationException`)                  | None, reported as `IIOException`                                | Not reported |
+| Lossless 32-bit float images fail to decode (valid with libjxl)                          | Modular decoding (`ModularChannel.decode`)       | `EOFException`, image can't be read                                        | None (`testReadGrayFloatLosslessUnsupported` tracks it)         | Not reported |
+| `transferInPlace` passes the bit depth where the maximum value belongs                   | `JXLImage.transferInPlace`                       | Integer images tagged linear light come out wrong                          | Converts color samples of linear images to float first          | Not reported |
+| `transform()` fails on gray images: `fillColor()` doesn't extend the bit depth array     | `JXLImage.fillColor`, `JXLImage.toneMapLinear`   | `ArrayIndexOutOfBoundsException` (also in the JXLatte CLI)                 | Uses `transfer()` for gray images                               | Not reported |
+| Color transforms that copy the image leave extra channels empty                          | `JXLImage.transfer(op)`, `JXLImage.toneMapLinear` | Alpha (and other extra channels) lost after linearizing or gamut mapping   | Takes the alpha buffer before transforming                      | Not reported |
+| Decoded ICC profile size is trusted, allocated up front                                  | `ImageHeader.getDecodedICC`                      | Possible huge allocation from corrupt data                                 | `OutOfMemoryError` reported as `IIOException`                   | Not reported |
+| Frame sizes from frame headers are trusted (frames can be larger than the image)         | `Frame`, `FrameHeader`                           | Possible huge allocations, not covered by the plugin's size limit          | `OutOfMemoryError` reported as `IIOException`                   | Not reported |
+| XYB images ignore an embedded ICC profile (not verified with a sample)                   | `JXLImage` constructor                           | Possibly wrong colors for lossy images with a non-enum color space         | None                                                            | Not reported |
+| Decoding always uses the common `ForkJoinPool`, `JXLOptions.threads` is unused           | `Frame.decodeFrame` (`CompletableFuture.runAsync`) | No way to limit or isolate decoding threads per decoder                  | None (documented: `ForkJoinPool.common.parallelism`)            | Not reported |
