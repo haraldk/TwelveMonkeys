@@ -67,6 +67,9 @@ public final class JXLImageReaderSpi extends ImageReaderSpiBase {
         }
     }
 
+    /**
+     * Creates a {@code JXLImageReaderSpi}.
+     */
     @SuppressWarnings("WeakerAccess")
     public JXLImageReaderSpi() {
         super(new JXLProviderInfo());

@@ -196,7 +196,9 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 
 ## Development
 
-No setup needed: the patched JXLatte is resolved from `lib/`. To test with other JXLatte changes, rebuild and add a
+No setup needed: the patched JXLatte is resolved from `lib/`. NOTE: Maven's offline mode (`-o`) also blocks
+file repositories, so the first build after a JXLatte update in `lib/` must not be offline (no network access is
+needed for it, though). To test with other JXLatte changes, rebuild and add a
 new version to `lib/` as described in `lib/README.md`.
 
 Run the module tests with decoding limited to one thread:
@@ -222,7 +224,9 @@ one small.
    Exif/XMP, for example a TIFF native tree as the TIFF and JPEG plugins have), and `brob` boxes (✔ with optional `org.brotli:dec`)
 6. ✔ Robustness: fuzz regression test, size limit before decoding, out of memory as `IIOException`, no copy for
    default reads, JXLatte allocation fix
-7. ☐ Integration: project README format table, CI on JDK 21+, release (JXLatte availability on Maven Central)
+7. ◐ Integration: ✔ project README format table and build note. ✔ CI: the existing JDK 21 and 25 jobs (Linux,
+   Windows, macOS) build and test the module automatically (`jdk21+` profile), the JDK 8/11/17 jobs skip it; the
+   JDK 25 javadoc job includes it. ☐ Release (see "Known issues")
 
 ## JXLatte changes to report upstream
 
