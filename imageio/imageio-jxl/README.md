@@ -223,3 +223,16 @@ one small.
 6. ✔ Robustness: fuzz regression test, size limit before decoding, out of memory as `IIOException`, no copy for
    default reads, JXLatte allocation fix
 7. ☐ Integration: project README format table, CI on JDK 21+, release (JXLatte availability on Maven Central)
+
+## JXLatte changes to report upstream
+
+Changes on local JXLatte branches (each based on JXLatte `main`, one pull request per branch), see "Quirks and known
+issues" for details. The patched build in `lib/` contains all of them. Update the status column when submitting.
+
+| Change                                                                                            | Local branch                | Commit    | Status       |
+|---------------------------------------------------------------------------------------------------|-----------------------------|-----------|--------------|
+| Truncated input blocks the decoding thread forever (`Frame.decodeFrame`)                          | `fix-truncated-input-hang`  | `93472a7` | Not reported |
+| PQ transfer function wrong: sign error in `toLinear`, `m1` constant (non-XYB PQ images are black) | `fix-pq-transfer-function`  | `76351d4` | Not reported |
+| `MathHelper.max(float...)` returns the minimum (PQ peak detection, splines)                       | `fix-mathhelper-max-float`  | `12b0d09` | Not reported |
+| Buffers allocated from untrusted lengths before reading (up to 2 GB from a 43-byte file)          | `fix-untrusted-allocations` | `99685ac` | Not reported |
+| New API: `JXLDecoder.readHeader()`, read the image header without decoding (required by plugin)   | `add-header-api`            | `4204a87` | Not reported |
