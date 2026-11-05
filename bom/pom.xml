@@ -145,12 +145,7 @@
                 <artifactId>imageio-batik</artifactId>
                 <version>${project.version}</version>
             </dependency>
-            <dependency>
-                <!-- Requires Java 21+ -->
-                <groupId>com.twelvemonkeys.imageio</groupId>
-                <artifactId>imageio-jxl</artifactId>
-                <version>${project.version}</version>
-            </dependency>
+            <!-- TODO: Add imageio-jxl (requires Java 21+), once it can be released, see imageio/imageio-jxl/README.md -->
 
             <!-- Servlet -->
             <dependency>

@@ -190,9 +190,14 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
   `com.traneptora:jxlatte:0.1.0-tm.2`, in the file based Maven repository `lib/`, which the module `pom.xml` declares.
   `lib/README.md` lists the exact commits and how to rebuild. Remove `lib/` and the `<repository>` once JXLatte has a
   release with these changes.
-- **Release:** to release this module, JXLatte (with these changes) must be on Maven Central, or users need clear
-  instructions where to get the patched jar (the dependency is `provided`, so consumers never resolve it from `lib/`).
-  Check whether Central's validation accepts a POM that declares a file repository.
+- **Not released yet:** the module isn't part of releases for now, and isn't in the BOM (`bom/pom.xml` has a TODO).
+  The release job builds on Java 8, so it doesn't build or deploy this module anyway. To release it:
+  - JXLatte with the changes from the tables below should be on Maven Central (upstream release). Then switch
+    `jxlatte.version` to it, and remove `lib/` and the `<repository>` from the module `pom.xml`.
+  - The release job must build on JDK 21+. As all other modules still target Java 8, the build then needs
+    `--release 8` for JDK 9+ (not only `-source`/`-target 8`), otherwise Java 8 users can hit `NoSuchMethodError`s
+    (for example covariant `ByteBuffer` methods). Alternatively, deploy this module in a separate JDK 21 step.
+  - Add the module back to the BOM.
 
 ## Development
 
@@ -226,7 +231,8 @@ one small.
    default reads, JXLatte allocation fix
 7. ◐ Integration: ✔ project README format table and build note. ✔ CI: the existing JDK 21 and 25 jobs (Linux,
    Windows, macOS) build and test the module automatically (`jdk21+` profile), the JDK 8/11/17 jobs skip it; the
-   JDK 25 javadoc job includes it. ☐ Release (see "Known issues")
+   JDK 25 javadoc job includes it. ☐ Release: postponed until JXLatte has an upstream release with the changes; not
+   in the BOM until then (see "Known issues")
 
 ## JXLatte changes to report upstream
 
