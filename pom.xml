@@ -129,11 +129,27 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Most binary modules are two directories below the root license. -->
+        <twelvemonkeys.license.directory>${project.basedir}/../..</twelvemonkeys.license.directory>
         <project.jpms.module.name>com.twelvemonkeys.${project.artifactId}</project.jpms.module.name>
     </properties>
 
     <build>
         <finalName>twelvemonkeys-${project.artifactId}-${project.version}</finalName>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+            <resource>
+                <directory>${twelvemonkeys.license.directory}</directory>
+                <targetPath>META-INF</targetPath>
+                <filtering>false</filtering>
+                <includes>
+                    <include>LICENSE.txt</include>
+                </includes>
+            </resource>
+        </resources>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
