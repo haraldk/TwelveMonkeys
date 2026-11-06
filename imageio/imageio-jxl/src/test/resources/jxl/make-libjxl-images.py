@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-# Writes lossless JPEG XL test images with float samples in other formats than 32-bit (f16 etc.), which cjxl and
-# ffmpeg can't create, by calling the libjxl encoder API (libjxl.so.0.11) with ctypes.
-# The pixel formulas are mirrored in JXLImageReaderTest.
+# Writes lossless JPEG XL test images that cjxl and ffmpeg can't create, by calling the libjxl encoder API
+# (libjxl.so.0.11) with ctypes: float samples in other formats than 32-bit (f16 etc.), and PQ with an intensity target
+# other than 10000 nits. The pixel formulas are mirrored in JXLImageReaderTest.
 #
-# Usage: python3 make-float-images.py <out dir>
+# Usage: python3 make-libjxl-images.py <out dir>
 
 import ctypes
 import struct
@@ -26,8 +26,13 @@ JXL_TYPE_FLOAT = 0
 JXL_ENC_FRAME_SETTING_EFFORT = 0
 
 # JxlBasicInfo, as uint32 fields (layout of libjxl 0.11, checked against the defaults of JxlEncoderInitBasicInfo)
-XSIZE, YSIZE, BITS, EXP_BITS, USES_ORIGINAL_PROFILE, ORIENTATION, NUM_COLOR, NUM_EXTRA, ALPHA_BITS, ALPHA_EXP_BITS = \
-    1, 2, 3, 4, 9, 12, 13, 14, 15, 16
+XSIZE, YSIZE, BITS, EXP_BITS, INTENSITY_TARGET, USES_ORIGINAL_PROFILE, ORIENTATION, NUM_COLOR, NUM_EXTRA, ALPHA_BITS, \
+    ALPHA_EXP_BITS = 1, 2, 3, 4, 5, 9, 12, 13, 14, 15, 16
+
+# JxlColorEncoding, as int32 fields (layout of libjxl 0.11, checked against the values of JxlColorEncodingSetToLinearSRGB)
+CE_WHITE_POINT, CE_PRIMARIES, CE_TRANSFER_FUNCTION = 1, 6, 20
+JXL_WHITE_POINT_D65, JXL_PRIMARIES_SRGB, JXL_PRIMARIES_2100 = 1, 1, 9
+JXL_TRANSFER_FUNCTION_LINEAR, JXL_TRANSFER_FUNCTION_PQ = 8, 16
 
 
 class PixelFormat(ctypes.Structure):
@@ -40,7 +45,8 @@ def check(result, what):
         raise RuntimeError('%s failed: %d' % (what, result))
 
 
-def encode(path, gray, alpha, bits, exp_bits, pixel):
+def encode(path, gray, alpha, bits, exp_bits, pixel, pq_intensity_target=None):
+    # Samples are passed as floats (0-1 for integer formats), color is linear sRGB, or BT.2100 PQ
     info = (ctypes.c_uint32 * 64)()  # JxlBasicInfo is 204 bytes in 0.11, with padding
     jxl.JxlEncoderInitBasicInfo(info)
     assert info[BITS] == 8 and info[ORIENTATION] == 1 and info[NUM_COLOR] == 3, 'unexpected JxlBasicInfo layout'
@@ -50,12 +56,19 @@ def encode(path, gray, alpha, bits, exp_bits, pixel):
     info[NUM_COLOR] = 1 if gray else 3
     if alpha:
         info[NUM_EXTRA], info[ALPHA_BITS], info[ALPHA_EXP_BITS] = 1, bits, exp_bits
+    if pq_intensity_target:
+        info[INTENSITY_TARGET] = struct.unpack('<I', struct.pack('<f', pq_intensity_target))[0]
 
     encoder = jxl.JxlEncoderCreate(None)
     try:
         check(jxl.JxlEncoderSetBasicInfo(ctypes.c_void_p(encoder), info), 'JxlEncoderSetBasicInfo')
-        color = ctypes.create_string_buffer(256)  # JxlColorEncoding
+        color = (ctypes.c_int32 * 64)()  # JxlColorEncoding is 104 bytes in 0.11
         jxl.JxlColorEncodingSetToLinearSRGB(color, 1 if gray else 0)
+        assert (color[CE_WHITE_POINT], color[CE_PRIMARIES], color[CE_TRANSFER_FUNCTION]) == \
+               (JXL_WHITE_POINT_D65, 0 if gray else JXL_PRIMARIES_SRGB, JXL_TRANSFER_FUNCTION_LINEAR), \
+            'unexpected JxlColorEncoding layout'
+        if pq_intensity_target:
+            color[CE_PRIMARIES], color[CE_TRANSFER_FUNCTION] = JXL_PRIMARIES_2100, JXL_TRANSFER_FUNCTION_PQ
         check(jxl.JxlEncoderSetColorEncoding(ctypes.c_void_p(encoder), color), 'JxlEncoderSetColorEncoding')
 
         settings = jxl.JxlEncoderFrameSettingsCreate(encoder, None)
@@ -108,3 +121,6 @@ if __name__ == '__main__':
            lambda x, y: (float16(x, y), float16(W - 1 - x, y), (y * 21) / 1024.0, alpha16(x, y)))
     # Unusual format: 24 bits with 8 exponent bits (15 bit mantissa), not a plain 32-bit float
     encode(out + '/grayf24-lossless.jxl', True, False, 24, 8, lambda x, y: (float16(x, y),))
+    # Same neutral gray PQ code values as rgb16-pq.jxl (pq16 in make-test-images.py), but intensity target 1000 nits
+    encode(out + '/rgb16-pq1000.jxl', False, False, 16, 0,
+           lambda x, y: ((x * 1000 + y * 20) / 65535.0,) * 3, pq_intensity_target=1000.0)

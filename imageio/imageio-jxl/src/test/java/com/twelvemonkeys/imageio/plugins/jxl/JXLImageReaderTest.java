@@ -104,6 +104,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
                 new TestData(getClassLoaderResource("/jxl/rgba16.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb8-icc.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb16-pq.jxl"), new Dimension(64, 48)),
+                new TestData(getClassLoaderResource("/jxl/rgb16-pq1000.jxl"), new Dimension(64, 48)),
                 new TestData(getClassLoaderResource("/jxl/rgb16-hlg.jxl"), new Dimension(64, 48)),
                 // Container with Exif, brob, split codestream (jxlp) and XMP boxes, see make-test-container.py
                 new TestData(getClassLoaderResource("/jxl/gray8-meta.jxl"), new Dimension(64, 48)),
@@ -116,7 +117,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     protected List<TestData> getTestDataForAffineTransformOpCompatibility() {
         // AffineTransformOp can't handle 16 bit interleaved RGB(A) (TYPE_CUSTOM),
         // or RGBA with a non-sRGB ICC color space (patches-lossless has a "Colour LCD Calibrated" profile)
-        List<String> excluded = asList("/rgb16.jxl", "/rgba16.jxl", "/rgbaf16-lossless.jxl", "/rgb16-pq.jxl", "/rgb16-hlg.jxl", "/patches-lossless.jxl");
+        List<String> excluded = asList("/rgb16.jxl", "/rgba16.jxl", "/rgbaf16-lossless.jxl", "/rgb16-pq.jxl", "/rgb16-pq1000.jxl", "/rgb16-hlg.jxl", "/patches-lossless.jxl");
 
         List<TestData> testData = new ArrayList<>(getTestData());
         testData.removeIf(data -> excluded.stream().anyMatch(data.toString()::endsWith));
@@ -273,7 +274,7 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
     }
 
     private static double float16(final int x, final int y) {
-        // Values exactly representable as f16, first row f16 subnormals, see make-float-images.py
+        // Values exactly representable as f16, first row f16 subnormals, see make-libjxl-images.py
         return y == 0 ? x * 8 * 0x1p-24 : (x * 16 + y % 16) / 1024.0;
     }
 
@@ -456,6 +457,23 @@ public class JXLImageReaderTest extends ImageReaderAbstractTest<JXLImageReader> 
                 linearToSRGB16(y * 21 / 1024.0),
                 (int) Math.round((y * 16 + x % 16) / 1024.0 * 65535)
         }, 2);
+    }
+
+    @Test
+    void testReadPQIntensityTargetToSRGB() throws IOException {
+        // Same PQ code values as rgb16-pq.jxl, but with an intensity target of 1000 nits (not 10000).
+        // Linear light is relative to the intensity target (1.0 is 1000 nits, like in libjxl), so the brightest pixel
+        // is above 1.0, peak detection doesn't scale down, and everything from 1000 nits on clips.
+        // NOTE: Requires a JXLatte with the PQ intensity target fix, otherwise the peak is scaled to 1.0 like for rgb16-pq
+        BufferedImage image = read("/jxl/rgb16-pq1000.jxl", null);
+
+        assertTrue(image.getColorModel().getColorSpace().isCS_sRGB());
+        assertEquals(DataBuffer.TYPE_USHORT, image.getRaster().getTransferType());
+
+        assertSamples(image, (x, y) -> {
+            int expected = linearToSRGB16(Math.min(1.0, pqToLinear(pq16(x, y) / 65535.0) * 10000 / 1000));
+            return new int[] {expected, expected, expected};
+        }, 64);
     }
 
     @Test

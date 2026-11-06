@@ -28,7 +28,7 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 <dependency>
     <groupId>com.traneptora</groupId>
     <artifactId>jxlatte</artifactId>
-    <version>0.1.0-tm.4</version> <!-- Patched build, from lib/ in this module, see "Known issues" -->
+    <version>0.1.0-tm.5</version> <!-- Patched build, from lib/ in this module, see "Known issues" -->
 </dependency>
 <!-- Optional, for Brotli compressed Exif/XMP boxes -->
 <dependency>
@@ -65,7 +65,7 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 | 1–8 bits per sample                       | ✔ | Returned as 8 bits per sample (`TYPE_BYTE`), scaled to the full 0–255 range. |
 | 9–16 bits per sample                      | ✔ | Returned as 16 bits per sample (`TYPE_USHORT`), scaled to the full 0–65535 range. The sample count decides: if color or alpha needs more than 8 bits, all bands use 16 bits. |
 | Float samples                             | ◐ | Returned as 16 bits per sample, clipped to 0–1. Lossy and lossless float work (tested lossless: 16-bit float (f16), 24-bit and 32-bit float, f16 alpha), lossless float needs the JXLatte fix (see quirks). |
-| HDR (PQ, HLG)                             | ◐ | Converted to SDR sRGB by JXLatte (16 bits per sample): linear light is scaled so that the brightest pixel becomes 1.0 (if it's below 1.0, i.e. 10000 nits), then gamut mapped and clipped. That isn't real tone mapping, highlights clip. PQ needs the JXLatte fixes, HLG the JXLatte HLG change (see quirks). HLG is converted from scene light without the OOTF (system gamma) and isn't scaled, so it comes out darker than intended (HLG reference white, 75 %, becomes about 55 % in sRGB). |
+| HDR (PQ, HLG)                             | ◐ | Converted to SDR sRGB by JXLatte (16 bits per sample): linear light (1.0 is the image's intensity target, e.g. 10000 or 1000 nits) is scaled so that the brightest pixel becomes 1.0 (if it's below 1.0), then gamut mapped and clipped. That isn't real tone mapping, highlights clip. PQ needs the JXLatte fixes, HLG the JXLatte HLG change (see quirks). HLG is converted from scene light without the OOTF (system gamma) and isn't scaled, so it comes out darker than intended (HLG reference white, 75 %, becomes about 55 % in sRGB). |
 | Grayscale                                 | ✔ | `TYPE_BYTE_GRAY` / `TYPE_USHORT_GRAY` (or gray + alpha) in `CS_GRAY`, with samples using the sRGB transfer function (gamma). That's the same convention as the JDK's PNG and JPEG readers. A gray ICC profile is used if embedded (not tested). |
 | Premultiplied alpha                       | ◐ | Converted to straight alpha before any color conversion. Not tested (no sample). |
 | Extra channels other than the first alpha | ✘ | Ignored (depth, spot colors, more alpha channels, ...). |
@@ -137,6 +137,12 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
   PQ to SDR (the peak becomes the largest row minimum, so images are scaled far too bright), and the maximum color
   when rendering splines. Status: fixed in the patched JXLatte in `lib/`,
   reported as [#45](https://github.com/Traneptora/jxlatte/issues/45), PR [#46](https://github.com/Traneptora/jxlatte/pull/46). `JXLImageReaderTest.testReadPQToSRGB` only passes with both PQ fixes.
+- **JXLatte's PQ conversion ignores the intensity target:** the PQ transfer function is absolute (1.0 is 10000 nits),
+  but linear light is relative to the intensity target (1.0 is the target, as XYB decoding produces it, and as in
+  libjxl). JXLatte converted between them without scaling, so HDR (PQ) output of XYB images was far too bright, and
+  non-XYB PQ images with an intensity target other than 10000 nits were linearized relative to 10000 nits.
+  Status: fixed in the patched JXLatte in `lib/`, reported as [#52](https://github.com/Traneptora/jxlatte/issues/52).
+  `JXLImageReaderTest.testReadPQIntensityTargetToSRGB` only passes with the fix.
 - **HLG isn't implemented in JXLatte** (`UnsupportedOperationException`, reported as `IIOException`), unless the image
   is XYB-encoded. Status: implemented in the patched JXLatte in `lib/` (BT.2100 HLG OETF and inverse, without the OOTF),
   reported as [#50](https://github.com/Traneptora/jxlatte/issues/50), PR [#51](https://github.com/Traneptora/jxlatte/pull/51). `JXLImageReaderTest.testReadHLGToSRGB` only passes with it. Converting HLG to SDR or PQ still lacks
@@ -194,7 +200,7 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
   doesn't reset the demuxer in that case (the reset would make the container demuxer look for the signature in the
   middle of the data). The plugin needs this API.
 - **Patched JXLatte in `lib/`:** JXLatte `main` with the fixes and the header API described above (each submitted
-  upstream as a separate pull request), shipped with this module as `com.traneptora:jxlatte:0.1.0-tm.4`, in the file
+  upstream as a separate pull request), shipped with this module as `com.traneptora:jxlatte:0.1.0-tm.5`, in the file
   based Maven repository `lib/`, which the module `pom.xml` declares. `lib/README.md` describes how to rebuild. Remove `lib/` and the `<repository>` once JXLatte has a
   release with these changes.
 - **Not released yet:** the module isn't part of releases for now, and isn't in the BOM (`bom/pom.xml` has a TODO).
