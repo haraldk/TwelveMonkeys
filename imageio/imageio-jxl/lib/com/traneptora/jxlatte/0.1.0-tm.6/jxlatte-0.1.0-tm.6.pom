@@ -6,7 +6,7 @@
 
     <groupId>com.traneptora</groupId>
     <artifactId>jxlatte</artifactId>
-    <version>0.1.0-tm.5</version>
+    <version>0.1.0-tm.6</version>
     <packaging>jar</packaging>
     <name>jxlatte</name>
 
@@ -20,7 +20,7 @@
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <java-release.version>21</java-release.version>
+        <java-release.version>8</java-release.version>
         <java.version>1.${java-release.version}</java.version>
     </properties>
 
@@ -56,10 +56,10 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.15.0</version>
                 <configuration>
-                    <source>${java-release.version}</source>
-                    <target>${java-release.version}</target>
+                    <release>${java-release.version}</release>
                     <compilerArgs>
                         <arg>-Xlint</arg>
+                        <arg>-Xlint:-options</arg>
                     </compilerArgs>
                 </configuration>
             </plugin>

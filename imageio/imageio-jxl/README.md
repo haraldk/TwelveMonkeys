@@ -11,12 +11,12 @@ This file tracks what the plugin supports, its limits and its quirks. Keep it up
 
 | Requirement           | Notes |
 |-----------------------|-------|
-| Java 21+ at runtime   | JXLatte is compiled for Java 21. The plugin itself is compiled for Java 8 like the rest of TwelveMonkeys, so it can sit on an older JVM's class path without breaking anything (see below). |
+| Java 8+ at runtime    | The plugin is compiled for Java 8 like the rest of TwelveMonkeys, and so is the patched JXLatte in `lib/`. JXLatte `main` is compiled for Java 21 (see "Known issues"); with such a JXLatte, the plugin needs Java 21+, but it can still sit on an older JVM's class path without breaking anything (see below). |
 | JXLatte on class path | `com.traneptora:jxlatte` is a `provided` dependency, so it has to be added explicitly. It must have `JXLDecoder.readHeader()`, which no JXLatte release has yet. For now use the patched build in `lib/` (see "Known issues"). |
 | Brotli (optional)     | `org.brotli:dec` (pure Java, MIT License) is an optional `provided` dependency. With it on the class path, Brotli-compressed (`brob`) Exif and XMP boxes are read; without it, they are skipped with a warning. |
-| JDK 21+ to build      | The module is only part of the build when the `jdk21+` profile in `imageio/pom.xml` is active, which happens automatically on JDK 21 or later. |
+| JDK 21+ to build      | The module is only part of the build when the `jdk21+` profile in `imageio/pom.xml` is active, which happens automatically on JDK 21 or later. Kept while upstream JXLatte targets Java 21, although the patched JXLatte would build on JDK 8. |
 
-If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded (for example on Java older than 21),
+If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded (for example a JXLatte for Java 21 on an older Java),
 `JXLImageReaderSpi` removes itself from the ImageIO registry when it is registered. In that case ImageIO finds no JPEG XL reader, and nothing fails.
 
 ```xml
@@ -28,7 +28,7 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
 <dependency>
     <groupId>com.traneptora</groupId>
     <artifactId>jxlatte</artifactId>
-    <version>0.1.0-tm.5</version> <!-- Patched build, from lib/ in this module, see "Known issues" -->
+    <version>0.1.0-tm.6</version> <!-- Patched build, from lib/ in this module, see "Known issues" -->
 </dependency>
 <!-- Optional, for Brotli compressed Exif/XMP boxes -->
 <dependency>
@@ -199,15 +199,21 @@ If JXLatte is missing, too old (no `JXLDecoder.readHeader()`) or can't be loaded
   the existing header parsing out of `decode()`. A following `decode()` continues after the header, and `JXLDecoder`
   doesn't reset the demuxer in that case (the reset would make the container demuxer look for the signature in the
   middle of the data). The plugin needs this API.
+- **JXLatte is compiled for Java 21,** although its code needs nothing newer than Java 8, except for one
+  `Objects.requireNonNullElse` (Java 9). Status: the patched JXLatte in `lib/` targets Java 8 (`--release 8`, all
+  classes are version 52), reported as [#54](https://github.com/Traneptora/jxlatte/issues/54), PR [#55](https://github.com/Traneptora/jxlatte/pull/55). All module tests pass on
+  Java 8 (see "Development").
 - **Patched JXLatte in `lib/`:** JXLatte `main` with the fixes and the header API described above (each submitted
-  upstream as a separate pull request), shipped with this module as `com.traneptora:jxlatte:0.1.0-tm.5`, in the file
+  upstream as a separate pull request), shipped with this module as `com.traneptora:jxlatte:0.1.0-tm.6`, in the file
   based Maven repository `lib/`, which the module `pom.xml` declares. `lib/README.md` describes how to rebuild. Remove `lib/` and the `<repository>` once JXLatte has a
   release with these changes.
 - **Not released yet:** the module isn't part of releases for now, and isn't in the BOM (`bom/pom.xml` has a TODO).
   The release job builds on Java 8, so it doesn't build or deploy this module anyway. To release it:
   - JXLatte with the changes above should be on Maven Central (upstream release). Then switch `jxlatte.version` to
     it, and remove `lib/` and the `<repository>` from the module `pom.xml`.
-  - The release job must build on JDK 21+. As all other modules still target Java 8, the build then needs
+  - If that release targets Java 8 ([#54](https://github.com/Traneptora/jxlatte/issues/54)), move the module out of
+    the `jdk21+` profile, so the Java 8 release job builds it. Otherwise, the release job must build on JDK 21+. As
+    all other modules still target Java 8, the build then needs
     `--release 8` for JDK 9+ (not only `-source`/`-target 8`), otherwise Java 8 users can hit `NoSuchMethodError`s
     (for example covariant `ByteBuffer` methods). Alternatively, deploy this module in a separate JDK 21 step.
   - Add the module back to the BOM.
@@ -224,6 +230,16 @@ Run the module tests with decoding limited to one thread:
 ```sh
 cd imageio/imageio-jxl
 mvn test "-DargLine=-Djava.util.concurrent.ForkJoinPool.common.parallelism=1"
+```
+
+To run the tests on Java 8, build with JDK 21+ and run the tests with a Java 8 JVM. Build the TwelveMonkeys modules
+the tests depend on with `--release 8` too: built on JDK 9+ with only `-source`/`-target 8` (as the snapshots in
+`~/.m2` usually are), they call covariant `ByteBuffer` methods of Java 9, which fail with `NoSuchMethodError` on Java 8.
+
+```sh
+# From the project root
+mvn test -pl imageio/imageio-jxl -am -Dmaven.compiler.release=8 -Dtest='JXL*' -Dsurefire.failIfNoSpecifiedTests=false \
+    -Djvm=<path to Java 8>/bin/java
 ```
 
 Test resources (`src/test/resources/jxl`) are JXLatte samples (MIT License, see `README.txt` there), plus reference

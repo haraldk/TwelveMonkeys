@@ -62,7 +62,7 @@ public final class JXLImageReaderSpi extends ImageReaderSpiBase {
             return true;
         }
         catch (ClassNotFoundException | NoSuchMethodException | LinkageError | SecurityException e) {
-            // Not on class path, too old JXLatte, or too old Java version (JXLatte requires Java 21)
+            // Not on class path, too old JXLatte, or JXLatte compiled for a newer Java version (UnsupportedClassVersionError)
             return false;
         }
     }

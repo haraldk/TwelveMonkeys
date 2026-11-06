@@ -11,7 +11,7 @@
     <description>
         <![CDATA[
         ImageIO wrapper for the JXLatte pure Java JPEG XL decoder, enabling JPEG XL (JXL) read support.
-        Requires Java 21 or later at runtime, and JXLatte on the class path.
+        Requires JXLatte on the class path, and the Java version JXLatte is compiled for at runtime.
         See the <a href="https://github.com/Traneptora/jxlatte">JXLatte project page</a>
         for more information.]]>
     </description>
@@ -19,7 +19,7 @@
     <properties>
         <project.jpms.module.name>com.twelvemonkeys.imageio.jxl</project.jpms.module.name>
         <!-- Patched JXLatte, from the module local repository below, see lib/README.md -->
-        <jxlatte.version>0.1.0-tm.5</jxlatte.version>
+        <jxlatte.version>0.1.0-tm.6</jxlatte.version>
         <brotli.version>0.1.2</brotli.version>
     </properties>
 
