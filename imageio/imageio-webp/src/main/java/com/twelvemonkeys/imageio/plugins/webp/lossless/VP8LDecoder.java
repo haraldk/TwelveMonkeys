@@ -130,8 +130,15 @@ public final class VP8LDecoder {
         // Use the Huffman trees to decode the LZ77 encoded data.
         decodeImage(decodeRaster, huffmanInfo, colorCache);
 
+        // Transforms that come after a color indexing transform in the stream apply to the packed pixels (xSize wide)
+        WritableRaster transformRaster = decodeRaster;
+
         for (Transform transform : transforms) {
-            transform.applyInverse(fullSizeRaster);
+            if (transform instanceof ColorIndexingTransform) {
+                transformRaster = fullSizeRaster;
+            }
+
+            transform.applyInverse(transformRaster);
         }
 
         if (fullSizeRaster != raster) {
