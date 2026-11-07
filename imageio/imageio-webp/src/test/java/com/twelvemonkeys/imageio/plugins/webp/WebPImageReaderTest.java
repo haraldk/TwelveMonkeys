@@ -68,7 +68,10 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
                 // Alpha transparency and Alpha filtering
                 new TestData(getClassLoaderResource("/webp/alpha_filter.webp"), new Dimension(1600, 1600)),
                 // Lossy with grayscale ICC profile
-                new TestData(getClassLoaderResource("/webp/incompatible-icc-gray.webp"), new Dimension(766, 1100))
+                new TestData(getClassLoaderResource("/webp/incompatible-icc-gray.webp"), new Dimension(766, 1100)),
+                // Predictor transform after a color indexing transform that packs pixels (lossless, and lossy with alpha)
+                new TestData(getClassLoaderResource("/webp/color_indexing_predictor.webp"), new Dimension(32, 24)),
+                new TestData(getClassLoaderResource("/webp/alpha_color_indexing_predictor.webp"), new Dimension(32, 24))
         );
     }
 
@@ -373,6 +376,57 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
         }
     }
 
+    /**
+     * A color indexing transform with 16 colors or fewer packs several pixels into one, which makes the image
+     * narrower. Transforms that come after it in the stream apply to the packed image, at the reduced width.
+     * The expected value is from libwebp:
+     *
+     * <pre>{@code
+     * dwebp imageio/imageio-webp/src/test/resources/webp/color_indexing_predictor.webp -pam -o /tmp/color_indexing_predictor.pam
+     * tail -c 3072 /tmp/color_indexing_predictor.pam | shasum -a 256
+     * }</pre>
+     */
+    @Test
+    public void testLosslessPredictorAfterPackedColorIndexing() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/color_indexing_predictor.webp"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0);
+            assertEquals("798eefa14a2721122d856d954dac9d3925123fc1a64c0f7f32ad6334e8eb23b6",
+                    sha256RGBA(image), "RGBA hash mismatch");
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    /**
+     * Same as {@link #testLosslessPredictorAfterPackedColorIndexing()}, but for a lossless alpha channel in a lossy image.
+     * The expected value is from libwebp:
+     *
+     * <pre>{@code
+     * dwebp imageio/imageio-webp/src/test/resources/webp/alpha_color_indexing_predictor.webp -alpha -o /tmp/alpha_color_indexing_predictor.pgm
+     * tail -c 768 /tmp/alpha_color_indexing_predictor.pgm | shasum -a 256
+     * }</pre>
+     */
+    @Test
+    public void testAlphaPredictorAfterPackedColorIndexing() throws IOException {
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = ImageIO.createImageInputStream(getClassLoaderResource("/webp/alpha_color_indexing_predictor.webp"))) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0);
+            assertEquals("8af17425f46dd2b46fef378a5f9b55374ee049c09d33734f0aa3152b72a4f2fc",
+                    sha256Alpha(image), "Alpha plane hash mismatch");
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
     private void assertColorTablePadding(BufferedImage image) {
         for (int y = 0; y < 16; y++) {
             for (int x = 0; x < 16; x++) {
@@ -394,19 +448,38 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
         int height = alphaRaster.getHeight();
         int[] samples = alphaRaster.getSamples(0, 0, width, height, 0, (int[]) null);
 
-        MessageDigest digest;
-        try {
-            digest = MessageDigest.getInstance("SHA-256");
-        }
-        catch (NoSuchAlgorithmException e) {
-            throw new AssertionError("SHA-256 not available", e);
-        }
+        MessageDigest digest = sha256Digest();
 
         for (int sample : samples) {
             digest.update((byte) sample);
         }
 
         return toHex(digest.digest());
+    }
+
+    private static String sha256RGBA(BufferedImage image) {
+        int width = image.getWidth();
+        int[] pixels = image.getRGB(0, 0, width, image.getHeight(), null, 0, width);
+
+        MessageDigest digest = sha256Digest();
+
+        for (int argb : pixels) {
+            digest.update((byte) (argb >> 16));
+            digest.update((byte) (argb >> 8));
+            digest.update((byte) argb);
+            digest.update((byte) (argb >>> 24));
+        }
+
+        return toHex(digest.digest());
+    }
+
+    private static MessageDigest sha256Digest() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        }
+        catch (NoSuchAlgorithmException e) {
+            throw new AssertionError("SHA-256 not available", e);
+        }
     }
 
     private static String toHex(byte[] bytes) {
