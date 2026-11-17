@@ -37,6 +37,7 @@ import javax.imageio.IIOException;
 import javax.imageio.stream.ImageInputStream;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.util.Locale;
 
 /**
  * PSDImageResource
@@ -152,7 +153,7 @@ public class PSDImageResource {
                     for (Field field : PSD.class.getDeclaredFields()) {
                         if (field.getName().startsWith("RES_") && field.getInt(null) == pId) {
                             String name = field.getName().substring(4);
-                            return StringUtil.lispToCamel(name.replace("_", "-").toLowerCase(), true);
+                            return StringUtil.lispToCamel(name.replace("_", "-").toLowerCase(Locale.ROOT), true);
                         }
                     }
                 }

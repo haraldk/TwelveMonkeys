@@ -40,6 +40,7 @@ import javax.imageio.metadata.IIOMetadataNode;
 import javax.imageio.stream.ImageOutputStream;
 import java.nio.ByteOrder;
 import java.util.Arrays;
+import java.util.Locale;
 
 import static com.twelvemonkeys.lang.Validate.notNull;
 import static java.lang.String.format;
@@ -107,7 +108,7 @@ public final class TIFFStreamMetadata extends IIOMetadata {
             throw new IIOInvalidTreeException("Missing \"value\" attribute in \"ByteOrder\" node", node);
         }
 
-        ByteOrder order = getByteOrder(value.toUpperCase());
+        ByteOrder order = getByteOrder(value.toUpperCase(Locale.ROOT));
         if (order == null) {
             throw new IIOInvalidTreeException("Unknown ByteOrder \"value\" attribute: " + value, node);
         }

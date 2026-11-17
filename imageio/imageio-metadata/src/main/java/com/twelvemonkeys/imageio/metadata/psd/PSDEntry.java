@@ -34,6 +34,7 @@ import com.twelvemonkeys.imageio.metadata.AbstractEntry;
 import com.twelvemonkeys.lang.StringUtil;
 
 import java.lang.reflect.Field;
+import java.util.Locale;
 
 /**
  * PhotoshopEntry
@@ -68,7 +69,7 @@ class PSDEntry extends AbstractEntry {
                         field.setAccessible(true);
 
                         if (field.get(null).equals(getIdentifier())) {
-                            String fieldName = StringUtil.lispToCamel(field.getName().substring(4).replace("_", "-").toLowerCase(), true);
+                            String fieldName = StringUtil.lispToCamel(field.getName().substring(4).replace("_", "-").toLowerCase(Locale.ROOT), true);
                             return name != null ? fieldName + ": " + name : fieldName;
                         }
                     }

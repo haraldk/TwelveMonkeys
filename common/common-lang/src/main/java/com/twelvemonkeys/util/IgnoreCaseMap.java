@@ -32,6 +32,7 @@ package com.twelvemonkeys.util;
 
 import java.io.Serializable;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -161,7 +162,7 @@ public class IgnoreCaseMap<V> extends AbstractDecoratedMap<String, V> implements
      */
     protected static Object toUpper(final Object pObject) {
         if (pObject instanceof String) {
-            return ((String) pObject).toUpperCase();
+            return ((String) pObject).toUpperCase(Locale.ROOT);
         }
         return pObject;
     }

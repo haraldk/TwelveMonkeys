@@ -53,6 +53,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteOrder;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.SortedSet;
 
 /**
@@ -352,7 +353,7 @@ public final class ThumbsDBImageReader extends ImageReaderBase {
         if (StringUtil.isEmpty(extension)) {
             return false;
         }
-        extension = extension.toLowerCase();
+        extension = extension.toLowerCase(Locale.ROOT);
 
         return !"psd".equals(extension) && !"svg".equals(extension) && catalog != null && catalog.getIndex(pFileName) != -1;
     }

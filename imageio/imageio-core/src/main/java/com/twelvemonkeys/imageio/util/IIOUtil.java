@@ -46,6 +46,7 @@ import java.awt.image.*;
 import java.io.*;
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -294,7 +295,7 @@ public final class IIOUtil {
         SortedSet<String> normalizedNames = new TreeSet<>();
 
         for (String name : names) {
-            normalizedNames.add(name.toUpperCase());
+            normalizedNames.add(name.toUpperCase(Locale.ROOT));
         }
 
         return normalizedNames.toArray(new String[0]);
