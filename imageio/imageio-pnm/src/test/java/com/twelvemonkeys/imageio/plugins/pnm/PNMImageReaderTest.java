@@ -41,12 +41,14 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -171,6 +173,24 @@ public class PNMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> 
             ImageReadParam param = reader.getDefaultReadParam();
             param.setDestinationType(ImageTypeSpecifier.createFromBufferedImageType(type));
             assertImageDataEquals("Images differ from reference for type: " + type, expected, reader.read(0, param));
+        }
+    }
+
+    @Test
+    public void testPGMMaxSample1() throws IOException {
+        // A maxval of 1 is valid for PGM, samples must be scaled to 0 or 255
+        byte[] header = "P5\n2 1\n1\n".getBytes(StandardCharsets.US_ASCII);
+        byte[] data = Arrays.copyOf(header, header.length + 2);
+        data[header.length + 1] = 1;
+
+        ImageReader reader = createReader();
+        try (ImageInputStream input = new ByteArrayImageInputStream(data)) {
+            reader.setInput(input);
+
+            assertArrayEquals(new int[] {0, 255}, reader.read(0).getRaster().getPixels(0, 0, 2, 1, (int[]) null));
+        }
+        finally {
+            reader.dispose();
         }
     }
 }
