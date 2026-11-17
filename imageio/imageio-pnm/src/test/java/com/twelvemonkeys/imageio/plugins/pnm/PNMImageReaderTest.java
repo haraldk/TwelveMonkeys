@@ -41,12 +41,14 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -69,6 +71,48 @@ public class PNMImageReaderTest extends ImageReaderAbstractTest<PNMImageReader> 
             // "exceeding" is unique to the size-guard message, confirming rejection in the guard (before
             // allocation), not a later EOF/parse error after a large buffer was committed.
             assertTrue(exception.getMessage().contains("exceeding"), exception.getMessage());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testNormalize8BitSamplesAboveHalfMaxSample() throws IOException {
+        // Samples are unsigned, values >= 128 must not be scaled as negative values
+        byte[] header = "P5\n4 1\n200\n".getBytes(StandardCharsets.US_ASCII);
+        byte[] data = Arrays.copyOf(header, header.length + 4);
+        data[header.length + 1] = 100;
+        data[header.length + 2] = (byte) 128;
+        data[header.length + 3] = (byte) 200;
+
+        ImageReader reader = createReader();
+        try (ImageInputStream input = new ByteArrayImageInputStream(data)) {
+            reader.setInput(input);
+
+            assertArrayEquals(new int[] {0, 127, 163, 255}, reader.read(0).getRaster().getPixels(0, 0, 4, 1, (int[]) null));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testNormalize16BitSamplesAboveHalfMaxSample() throws IOException {
+        // Samples are unsigned, values >= 32768 must not be scaled as negative values
+        byte[] header = "P5\n4 1\n40000\n".getBytes(StandardCharsets.US_ASCII);
+        byte[] data = Arrays.copyOf(header, header.length + 8);
+        int[] samples = {0, 20000, 32768, 40000};
+        for (int i = 0; i < samples.length; i++) {
+            data[header.length + i * 2] = (byte) (samples[i] >> 8);
+            data[header.length + i * 2 + 1] = (byte) samples[i];
+        }
+
+        ImageReader reader = createReader();
+        try (ImageInputStream input = new ByteArrayImageInputStream(data)) {
+            reader.setInput(input);
+
+            assertArrayEquals(new int[] {0, 32767, 53686, 65535}, reader.read(0).getRaster().getPixels(0, 0, 4, 1, (int[]) null));
         }
         finally {
             reader.dispose();
