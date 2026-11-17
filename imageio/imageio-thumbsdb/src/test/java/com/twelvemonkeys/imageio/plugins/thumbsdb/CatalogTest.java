@@ -43,6 +43,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataInput;
+import java.io.EOFException;
 import java.io.IOException;
 import java.nio.ByteOrder;
 
@@ -116,6 +117,54 @@ public class CatalogTest {
     void testItemIdAboveRange() {
         // Creates a crafted Catalog with entry above the range
         assertThrows(IIOException.class, () -> Catalog.read(catalogWith(9, "image.jpg")));
+    }
+
+    @Test
+    void testNegativeThumbnailCount() throws IOException {
+        FastByteArrayOutputStream bytes = new FastByteArrayOutputStream(1024);
+        LittleEndianDataOutputStream out = new LittleEndianDataOutputStream(bytes);
+        writeHeader(out, -1);
+        out.flush();
+
+        assertThrows(IIOException.class, () -> Catalog.read(bytes.createInputStream()));
+    }
+
+    @Test
+    void testHugeThumbnailCount() throws IOException {
+        FastByteArrayOutputStream bytes = new FastByteArrayOutputStream(1024);
+        LittleEndianDataOutputStream out = new LittleEndianDataOutputStream(bytes);
+        writeHeader(out, Integer.MAX_VALUE);
+        writeItem(out, 1, "image.jpg");
+        out.flush();
+
+        assertThrows(EOFException.class, () -> Catalog.read(bytes.createInputStream()));
+    }
+
+    @Test
+    void testDuplicateItemId() throws IOException {
+        FastByteArrayOutputStream bytes = new FastByteArrayOutputStream(1024);
+        LittleEndianDataOutputStream out = new LittleEndianDataOutputStream(bytes);
+        writeHeader(out, 2);
+        writeItem(out, 1, "image.jpg");
+        writeItem(out, 1, "other.jpg");
+        out.flush();
+
+        assertThrows(IIOException.class, () -> Catalog.read(bytes.createInputStream()));
+    }
+
+    @Test
+    void testUnterminatedName() throws IOException {
+        FastByteArrayOutputStream bytes = new FastByteArrayOutputStream(1024);
+        LittleEndianDataOutputStream out = new LittleEndianDataOutputStream(bytes);
+        writeHeader(out, 1);
+        out.writeInt(20); // size, room for 2 chars
+        out.writeInt(1);
+        out.writeLong(0L);
+        out.writeChars("abcd"); // no NUL terminator within size
+        out.writeChar(0);
+        out.flush();
+
+        assertThrows(IIOException.class, () -> Catalog.read(bytes.createInputStream()));
     }
 
     @Test
