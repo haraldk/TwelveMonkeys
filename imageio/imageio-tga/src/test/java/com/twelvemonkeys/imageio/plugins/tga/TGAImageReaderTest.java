@@ -127,6 +127,71 @@ public class TGAImageReaderTest extends ImageReaderAbstractTest<TGAImageReader> 
         }
     }
 
+    @Test
+    public void readInputTooShortForFooter() throws IOException {
+        // A valid 1x1 grayscale TGA is only 19 bytes, too short for the 26-byte v2 footer.
+        // Probing for the footer seeked back into the flushed header, throwing IndexOutOfBoundsException.
+        byte[] tiny = {
+                0, 0, 3,                      // no id, no color map, uncompressed grayscale
+                0, 0, 0, 0, 0,                // color map spec
+                0, 0, 0, 0,                   // x/y origin
+                1, 0, 1, 0,                   // width: 1, height: 1
+                8, 0,                         // pixel depth: 8 bit, image descriptor
+                0x7f                          // pixel data
+        };
+
+        ImageReader reader = createReader();
+        try (ImageInputStream input = new ByteArrayImageInputStream(tiny)) {
+            reader.setInput(input);
+
+            BufferedImage image = reader.read(0);
+            assertEquals(1, image.getWidth());
+            assertEquals(1, image.getHeight());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void readExtensionAndThumbnailOffsetsInsideHeaderIgnored() throws IOException {
+        // Footer extension area offset and the extension area's postage stamp offset are unchecked
+        // file values, an offset pointing back into the flushed header threw IndexOutOfBoundsException.
+        byte[] header = {
+                0, 0, 3,
+                0, 0, 0, 0, 0,
+                0, 0, 0, 0,
+                1, 0, 1, 0,
+                8, 0,
+                0x7f
+        };
+
+        // Extension area at offset 19 with postage stamp offset 1, then footer pointing to it
+        byte[] withThumbnail = Arrays.copyOf(header, 19 + TGA.EXT_AREA_SIZE + 26);
+        withThumbnail[19] = (byte) TGA.EXT_AREA_SIZE;
+        withThumbnail[20] = (byte) (TGA.EXT_AREA_SIZE >> 8);
+        withThumbnail[19 + 486] = 1;
+        withThumbnail[19 + TGA.EXT_AREA_SIZE] = 19;
+        System.arraycopy(TGA.MAGIC, 0, withThumbnail, withThumbnail.length - TGA.MAGIC.length, TGA.MAGIC.length);
+
+        // Footer pointing extension area into the header
+        byte[] withExtension = withThumbnail.clone();
+        withExtension[19 + TGA.EXT_AREA_SIZE] = 1;
+
+        for (byte[] data : Arrays.asList(withThumbnail, withExtension)) {
+            ImageReader reader = createReader();
+            try (ImageInputStream input = new ByteArrayImageInputStream(data)) {
+                reader.setInput(input);
+
+                assertEquals(1, reader.read(0).getWidth());
+                assertFalse(reader.hasThumbnails(0));
+            }
+            finally {
+                reader.dispose();
+            }
+        }
+    }
+
     @Override
     protected List<TestData> getTestData() {
         return Arrays.asList(
