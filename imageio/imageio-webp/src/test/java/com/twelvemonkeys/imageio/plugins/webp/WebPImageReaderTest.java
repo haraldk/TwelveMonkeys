@@ -358,6 +358,29 @@ public class WebPImageReaderTest extends ImageReaderAbstractTest<WebPImageReader
     }
           
     @Test
+    public void testLosslessPlaneDistanceCodeNarrowImage() throws IOException {
+        // 1 x 2 lossless image, where the second pixel is a backward reference using distance code 80
+        // (xi = -7, yi = 1). For width 1, xi + yi * width < 1, so the spec clamps the distance to 1
+        // (copy the pixel above), libwebp decodes this as two identical pixels.
+        byte[] data = Base64.getDecoder().decode("UklGRh4AAABXRUJQVlA4TBIAAAAvAEAAEACQEvq/WoEK2P8y+AA=");
+
+        WebPImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(data)) {
+            reader.setInput(stream);
+
+            BufferedImage image = reader.read(0);
+            assertEquals(1, image.getWidth());
+            assertEquals(2, image.getHeight());
+            assertRGBEquals("Unexpected pixel at (0, 0)", 0xff400080, image.getRGB(0, 0), 0);
+            assertRGBEquals("Unexpected pixel at (0, 1)", 0xff400080, image.getRGB(0, 1), 0);
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
     public void testLosslessColorIndexOutsideColorTable() throws IOException {
         // #1361: indices >= color_table_size must decode as transparent black (0x00000000)
         WebPImageReader reader = createReader();
