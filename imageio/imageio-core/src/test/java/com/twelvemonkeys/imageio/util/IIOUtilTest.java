@@ -10,6 +10,7 @@ import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.io.*;
 
+import javax.imageio.IIOException;
 import javax.imageio.ImageReadParam;
 import javax.imageio.ImageTypeSpecifier;
 import javax.imageio.ImageWriteParam;
@@ -539,5 +540,91 @@ public class IIOUtilTest {
             compressionType = "Unset";
             compressionTypes = new String[] { "Bar", "Foo" };
         }
+    }
+
+    @Test
+    void readFullyImageInputStreamNull() {
+        assertThrows(NullPointerException.class, () -> IIOUtil.readFully(null, 42));
+    }
+
+    @Test
+    void readFullyImageInputStreamNegative() throws IOException {
+        try (ImageInputStream stream = new ByteArrayImageInputStream(new byte[4])) {
+            assertThrows(IIOException.class, () -> IIOUtil.readFully(stream, -1));
+        }
+    }
+
+    @Test
+    void readFullyImageInputStream() throws IOException {
+        try (ImageInputStream stream = new ByteArrayImageInputStream(new byte[] {1, 2, 3, 4, 5})) {
+            stream.readByte();
+
+            assertArrayEquals(new byte[] {2, 3, 4}, IIOUtil.readFully(stream, 3));
+            assertEquals(4, stream.getStreamPosition());
+            assertArrayEquals(new byte[0], IIOUtil.readFully(stream, 0));
+        }
+    }
+
+    @Test
+    void readFullyImageInputStreamKnownLengthTooLarge() throws IOException {
+        try (ImageInputStream stream = new ByteArrayImageInputStream(new byte[10])) {
+            assertThrows(EOFException.class, () -> IIOUtil.readFully(stream, Integer.MAX_VALUE - 16));
+            assertEquals(0, stream.getStreamPosition());
+        }
+    }
+
+    @Test
+    void readFullyImageInputStreamUnknownLength() throws IOException {
+        byte[] data = new byte[3 * 1024 * 1024 + 17];
+        for (int i = 0; i < data.length; i++) {
+            data[i] = (byte) i;
+        }
+
+        try (ImageInputStream stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(data))) {
+            assertEquals(-1, stream.length());
+            assertArrayEquals(data, IIOUtil.readFully(stream, data.length));
+        }
+    }
+
+    @Test
+    void readFullyImageInputStreamUnknownLengthTooLarge() throws IOException {
+        try (ImageInputStream stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(new byte[10]))) {
+            assertThrows(EOFException.class, () -> IIOUtil.readFully(stream, Integer.MAX_VALUE - 16));
+        }
+    }
+
+    @Test
+    void readFullyImageInputStreamTooLargeForArray() throws IOException {
+        try (ImageInputStream stream = new ByteArrayImageInputStream(new byte[10])) {
+            assertThrows(IIOException.class, () -> IIOUtil.readFully(stream, Integer.MAX_VALUE + 1L));
+        }
+    }
+
+    @Test
+    void checkAvailable() throws IOException {
+        try (ImageInputStream stream = new ByteArrayImageInputStream(new byte[16])) {
+            assertEquals(4, IIOUtil.checkAvailable(stream, 4, 4));
+            assertEquals(0, stream.getStreamPosition());
+            assertThrows(EOFException.class, () -> IIOUtil.checkAvailable(stream, 5, 4));
+            assertThrows(IIOException.class, () -> IIOUtil.checkAvailable(stream, -1, 4));
+            assertThrows(IllegalArgumentException.class, () -> IIOUtil.checkAvailable(stream, 1, 0));
+        }
+    }
+
+    @Test
+    void checkAvailableUnknownLength() throws IOException {
+        try (ImageInputStream stream = new MemoryCacheImageInputStream(new ByteArrayInputStream(new byte[16]))) {
+            assertEquals(1000, IIOUtil.checkAvailable(stream, 1000, 4));
+            assertThrows(IIOException.class, () -> IIOUtil.checkAvailable(stream, Integer.MAX_VALUE + 1L, 1));
+        }
+    }
+
+    @Test
+    void checkedArrayLength() throws IIOException {
+        assertEquals(0, IIOUtil.checkedArrayLength(0));
+        assertEquals(42, IIOUtil.checkedArrayLength(42));
+        assertThrows(IIOException.class, () -> IIOUtil.checkedArrayLength(-1));
+        assertThrows(IIOException.class, () -> IIOUtil.checkedArrayLength(Integer.MAX_VALUE));
+        assertThrows(IIOException.class, () -> IIOUtil.checkedArrayLength(Math.multiplyExact(70000L, 70000L)));
     }
 }
