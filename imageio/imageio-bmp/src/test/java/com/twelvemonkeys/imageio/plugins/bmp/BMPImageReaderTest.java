@@ -51,8 +51,12 @@ import javax.imageio.spi.IIORegistry;
 import javax.imageio.spi.ImageReaderSpi;
 import java.awt.*;
 import java.awt.image.*;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
@@ -275,6 +279,47 @@ public class BMPImageReaderTest extends ImageReaderAbstractTest<BMPImageReader> 
         finally {
             reader.dispose();
         }
+    }
+
+    @Test
+    public void testReadUnsignedPixelOffsetAndColorsUsed() throws IOException {
+        // Pixel offset past 2 GB, previously narrowed to a negative color map size, pixel data is past EOF
+        BMPImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(new ByteArrayInputStream(createIndexedBMP(0xffffff00, 0))));
+            assertThrows(EOFException.class, () -> reader.read(0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    @Test
+    public void testReadColorsUsedAboveSignedRange() throws IOException {
+        // ColorsUsed 0xffffffff, color map size is limited by the pixel offset
+        BMPImageReader reader = createReader();
+
+        try {
+            reader.setInput(ImageIO.createImageInputStream(new ByteArrayInputStream(createIndexedBMP(54 + 8, 0xffffffff))));
+            BufferedImage image = reader.read(0);
+
+            assertEquals(1, image.getWidth());
+            assertEquals(2, ((IndexColorModel) image.getColorModel()).getMapSize());
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static byte[] createIndexedBMP(int pixelOffset, int colorsUsed) {
+        ByteBuffer bmp = ByteBuffer.allocate(54 + 8 + 4).order(ByteOrder.LITTLE_ENDIAN);
+        bmp.put((byte) 'B').put((byte) 'M').putInt(bmp.capacity()).putInt(0).putInt(pixelOffset);
+        bmp.putInt(40).putInt(1).putInt(1).putShort((short) 1).putShort((short) 8); // 1 x 1, 8 bit
+        bmp.putInt(0).putInt(4).putInt(0).putInt(0).putInt(colorsUsed).putInt(0);
+        bmp.putInt(0x000000).putInt(0xffffff); // 2 color map entries, followed by 1 pixel
+
+        return bmp.array();
     }
 
     @Test
