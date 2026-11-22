@@ -127,6 +127,26 @@ public class JFXXThumbnailReaderTest extends AbstractThumbnailReaderTest {
     }
 
     @Test
+    public void testReadRGBPixelValues() throws IOException {
+        // 2 x 2 RGB thumbnail: width and height bytes, followed by the pixel data
+        byte[] thumbnail = {
+                2, 2,
+                0x10, 0x20, 0x30, 0x40, 0x50, 0x60,
+                0x70, (byte) 0x80, (byte) 0x90, (byte) 0xa0, (byte) 0xb0, (byte) 0xc0
+        };
+        ThumbnailReader reader = JFXXThumbnail.from(new JFXX(JFXX.RGB, thumbnail), thumbnailReader);
+        assertNotNull(reader);
+
+        BufferedImage image = reader.read();
+        assertNotNull(image);
+
+        assertEquals(0x102030, image.getRGB(0, 0) & 0xffffff);
+        assertEquals(0x405060, image.getRGB(1, 0) & 0xffffff);
+        assertEquals(0x708090, image.getRGB(0, 1) & 0xffffff);
+        assertEquals(0xa0b0c0, image.getRGB(1, 1) & 0xffffff);
+    }
+
+    @Test
     public void testReadJPEG() throws IOException {
         ThumbnailReader reader = createReader(createStream("/jpeg/jfif-jfxx-thumbnail-olympus-d320l.jpg"));
 
