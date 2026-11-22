@@ -1,0 +1,20 @@
+module com.twelvemonkeys.imageio.tiff {
+    requires com.twelvemonkeys.common.image;
+    requires com.twelvemonkeys.common.io;
+    requires com.twelvemonkeys.common.lang;
+
+    requires transitive com.twelvemonkeys.imageio.core;
+    requires transitive com.twelvemonkeys.imageio.metadata;
+    requires transitive java.desktop;
+    requires transitive java.xml;
+
+    exports com.twelvemonkeys.imageio.plugins.tiff;
+
+    provides javax.imageio.spi.ImageReaderSpi with
+        com.twelvemonkeys.imageio.plugins.tiff.TIFFImageReaderSpi,
+        com.twelvemonkeys.imageio.plugins.tiff.BigTIFFImageReaderSpi;
+    provides javax.imageio.spi.ImageWriterSpi with
+        com.twelvemonkeys.imageio.plugins.tiff.TIFFImageWriterSpi,
+        com.twelvemonkeys.imageio.plugins.tiff.BigTIFFImageWriterSpi;
+
+}
