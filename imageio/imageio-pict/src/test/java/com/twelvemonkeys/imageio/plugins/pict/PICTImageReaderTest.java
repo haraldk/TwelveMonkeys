@@ -398,22 +398,7 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
         ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         try (DataOutputStream output = new DataOutputStream(bytes)) {
             output.write(new byte[headerSize]);
-            output.writeShort(0);               // picture size
-            output.writeShort(0);               // frame top
-            output.writeShort(0);               // frame left
-            output.writeShort(1);               // frame bottom
-            output.writeShort(1);               // frame right
-            output.writeShort(0x0011);          // VersionOp
-            output.writeShort(0x02ff);          // version 2
-            output.writeShort(0x0c00);          // HeaderOp
-            output.writeInt(0xfffe0000);        // extended v2 header
-            output.writeInt(72 << 16);          // horizontal resolution
-            output.writeInt(72 << 16);          // vertical resolution
-            output.writeShort(0);               // optimal source top
-            output.writeShort(0);               // optimal source left
-            output.writeShort(1);               // optimal source bottom
-            output.writeShort(1);               // optimal source right
-            output.writeInt(0);                 // reserved
+            writeV2Header(output, 1, 1);
             output.writeShort(opcode);
             if (unsignedShortLength) {
                 output.writeShort(dataLength);
@@ -427,6 +412,116 @@ public class PICTImageReaderTest extends ImageReaderAbstractTest<PICTImageReader
                 output.writeByte(0);             // v2 opcode alignment
             }
 
+            output.writeShort(PICT.OP_END_OF_PICTURE);
+        }
+
+        return bytes.toByteArray();
+    }
+
+    private static void writeV2Header(DataOutputStream output, int frameBottom, int frameRight) throws IOException {
+        output.writeShort(0);               // picture size
+        output.writeShort(0);               // frame top
+        output.writeShort(0);               // frame left
+        output.writeShort(frameBottom);     // frame bottom
+        output.writeShort(frameRight);      // frame right
+        output.writeShort(0x0011);          // VersionOp
+        output.writeShort(0x02ff);          // version 2
+        output.writeShort(0x0c00);          // HeaderOp
+        output.writeInt(0xfffe0000);        // extended v2 header
+        output.writeInt(72 << 16);          // horizontal resolution
+        output.writeInt(72 << 16);          // vertical resolution
+        output.writeShort(0);               // optimal source top
+        output.writeShort(0);               // optimal source left
+        output.writeShort(frameBottom);     // optimal source bottom
+        output.writeShort(frameRight);      // optimal source right
+        output.writeInt(0);                 // reserved
+    }
+
+    @Test
+    public void testInvalidBitMapRectangles() throws IOException {
+        int[] valid = {0, 0, 4, 8};
+        int[][] invalid = {
+                {8, 0, 4, 8}, // inverted height
+                {4, 0, 4, 8}, // empty height
+                {0, 8, 4, 0}, // inverted width
+                {0, 8, 4, 8}, // empty width
+        };
+
+        for (int[] rect : invalid) {
+            assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_BITS_RECT, rect, valid));
+            assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_BITS_RECT, valid, rect));
+            assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_PACK_BITS_RECT, valid, rect));
+            assertInvalidBitMapRectangle(createBitMapPICT(PICT.OP_DIRECT_BITS_RECT, valid, rect));
+        }
+    }
+
+    @Test
+    public void testValidBitMapRectangles() throws IOException {
+        int[] valid = {0, 0, 4, 8};
+
+        for (int opcode : new int[] {PICT.OP_BITS_RECT, PICT.OP_PACK_BITS_RECT}) {
+            PICTImageReader reader = createReader();
+            try (ImageInputStream stream = new ByteArrayImageInputStream(createBitMapPICT(opcode, valid, valid))) {
+                reader.setInput(stream);
+                assertNotNull(reader.read(0));
+            }
+            finally {
+                reader.dispose();
+            }
+        }
+    }
+
+    private void assertInvalidBitMapRectangle(byte[] data) throws IOException {
+        PICTImageReader reader = createReader();
+        try (ImageInputStream stream = new ByteArrayImageInputStream(data)) {
+            reader.setInput(stream);
+            assertThrows(IIOException.class, () -> reader.read(0));
+        }
+        finally {
+            reader.dispose();
+        }
+    }
+
+    private static byte[] createBitMapPICT(int opcode, int[] bounds, int[] srcRect) throws IOException {
+        ByteArrayOutputStream bytes = new ByteArrayOutputStream();
+        try (DataOutputStream output = new DataOutputStream(bytes)) {
+            writeV2Header(output, 4, 8);
+            output.writeShort(opcode);
+
+            if (opcode == PICT.OP_DIRECT_BITS_RECT) {
+                output.writeInt(0xff);          // base address
+                output.writeShort(0x8000 | 32); // PixMap, rowBytes
+            }
+            else {
+                output.writeShort(1);           // BitMap, rowBytes
+            }
+
+            for (int v : bounds) {
+                output.writeShort(v);
+            }
+
+            if (opcode == PICT.OP_DIRECT_BITS_RECT) {
+                output.writeShort(0);           // pmVersion
+                output.writeShort(4);           // packType
+                output.writeInt(0);             // packSize
+                output.writeInt(72 << 16);      // hRes
+                output.writeInt(72 << 16);      // vRes
+                output.writeShort(16);          // pixelType
+                output.writeShort(32);          // pixelSize
+                output.writeShort(3);           // cmpCount
+                output.writeShort(8);           // cmpSize
+                output.writeInt(0);             // planeBytes
+                output.writeInt(0);             // pmTable
+                output.writeInt(0);             // reserved
+            }
+
+            for (int v : srcRect) {
+                output.writeShort(v);
+            }
+
+            output.writeLong(0x0000000000040008L); // dstRect (0, 0, 4, 8)
+            output.writeShort(0);               // mode
+            output.write(new byte[4]);          // pixel data, 4 rows of 1 byte
             output.writeShort(PICT.OP_END_OF_PICTURE);
         }
 
