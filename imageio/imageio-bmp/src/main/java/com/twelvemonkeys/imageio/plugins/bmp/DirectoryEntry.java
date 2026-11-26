@@ -112,7 +112,7 @@ abstract class DirectoryEntry {
         return String.format(
                 "%s: width: %d, height: %d, colors: %d, planes: %d, bit count: %d, size: %d, offset: %d",
                 getClass().getSimpleName(),
-                width, height, colorCount, planes, bitCount, size, offset
+                getWidth(), getHeight(), getColorCount(), getPlanes(), getBitCount(), getSize(), getOffset()
         );
     }
 
@@ -128,16 +128,18 @@ abstract class DirectoryEntry {
         return height;
     }
 
-    public int getOffset() {
-        return offset;
+    public long getOffset() {
+        // NOTE: Unsigned 32 bit value
+        return Integer.toUnsignedLong(offset);
     }
 
     public int getPlanes() {
         return planes;
     }
 
-    public int getSize() {
-        return size;
+    public long getSize() {
+        // NOTE: Unsigned 32 bit value
+        return Integer.toUnsignedLong(size);
     }
 
     public int getWidth() {

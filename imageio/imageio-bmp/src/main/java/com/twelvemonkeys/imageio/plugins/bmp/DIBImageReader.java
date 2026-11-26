@@ -119,7 +119,7 @@ abstract class DIBImageReader extends ImageReaderBase {
             case 4:
             case 8:
                 // TODO: This is slightly QnD...
-                int offset = entry.getOffset() + header.getSize();
+                long offset = entry.getOffset() + header.getSize();
                 if (offset != imageInput.getStreamPosition()) {
                     imageInput.seek(offset);
                 }
@@ -271,6 +271,16 @@ abstract class DIBImageReader extends ImageReaderBase {
         if (!headers.containsKey(entry)) {
             imageInput.seek(entry.getOffset());
             DIBHeader header = DIBHeader.read(imageInput);
+
+            // NOTE: The entry bit count takes precedence over the header and sizes the palette
+            // (see BitmapDescriptor.getColorCount), so an entry claiming more than 8 bits for an
+            // indexed bitmap would size the palette from a bit count the bitmap never uses.
+            if (header.getBitCount() <= 8 && entry.getBitCount() > 8) {
+                throw new IIOException(String.format(
+                        "Directory entry bit count (%d) does not match indexed DIB header bit count (%d)",
+                        entry.getBitCount(), header.getBitCount()));
+            }
+
             headers.put(entry, header);
         }
 
@@ -284,7 +294,7 @@ abstract class DIBImageReader extends ImageReaderBase {
         if (descriptor == null || !descriptors.containsKey(entry)) {
             DIBHeader header = getHeader(entry);
 
-            int offset = entry.getOffset() + header.getSize();
+            long offset = entry.getOffset() + header.getSize();
             if (offset != imageInput.getStreamPosition()) {
                 imageInput.seek(offset);
             }
