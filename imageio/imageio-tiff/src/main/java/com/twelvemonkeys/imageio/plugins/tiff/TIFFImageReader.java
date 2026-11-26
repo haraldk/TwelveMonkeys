@@ -1018,6 +1018,10 @@ public final class TIFFImageReader extends ImageReaderBase {
             stripTileHeight = getValueAsIntWithDefault(TIFF.TAG_TILE_HEIGTH, "TileHeight", stripTileHeight);
         }
 
+        if (stripTileWidth <= 0 || stripTileHeight <= 0) {
+            throw new IIOException(String.format("Unsupported strip/tile dimensions for TIFF: %dx%d", Integer.toUnsignedLong(stripTileWidth), Integer.toUnsignedLong(stripTileHeight)));
+        }
+
         int tilesAcross = (width + stripTileWidth - 1) / stripTileWidth;
         int tilesDown = (height + stripTileHeight - 1) / stripTileHeight;
 

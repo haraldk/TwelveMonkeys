@@ -725,6 +725,70 @@ public class TIFFImageReaderTest extends ImageReaderAbstractTest<TIFFImageReader
         }
     }
 
+    @Test
+    public void testReadZeroRowsPerStrip() throws IOException {
+        TIFFImageReader reader = createReader();
+
+        try (ImageInputStream stream = new ByteArrayImageInputStream(createSingleStripTIFF(0))) {
+            reader.setInput(stream);
+
+            assertThrows(IIOException.class, () -> reader.read(0));
+        }
+    }
+
+    @Test
+    public void testReadIllegalTileSize() throws IOException {
+        TIFFImageReader reader = createReader();
+
+        int[][] tileSizes = {{0, 2}, {4, 0}, {0x80000000, 2}, {4, 0x80000000}};
+        for (int[] tileSize : tileSizes) {
+            try (ImageInputStream stream = new ByteArrayImageInputStream(createSingleTileTIFF(tileSize[0], tileSize[1]))) {
+                reader.setInput(stream);
+
+                assertThrows(IIOException.class, () -> reader.read(0), String.format("%08x x %08x", tileSize[0], tileSize[1]));
+            }
+        }
+    }
+
+    // 4x2 8 bit gray, single strip
+    private static byte[] createSingleStripTIFF(int rowsPerStrip) {
+        ByteBuffer buffer = ByteBuffer.allocate(256).order(ByteOrder.LITTLE_ENDIAN);
+        buffer.put((byte) 'I').put((byte) 'I').putShort((short) 42).putInt(8);
+        buffer.putShort((short) 9);
+        putEntry(buffer, TIFF.TAG_IMAGE_WIDTH, TIFF.TYPE_SHORT, 1, 4);
+        putEntry(buffer, TIFF.TAG_IMAGE_HEIGHT, TIFF.TYPE_SHORT, 1, 2);
+        putEntry(buffer, TIFF.TAG_BITS_PER_SAMPLE, TIFF.TYPE_SHORT, 1, 8);
+        putEntry(buffer, TIFF.TAG_COMPRESSION, TIFF.TYPE_SHORT, 1, TIFFBaseline.COMPRESSION_NONE);
+        putEntry(buffer, TIFF.TAG_PHOTOMETRIC_INTERPRETATION, TIFF.TYPE_SHORT, 1, TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO);
+        putEntry(buffer, TIFF.TAG_STRIP_OFFSETS, TIFF.TYPE_LONG, 1, 128);
+        putEntry(buffer, TIFF.TAG_SAMPLES_PER_PIXEL, TIFF.TYPE_SHORT, 1, 1);
+        putEntry(buffer, TIFF.TAG_ROWS_PER_STRIP, TIFF.TYPE_SHORT, 1, rowsPerStrip);
+        putEntry(buffer, TIFF.TAG_STRIP_BYTE_COUNTS, TIFF.TYPE_LONG, 1, 8);
+        buffer.putInt(0);
+
+        return buffer.array();
+    }
+
+    // 4x2 8 bit gray, single tile
+    private static byte[] createSingleTileTIFF(int tileWidth, int tileHeight) {
+        ByteBuffer buffer = ByteBuffer.allocate(256).order(ByteOrder.LITTLE_ENDIAN);
+        buffer.put((byte) 'I').put((byte) 'I').putShort((short) 42).putInt(8);
+        buffer.putShort((short) 10);
+        putEntry(buffer, TIFF.TAG_IMAGE_WIDTH, TIFF.TYPE_SHORT, 1, 4);
+        putEntry(buffer, TIFF.TAG_IMAGE_HEIGHT, TIFF.TYPE_SHORT, 1, 2);
+        putEntry(buffer, TIFF.TAG_BITS_PER_SAMPLE, TIFF.TYPE_SHORT, 1, 8);
+        putEntry(buffer, TIFF.TAG_COMPRESSION, TIFF.TYPE_SHORT, 1, TIFFBaseline.COMPRESSION_NONE);
+        putEntry(buffer, TIFF.TAG_PHOTOMETRIC_INTERPRETATION, TIFF.TYPE_SHORT, 1, TIFFBaseline.PHOTOMETRIC_BLACK_IS_ZERO);
+        putEntry(buffer, TIFF.TAG_SAMPLES_PER_PIXEL, TIFF.TYPE_SHORT, 1, 1);
+        putEntry(buffer, TIFF.TAG_TILE_WIDTH, TIFF.TYPE_LONG, 1, tileWidth);
+        putEntry(buffer, TIFF.TAG_TILE_HEIGTH, TIFF.TYPE_LONG, 1, tileHeight);
+        putEntry(buffer, TIFF.TAG_TILE_OFFSETS, TIFF.TYPE_LONG, 1, 160);
+        putEntry(buffer, TIFF.TAG_TILE_BYTE_COUNTS, TIFF.TYPE_LONG, 1, 8);
+        buffer.putInt(0);
+
+        return buffer.array();
+    }
+
     // 4x2 8 bit gray, RowsPerStrip 1 (two strips)
     private static byte[] createTwoStripTIFF(int offsetCount, int byteCountCount) {
         ByteBuffer buffer = ByteBuffer.allocate(256).order(ByteOrder.LITTLE_ENDIAN);
