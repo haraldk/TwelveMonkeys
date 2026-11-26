@@ -1019,7 +1019,7 @@ public final class TIFFImageReader extends ImageReaderBase {
         }
 
         if (stripTileWidth <= 0 || stripTileHeight <= 0) {
-            throw new IIOException(String.format("Illegal strip/tile dimensions for TIFF: %dx%d", stripTileWidth, stripTileHeight));
+            throw new IIOException(String.format("Unsupported strip/tile dimensions for TIFF: %dx%d", Integer.toUnsignedLong(stripTileWidth), Integer.toUnsignedLong(stripTileHeight)));
         }
 
         int tilesAcross = (width + stripTileWidth - 1) / stripTileWidth;
