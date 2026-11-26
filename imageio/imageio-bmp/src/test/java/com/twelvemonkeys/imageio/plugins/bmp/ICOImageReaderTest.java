@@ -40,6 +40,7 @@ import javax.imageio.stream.ImageInputStream;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -125,7 +126,7 @@ public class ICOImageReaderTest extends ImageReaderAbstractTest<ICOImageReader> 
         // Entry bit count 31 makes the palette size 1 << 31 (negative), the DIB header says 8 bit indexed
         byte[] data = createICO(31, 40 + 256 * 4 + 8, 22, createDIBHeader(8));
 
-        assertReadThrowsIIOException(data);
+        assertReadThrows(IIOException.class, data);
     }
 
     @Test
@@ -151,28 +152,29 @@ public class ICOImageReaderTest extends ImageReaderAbstractTest<ICOImageReader> 
     }
 
     @Test
-    public void testRejectsNegativeEntryOffset() throws IOException {
+    public void testEntryOffsetTreatedAsUnsigned() throws IOException {
+        // An offset with the high bit set is past the end of the stream, but must not be read as negative
         byte[] data = createICO(8, 40 + 256 * 4 + 8, Integer.MIN_VALUE, createDIBHeader(8));
 
-        assertReadThrowsIIOException(data);
+        assertReadThrows(EOFException.class, data);
     }
 
     @Test
-    public void testRejectsNegativeEntrySize() throws IOException {
+    public void testEntrySizeTreatedAsUnsigned() throws IOException {
         // PNG magic at the entry offset routes to the PNG reader, using the entry size as stream length
         byte[] png = {(byte) 0x89, 'P', 'N', 'G', 0x0d, 0x0a, 0x1a, 0x0a, 0, 0, 0, 13, 'I', 'H', 'D', 'R'};
         byte[] data = createICO(32, -1, 22, png);
 
-        assertReadThrowsIIOException(data);
+        assertReadThrows(IIOException.class, data);
     }
 
-    private void assertReadThrowsIIOException(byte[] data) throws IOException {
+    private void assertReadThrows(Class<? extends IOException> expected, byte[] data) throws IOException {
         ICOImageReader reader = createReader();
 
         try (ImageInputStream stream = new ByteArrayImageInputStream(data)) {
             reader.setInput(stream);
 
-            assertThrows(IIOException.class, () -> reader.read(0));
+            assertThrows(expected, () -> reader.read(0));
         }
         finally {
             reader.dispose();
