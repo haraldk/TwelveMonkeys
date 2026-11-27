@@ -36,6 +36,7 @@ As there is lots of legacy data out there, we see the need for open implementati
 | [IFF](https://github.com/haraldk/TwelveMonkeys/wiki/IFF-Plugin)    | IFF      | Commodore Amiga/Electronic Arts Interchange File Format | ✔  |  ✔  | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 | [JPEG](https://github.com/haraldk/TwelveMonkeys/wiki/JPEG-Plugin)   | **JPEG** | Joint Photographers Expert Group                        | ✔  |  ✔  | [Native](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/jpeg_metadata.html#image), [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 |   | JPEG Lossless |                                                         | ✔  |  -  | [Native](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/jpeg_metadata.html#image), [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
+| [JPEG XL](imageio/imageio-jxl/README.md) | JXL | JPEG XL                                       | ✔  |  -  | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | Requires [JXLatte](https://github.com/Traneptora/jxlatte) |
 | [PCX](https://github.com/haraldk/TwelveMonkeys/wiki/PCX-Plugin)    | PCX      | ZSoft Paintbrush Format                                 | ✔  |  -  | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 |        | DCX      | Multi-page PCX fax document                             | ✔  |  -  | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
 | [PICT](https://github.com/haraldk/TwelveMonkeys/wiki/PICT-Plugin)   | PICT     | Apple QuickTime Picture Format                          | ✔  |  ✔  | [Standard](https://docs.oracle.com/en/java/javase/11/docs/api/java.desktop/javax/imageio/metadata/doc-files/standard_metadata.html) | 
@@ -279,6 +280,8 @@ It's possible to build using OpenJDK, but some tests might fail due to some mino
 
 Because the unit tests needs quite a bit of memory to run, you might have to set the environment variable `MAVEN_OPTS`
 to give the Java process that runs Maven more memory. I suggest something like `-Xmx512m -XX:MaxPermSize=256m`.
+
+The JPEG XL plugin (`imageio-jxl`) requires JDK 21 or later, and is only part of the build when building with JDK 21+.
 
 Optionally, you can install the project in your local Maven repository using:
 

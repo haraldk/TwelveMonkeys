@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+    <parent>
+        <groupId>com.twelvemonkeys.imageio</groupId>
+        <artifactId>imageio</artifactId>
+        <version>3.15.4-SNAPSHOT</version>
+    </parent>
+    <artifactId>imageio-jxl</artifactId>
+    <name>TwelveMonkeys » ImageIO » JPEG XL plugin</name>
+    <description>
+        <![CDATA[
+        ImageIO wrapper for the JXLatte pure Java JPEG XL decoder, enabling JPEG XL (JXL) read support.
+        Requires JXLatte on the class path, and the Java version JXLatte is compiled for at runtime.
+        See the <a href="https://github.com/Traneptora/jxlatte">JXLatte project page</a>
+        for more information.]]>
+    </description>
+
+    <properties>
+        <project.jpms.module.name>com.twelvemonkeys.imageio.jxl</project.jpms.module.name>
+        <!-- Patched JXLatte, from the module local repository below, see lib/README.md -->
+        <jxlatte.version>0.1.0-tm.6</jxlatte.version>
+        <brotli.version>0.1.2</brotli.version>
+    </properties>
+
+    <repositories>
+        <!-- TODO: Remove, once a JXLatte release with the required changes is available -->
+        <repository>
+            <id>imageio-jxl-lib</id>
+            <name>Patched JXLatte (temporary)</name>
+            <url>file://${project.basedir}/lib</url>
+            <releases>
+                <enabled>true</enabled>
+                <checksumPolicy>fail</checksumPolicy>
+            </releases>
+            <snapshots>
+                <enabled>false</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-metadata</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.twelvemonkeys.imageio</groupId>
+            <artifactId>imageio-core</artifactId>
+            <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- Must be provided by the user, the SPI de-registers itself if not available -->
+        <dependency>
+            <groupId>com.traneptora</groupId>
+            <artifactId>jxlatte</artifactId>
+            <version>${jxlatte.version}</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Optional, enables reading Brotli compressed (brob) Exif and XMP boxes, if added by the user -->
+        <dependency>
+            <groupId>org.brotli</groupId>
+            <artifactId>dec</artifactId>
+            <version>${brotli.version}</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.felix</groupId>
+                <artifactId>maven-bundle-plugin</artifactId>
+                <configuration>
+                    <instructions>
+                        <Import-Package>
+                            com.traneptora.jxlatte.*;resolution:=optional,
+                            org.brotli.dec;resolution:=optional,
+                            *
+                        </Import-Package>
+                        <Provide-Capability>
+                            osgi.serviceloader;
+                            osgi.serviceloader=javax.imageio.spi.ImageReaderSpi
+                        </Provide-Capability>
+                    </instructions>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>
