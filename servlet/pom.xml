@@ -15,6 +15,7 @@
     </description>
 
     <properties>
+        <twelvemonkeys.root.license>${project.basedir}/../LICENSE.txt</twelvemonkeys.root.license>
         <junit.jupiter.version>5.14.4</junit.jupiter.version>
     </properties>
 
